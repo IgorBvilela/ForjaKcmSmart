@@ -19,6 +19,17 @@ from tests.e2e.helpers import (
 
 pytestmark = pytest.mark.e2e
 
+# Contrato (rodada 3, 2026-10-01, revisão do Ultron): o usuário não lê "fase E"; a tela diz
+# "Em desenvolvimento · próxima etapa: <nome>". A letra da fase continua em `data-phase`.
+# Espelha PHASE_NAMES em frontend/src/lib/nav.ts.
+PHASE_NAMES = {
+    "E": "Tendências e histórico",
+    "F": "Alertas e diagnóstico avançado",
+    "G": "Comunicação com o KCM",
+    "L": "Saúde e registros",
+    "M": "Relatórios, backup e usuários",
+}
+
 
 def test_no_command_controls_outside_simulator(
     desktop_1920: Page, nav_routes: list[NavRoute]
@@ -61,7 +72,9 @@ def test_future_phase_routes_show_honest_empty_state(
         empty = page.get_by_test_id("empty-state")
         expect(empty).to_be_visible()
         expect(empty).to_have_attribute("data-phase", route.phase)
-        expect(empty).to_contain_text(f"Disponível na fase {route.phase}")
+        expect(empty).to_contain_text("Em desenvolvimento")
+        expect(empty).to_contain_text(f"próxima etapa: {PHASE_NAMES[route.phase]}")
+        expect(empty).not_to_contain_text(re.compile(r"fase [A-Z]"))
         expect(empty).to_contain_text("ainda não está disponível")
         expect(empty).to_contain_text("a Forja só lê")
         # sem botão falso dentro do estado vazio

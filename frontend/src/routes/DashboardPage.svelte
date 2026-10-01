@@ -3,7 +3,10 @@
    *  linha 1 — "O que o sistema está vendo" em largura total, compacto;
    *  linha 2 — os 6 indicadores numa linha (variante compacta);
    *  linha 3 — dosador animado (5/12) ao lado de eventos + diagnóstico (7/12).
-   *  Abaixo de 1280 px tudo empilha: sistema, indicadores, dosador, eventos, diagnóstico. */
+   *  Abaixo de 1280 px tudo empilha: sistema, indicadores, dosador, eventos, diagnóstico.
+   *  No celular (< 768 px) o dosador sobe para logo depois de "O que o sistema está vendo": o
+   *  desenho é o que a manutenção olha primeiro, e os 6 indicadores empilhados o empurravam
+   *  cinco telas para baixo. */
   import { untrack } from 'svelte'
   import ArrowRight from '@lucide/svelte/icons/arrow-right'
   import Eye from '@lucide/svelte/icons/eye'
@@ -36,6 +39,7 @@
   import Card from '../components/ui/Card.svelte'
   import EmptyState from '../components/ui/EmptyState.svelte'
   import StatusDot from '../components/ui/StatusDot.svelte'
+  import Tooltip from '../components/ui/Tooltip.svelte'
   import WbfMachine from '../components/wbf/WbfMachine.svelte'
 
   let { equipmentId }: { equipmentId: string } = $props()
@@ -70,6 +74,26 @@
   const connectionPt = $derived(eq?.connection_pt ?? card?.connection_pt ?? 'Sem informação')
   const statePt = $derived(card?.state_pt ?? null)
   const stateT: StateTone = $derived(stateTone(statePt))
+  /** Explicação do chip de conexão. Este sinal fala do KCM; o "ONLINE" do topo fala do Forja Edge
+   *  (este programa). Dois sinais, duas explicações. */
+  const connectionText = $derived.by(() => {
+    const sim = simulated ? ' (dados simulados)' : ''
+    switch (connection) {
+      case 'CONNECTED':
+        return `Leitura do equipamento ativa${sim}. Este sinal fala do KCM; o sinal do Edge, no topo da tela, fala deste programa.`
+      case 'CONNECTING':
+      case 'HANDSHAKE':
+        return `Tentando abrir a leitura do KCM${sim}. Ainda não há valores novos.`
+      case 'NOT_CONFIGURED':
+        return 'Comunicação com o KCM ainda não configurada. Disponível após configuração de campo.'
+      case 'DISCONNECTED':
+      case 'ERROR':
+      case 'RECONNECTING':
+        return `A Forja não está conseguindo ler o KCM${sim}. O KCM pode estar operando normalmente; só a leitura falhou.`
+      default:
+        return 'Sem informação sobre a conexão com o equipamento.'
+    }
+  })
   /** ≥ 1280 px: 6 indicadores numa linha, na variante compacta. */
   const compactTiles = $derived(app.isDesktop)
 
@@ -302,8 +326,10 @@
         <span>{controllerText}</span>
         <span class="sep" aria-hidden="true">|</span>
         <span class="conn" data-conn={connection ?? ''}>
-          <StatusDot state={connectionTone(connection)} hollow={connection !== 'CONNECTED'} size={8} />
-          {connectionPt}
+          <Tooltip label={`Conexão com o equipamento: ${connectionPt}`} text={connectionText} align="start">
+            <StatusDot state={connectionTone(connection)} hollow={connection !== 'CONNECTED'} size={8} />
+            {connectionPt}
+          </Tooltip>
         </span>
         {#if !app.isMobile}
           <!-- no celular o selo já está na faixa de fonte de dados, logo acima -->
@@ -322,6 +348,31 @@
       {/if}
     </div>
   </header>
+
+  {#snippet machineCard()}
+    <Card class="area-machine machine-card" padded={false} testid="dashboard-machine">
+      <div class="machine-head">
+        <span class="label">Dosador de correia · corte lateral</span>
+        <span class="machine-note">Reage à velocidade e ao material</span>
+      </div>
+      <div class="machine-body">
+        <WbfMachine
+          rpm={numOf('rpm')}
+          beltLoad={numOf('belt_load')}
+          driveCommand={numOf('drive_command')}
+          massFlow={numOf('mass_flow')}
+          {machineState}
+          quality={machineQuality}
+          connection={connection ?? 'DISCONNECTED'}
+          rpmRef={refs.rpm_ref ?? null}
+          beltLoadRef={refs.belt_load_ref ?? null}
+          {scenario}
+          reducedMotion={app.reducedMotion}
+          frameless
+        />
+      </div>
+    </Card>
+  {/snippet}
 
   {#if detailError && !card && !eq}
     <EmptyState title="Equipamento indisponível" text={detailError} />
@@ -344,6 +395,9 @@
           </a>
         {/if}
       </Card>
+
+      <!-- Celular: o dosador vem logo depois da condição (DOM = ordem visual, foco coerente) -->
+      {#if app.isMobile}{@render machineCard()}{/if}
 
       <!-- Linha 2: 6 indicadores -->
       <div class="area-tiles tiles" data-testid={TID.kpi.grid} data-variant={compactTiles ? 'compact' : 'full'}>
@@ -374,29 +428,8 @@
         {/each}
       </div>
 
-      <!-- Linha 3, esquerda: dosador animado -->
-      <Card class="area-machine machine-card" padded={false} testid="dashboard-machine">
-        <div class="machine-head">
-          <span class="label">Dosador de correia · corte lateral</span>
-          <span class="machine-note">Reage à velocidade e ao material</span>
-        </div>
-        <div class="machine-body">
-          <WbfMachine
-            rpm={numOf('rpm')}
-            beltLoad={numOf('belt_load')}
-            driveCommand={numOf('drive_command')}
-            massFlow={numOf('mass_flow')}
-            {machineState}
-            quality={machineQuality}
-            connection={connection ?? 'DISCONNECTED'}
-            rpmRef={refs.rpm_ref ?? null}
-            beltLoadRef={refs.belt_load_ref ?? null}
-            {scenario}
-            reducedMotion={app.reducedMotion}
-            frameless
-          />
-        </div>
-      </Card>
+      <!-- Linha 3, esquerda: dosador animado (tablet e desktop) -->
+      {#if !app.isMobile}{@render machineCard()}{/if}
 
       <!-- Linha 3, direita: eventos + diagnóstico -->
       <div class="area-side">
@@ -488,7 +521,23 @@
     font: var(--fs-body) / var(--lh-body) var(--font-ui);
   }
   .sep { color: var(--border-2); }
-  .conn { display: inline-flex; align-items: center; gap: var(--sp-2); }
+  .conn { display: inline-flex; align-items: center; }
+  /* o chip de conexão é texto da linha de metadados; o botão do Tooltip não pode parecer botão */
+  .conn :global(.tip-btn) {
+    gap: var(--sp-2);
+    min-height: 0;
+    padding: 0 var(--sp-1);
+    margin: 0 calc(-1 * var(--sp-1));
+    color: inherit;
+    font: inherit;
+    text-decoration: underline dotted var(--border-2);
+    text-underline-offset: 3px;
+  }
+  .conn :global(.tip-btn:hover) { background: transparent; color: var(--text-1); text-decoration-color: var(--text-3); }
+  @media (max-width: 767px), (pointer: coarse) {
+    /* alvo de 44 px sem engordar a linha: a margem negativa devolve a altura */
+    .conn :global(.tip-btn) { min-height: var(--touch); margin-block: -12px; }
+  }
   .dash-actions { display: flex; gap: var(--sp-2); flex: none; }
   @media (min-width: 1024px) {
     .dash-title h1 { font-size: var(--fs-display); line-height: var(--lh-display); }

@@ -10,12 +10,12 @@ text_pt: >-
 sources:
   - id: SRC-RULE-R-DRIVE-001
     kind: rule
-    title: "Regra Forja R-DRIVE-001: Esforço do acionamento alto"
+    title: "Regra Forja 'Esforço do acionamento alto'"
     reference: "config/rules/R-DRIVE-001.yaml"
     evidence_level: FORJA_RULE
   - id: SRC-OPINION-DRIVE
     kind: opinion
-    title: "Opinião técnica Forja sobre Drive Command alto"
+    title: "Opinião técnica Forja sobre esforço do acionamento alto"
     reference: "Documento Mestre §18.3"
     evidence_level: TECHNICAL_OPINION
 hypotheses:
@@ -67,6 +67,6 @@ next_checks:
     evidence_level: TECHNICAL_OPINION
     source_ids: [SRC-OPINION-DRIVE]
 caveats:
-  - "85% é limiar de atenção da Forja sobre a tag drive_command; não é limite do KCM nem do acionamento."
+  - "85% é limiar de atenção da Forja sobre o esforço do acionamento; não é limite do KCM nem do acionamento."
 related_rules: [R-DRIVE-001]
 related_cases: []

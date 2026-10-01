@@ -10,8 +10,15 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from forja.config.loader import load_alarm_catalog, load_profile, load_stop_by_catalog
+from forja.config.loader import (
+    load_alarm_catalog,
+    load_mapping,
+    load_profile,
+    load_stop_by_catalog,
+)
 from forja.domain import (
+    Diagnosis,
+    DriverError,
     EquipmentProfile,
     Event,
     EventTransition,
@@ -29,6 +36,7 @@ RULES_DIR = REPO_ROOT / "config" / "rules"
 ALARMS_DIR = REPO_ROOT / "config" / "alarms"
 STOP_BY_DIR = REPO_ROOT / "config" / "stop_by"
 EQUIPMENT_DIR = REPO_ROOT / "config" / "equipment"
+MAPPINGS_DIR = REPO_ROOT / "config" / "mappings"
 DIAGNOSTICS_DIR = REPO_ROOT / "knowledge" / "diagnostics"
 CASES_DIR = REPO_ROOT / "knowledge" / "cases"
 I18N_DIR = REPO_ROOT / "knowledge" / "i18n"
@@ -230,3 +238,66 @@ async def open_beltload_low_event(
     if len(found) != 1:
         raise AssertionError(f"esperado 1 OPEN de BELT_LOAD_LOW, veio {len(found)}")
     return engine, found[0], transitions
+
+
+async def simulate_scenario(
+    scenario_code: str,
+    seconds: float = 150.0,
+    *,
+    clock: FakeClock | None = None,
+    timezone: str = "America/Sao_Paulo",
+) -> tuple[list[EventTransition], list[Diagnosis]]:
+    """Simulador REAL + Normalizer + RuleEngine + DiagnosisEngine no perfil GTEX, sem rede e sem
+    banco. Mesmo caminho do `forja diagnose --demo`; tudo que sai e SIMULATED.
+
+    Devolve todas as transicoes e um diagnostico por OPEN.
+    """
+    from forja.acquisition.state import reason_pt_for
+    from forja.diagnostics.engine import DiagnosisEngine
+    from forja.diagnostics.library import load_library
+    from forja.diagnostics.translator import load_translator
+    from forja.drivers.simulator.controls import SimulatorControlRegistry
+    from forja.drivers.simulator.driver import SimulatorDriver
+    from forja.normalization.normalizer import Normalizer, comm_error_batch
+    from forja.normalization.plan import ReadPlanCompiler
+
+    clock = clock or FakeClock(T0)
+    profile = gtex_profile().model_copy(deep=True)
+    profile.communication.options["scenario"] = scenario_code
+    mapping = load_mapping(MAPPINGS_DIR / f"{profile.mapping_profile}.yaml")
+    driver = SimulatorDriver(profile, mapping, clock, controls=SimulatorControlRegistry())
+    compiler = ReadPlanCompiler()
+    plan = compiler.compile(profile, mapping)
+    normalizer = Normalizer(compiler=compiler)
+    engine = RuleEngine(
+        seed_rules(),
+        load_alarm_catalog(ALARMS_DIR),
+        load_stop_by_catalog(STOP_BY_DIR),
+        clock,
+        profiles={profile.id: profile},
+        timezone=timezone,
+    )
+    diagnosis_engine = DiagnosisEngine(
+        load_library(DIAGNOSTICS_DIR), clock, load_translator(I18N_DIR), timezone=timezone
+    )
+    transitions: list[EventTransition] = []
+    diagnoses: list[Diagnosis] = []
+    step = profile.communication.poll_interval_s
+    await driver.connect()
+    try:
+        elapsed = 0.0
+        while elapsed <= seconds:
+            try:
+                frame = await driver.read(plan)
+                batch = normalizer.normalize(frame, profile, mapping, clock, plan)
+            except DriverError as exc:
+                batch = comm_error_batch(profile, mapping, clock, reason_pt_for(exc))
+            for t in await engine.on_batch(batch):
+                transitions.append(t)
+                if t.kind == "OPEN":
+                    diagnoses.append(diagnosis_engine.diagnose(t.event))
+            clock.advance(step)
+            elapsed += step
+    finally:
+        await driver.disconnect()
+    return transitions, diagnoses

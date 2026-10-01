@@ -12,17 +12,17 @@ text_pt: >-
 sources:
   - id: SRC-RULE-R-BELTLOAD-001
     kind: rule
-    title: "Regra Forja R-BELTLOAD-001: Pouco material sobre a correia"
+    title: "Regra Forja 'Pouco material sobre a correia'"
     reference: "config/rules/R-BELTLOAD-001.yaml"
     evidence_level: FORJA_RULE
   - id: SRC-CASE-GTEX-2026-09
     kind: field_observation
-    title: "Caso de campo GTEX/PHA Pó Base, 09/2026 (alarme 56 observado; causa confirmada UNKNOWN)"
+    title: "Caso de campo GTEX/PHA Pó Base, 09/2026 (alarme 56 observado; causa confirmada desconhecida)"
     reference: "knowledge/cases/2026-09_gtex_pha_po_base_velocidade.yaml"
     evidence_level: FIELD_OBSERVED
   - id: SRC-OPINION-BELT-LOAD
     kind: opinion
-    title: "Opinião técnica Forja sobre o padrão Belt Load em queda com Drive Command em alta"
+    title: "Opinião técnica Forja sobre o padrão material na correia em queda com esforço do acionamento em alta"
     reference: "Documento Mestre §18.1"
     evidence_level: TECHNICAL_OPINION
 hypotheses:
@@ -76,7 +76,7 @@ next_checks:
   - id: V5
     order: 5
     text_pt: "Verificar a interface da balança (SIB/Scale), se aplicável nesta instalação."
-    how_pt: "A presença de SIB nesta instalação é UNKNOWN; confirmar antes de procurar."
+    how_pt: "A presença de SIB nesta instalação ainda não é conhecida; confirmar antes de procurar."
     safety_pt: "Conforme procedimento da planta."
     evidence_level: TECHNICAL_OPINION
     source_ids: [SRC-OPINION-BELT-LOAD]
@@ -95,7 +95,7 @@ next_checks:
     evidence_level: TECHNICAL_OPINION
     source_ids: [SRC-OPINION-BELT-LOAD]
 caveats:
-  - "O alarme 56 (BELTLOAD LOW), quando informado pelo KCM, é dado do KCM com limite interno desconhecido pela Forja."
-  - "O simulador reproduz este padrão de forma simplificada (Mass Flow ≈ Belt Load × Belt Speed); o KCM real usa algoritmo proprietário."
+  - "O alarme 56 (texto exibido pelo KCM: 'BELTLOAD LOW'), quando informado pelo KCM, é dado do KCM com limite interno desconhecido pela Forja."
+  - "O simulador reproduz este padrão com um modelo simplificado (vazão ≈ material na correia × velocidade da correia); o KCM real usa algoritmo proprietário."
 related_rules: [R-BELTLOAD-001]
 related_cases: [CASE-2026-09-GTEX-PHA-PO-BASE-VELOCIDADE]

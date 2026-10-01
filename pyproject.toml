@@ -19,6 +19,7 @@ dependencies = [
   "PyYAML==6.0.3",
   "sse-starlette==3.5.0",
   "httpx==0.28.1",
+  "tzdata==2026.4",
   "pywin32==312; sys_platform == 'win32'",
 ]
 

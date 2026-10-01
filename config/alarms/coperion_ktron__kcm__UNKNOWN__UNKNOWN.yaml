@@ -26,7 +26,7 @@ alarms:
     meaning_pt: "Tradução do texto do alarme. Comportamento real depende da aplicação e da versão."
     evidence: HYPOTHESIS
     source: "referência técnica sem documento identificado"
-    note_pt: "Candidato. O simulador usa este código no cenário SFT_FAILURE como valor SIMULADO."
+    note_pt: "Candidato. O simulador usa este código no cenário simulado de falha da célula de pesagem, como valor simulado."
   - key: { manufacturer: "Coperion K-Tron", controller: KCM, application: UNKNOWN, software_version: UNKNOWN, code: "09" }
     text: "NO MDU FOUND"
     title_pt: "Módulo de acionamento MDU não encontrado"

@@ -28,7 +28,7 @@ interventions_pt:
 measurements:
   - what_pt: "Alimentação do encoder"
     value: "aproximadamente 4,9 V"
-    nature_pt: "Observação do atendimento. Não é threshold nem valor nominal confirmado para esta instalação."
+    nature_pt: "Observação do atendimento. Não é limite nem valor nominal confirmado para esta instalação."
     evidence: FIELD_OBSERVED
   - what_pt: "MDU STATUS (bruto)"
     value: "0046, 2006 e 2046 em momentos distintos"
@@ -48,7 +48,7 @@ calibration_reported_pt:
   - "Validações comparando indicação do KCM com referência externa, dentro da tolerância de processo informada no atendimento."
   - "Tratar como validação de processo/serviço de campo, não como certificação metrológica."
 learned_rule_pt: >-
-  Conjunto com movimento físico + Drive Command presente + RPM indicada = 0 é comportamento compatível com
+  Conjunto com movimento físico, esforço do acionamento presente e velocidade indicada em zero é comportamento compatível com
   problema na cadeia de feedback de velocidade, mas não confirma automaticamente encoder queimado.
   Sequência de verificação: movimento físico? → alimentação do sensor → sinal/frequência na origem →
   cabo/conector → gap/alinhamento → interface/SIB se aplicável → entrada do KCM → configuração/PICK UP TEETH.
@@ -63,4 +63,4 @@ sources:
 notes_pt: >-
   O encoder foi substituído e o sistema voltou a operar, mas a cadeia causal não foi fechada com evidência:
   outras intervenções (cabos, conectores, emenda) ocorreram no mesmo atendimento. Por isso a causa
-  confirmada é UNKNOWN. A regra R-SPEED-001 nasceu deste caso.
+  confirmada permanece desconhecida. A regra Forja 'Leitura de velocidade inconsistente' nasceu deste caso.

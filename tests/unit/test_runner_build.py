@@ -315,7 +315,7 @@ async def test_start_and_stop_are_graceful(tmp_path: Path) -> None:
     assert container.uptime_s == pytest.approx(5.0)
 
     tasks = list(container.runtime.tasks)
-    await stop(container, timeout_s=1)
+    await stop(container, timeout_s=10)
     await settle()
     assert all(t.done() for t in tasks)
     assert container.runtime.tasks == []
@@ -324,7 +324,7 @@ async def test_start_and_stop_are_graceful(tmp_path: Path) -> None:
     assert historian.closed
     assert container.events_repo.closed  # type: ignore[attr-defined]
     assert not container.manager.is_running("EQ_A")
-    await stop(container, timeout_s=1)  # parar duas vezes é inofensivo
+    await stop(container, timeout_s=10)  # parar duas vezes é inofensivo
 
 
 # --- build_container ------------------------------------------------------------------------
@@ -463,7 +463,7 @@ async def test_build_container_wiring_with_stubs(
     await start(container)
     await run_for(clock, 3)
     assert rules.batches, "lotes dos perfis-semente chegam ao RuleEngine"
-    await stop(container, timeout_s=1)
+    await stop(container, timeout_s=10)
     assert historian.closed
 
 

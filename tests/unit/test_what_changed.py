@@ -1,15 +1,23 @@
-"""Componente 'O QUE MUDOU': antes/agora/variacao e quem saiu do padrao primeiro."""
+"""Componente 'O QUE MUDOU': antes/agora/variacao e quem saiu do padrao primeiro.
+
+Discretas (estado, alarme, modo) so entram quando mudaram, em palavras, sem decimais.
+"""
 
 from __future__ import annotations
+
+import re
 
 from forja.domain import Quality, Sample
 from forja.events.what_changed import (
     compute_what_changed,
     delta_kind_for,
     delta_text_pt,
+    discrete_value_pt,
     fmt_number_pt,
 )
 from tests.fixtures.synthetic_batches import EQ, SOURCE, at
+
+DECIMAL = re.compile(r"\d,\d")
 
 
 def sample(t: float, tag: str, value: float | None, quality: Quality = Quality.SIMULATED) -> Sample:
@@ -24,7 +32,10 @@ def test_delta_kind_by_unit() -> None:
     assert delta_kind_for("net_weight") == "pct"
     assert delta_kind_for("drive_command") == "points"
     assert delta_kind_for("rpm") == "abs"
-    assert delta_kind_for("alarm_code") == "abs"
+    # discretas e status brutos nao tem variacao numerica
+    assert delta_kind_for("alarm_code") == "none"
+    assert delta_kind_for("machine_state") == "none"
+    assert delta_kind_for("stop_by") == "none"
 
 
 def test_before_is_median_of_baseline_and_delta_pct() -> None:
@@ -57,14 +68,83 @@ def test_ordered_by_departure_with_single_changed_first() -> None:
         "machine_state": sample(80, "machine_state", 1),
     }
     items = compute_what_changed(pre, now, ["machine_state", "drive_command", "belt_load"])
-    assert [i.tag for i in items] == ["belt_load", "drive_command", "machine_state"]
-    assert [i.changed_first for i in items] == [True, False, False]
+    # machine_state nao mudou: discreta sem mudanca fica de fora
+    assert [i.tag for i in items] == ["belt_load", "drive_command"]
+    assert [i.changed_first for i in items] == [True, False]
     assert items[0].ts_start_utc == at(60)
     assert items[1].ts_start_utc == at(65)
     assert items[1].delta_kind == "points"
     assert items[1].delta == 20.0
-    assert items[2].ts_start_utc is None
-    assert items[2].delta == 0.0
+
+
+def test_discrete_enters_only_when_changed_and_in_words() -> None:
+    pre = [sample(t, "machine_state", 1) for t in range(10)]
+    pre += [sample(t, "machine_state", 0) for t in range(10, 15)]
+    (item,) = compute_what_changed(
+        pre, {"machine_state": sample(15, "machine_state", 0)}, ["machine_state"]
+    )
+    assert item.text_pt == "passou de Em operação para Parado"
+    assert item.before == 1.0
+    assert item.now == 0.0
+    assert item.delta is None
+    assert item.delta_kind == "none"
+    assert item.ts_start_utc == at(10)
+    assert item.changed_first is True
+    assert not DECIMAL.search(item.text_pt)
+
+
+def test_discrete_changed_on_detection_batch_starts_now() -> None:
+    pre = [sample(t, "machine_state", 1) for t in range(5)]
+    (item,) = compute_what_changed(
+        pre, {"machine_state": sample(5, "machine_state", 2)}, ["machine_state"]
+    )
+    assert item.text_pt == "passou de Em operação para Em alarme"
+    assert item.ts_start_utc == at(5)
+
+
+def test_discrete_without_history_or_usable_now_is_excluded() -> None:
+    pre = [sample(t, "alarm_active", 0) for t in range(5)]
+    assert (
+        compute_what_changed([], {"alarm_active": sample(5, "alarm_active", 1)}, ["alarm_active"])
+        == ()
+    )
+    stale_now = {"alarm_active": sample(5, "alarm_active", 1, Quality.STALE)}
+    assert compute_what_changed(pre, stale_now, ["alarm_active"]) == ()
+    assert compute_what_changed(pre, {}, ["alarm_active"]) == ()
+
+
+def test_alarm_code_in_words_with_catalog_detail() -> None:
+    pre = [sample(t, "alarm_code", 0) for t in range(20)]
+    pre += [sample(t, "alarm_code", 56) for t in range(20, 25)]
+    now = {"alarm_code": sample(25, "alarm_code", 56)}
+
+    def detail(tag: str, value: float) -> str | None:
+        return "Pouco material sobre a correia" if (tag, value) == ("alarm_code", 56.0) else None
+
+    (plain,) = compute_what_changed(pre, now, ["alarm_code"])
+    assert plain.text_pt == "passou de nenhum alarme para alarme 56"
+    (rich,) = compute_what_changed(pre, now, ["alarm_code"], detail_for=detail)
+    assert rich.text_pt == "passou de nenhum alarme para alarme 56 (Pouco material sobre a correia)"
+    assert rich.ts_start_utc == at(20)
+
+
+def test_discrete_value_pt_uses_simulator_encoding_and_falls_back_to_integer() -> None:
+    assert discrete_value_pt("machine_state", 0) == "Parado"
+    assert discrete_value_pt("machine_state", 1) == "Em operação"
+    assert discrete_value_pt("machine_state", 2) == "Em alarme"
+    assert discrete_value_pt("machine_state", 7) == "7"  # fora do mapa: inteiro, nunca inventado
+    assert discrete_value_pt("alarm_active", 1) == "sim"
+    assert discrete_value_pt("alarm_active", 0) == "não"
+    assert discrete_value_pt("control_mode", 1) == "gravimétrico"
+    assert discrete_value_pt("control_mode", 0) == "volumétrico"
+    assert discrete_value_pt("alarm_code", 0) == "nenhum alarme"
+    assert discrete_value_pt("alarm_code", 8) == "alarme 8"
+    assert discrete_value_pt("stop_by", 0) == "nenhum"
+    assert (
+        discrete_value_pt("stop_by", 3, "Motivo desconhecido") == "código 3 (Motivo desconhecido)"
+    )
+    assert discrete_value_pt("sft_status", 385) == "385"
+    assert discrete_value_pt("machine_state", None) == "sem leitura"
 
 
 def test_unchanged_tag_has_no_departure() -> None:
@@ -100,7 +180,16 @@ def test_missing_now_gives_none_delta() -> None:
     assert item.now is None
     assert item.delta is None
     assert item.delta_kind == "none"
+    assert "Agora: sem leitura" in item.text_pt
     assert "sem variação mensurável" in item.text_pt
+    assert "—" not in item.text_pt
+
+
+def test_continuous_without_any_usable_reading_is_excluded() -> None:
+    pre = [sample(t, "mass_flow", None, Quality.COMM_ERROR) for t in range(10)]
+    now = {"mass_flow": sample(10, "mass_flow", None, Quality.COMM_ERROR)}
+    assert compute_what_changed(pre, now, ["mass_flow"]) == ()
+    assert compute_what_changed([], {}, ["mass_flow"]) == ()
 
 
 def test_duplicate_tags_collapse_and_unknown_order_is_input_order() -> None:

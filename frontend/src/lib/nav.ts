@@ -26,6 +26,23 @@ import ScrollText from '@lucide/svelte/icons/scroll-text'
 import Info from '@lucide/svelte/icons/info'
 import { href, type EqScreen, type KnowledgeSub, type SystemSub, type ToolsSub } from './router'
 
+/** Fases do plano que ainda não têm tela. Para o usuário, cada uma vira o nome da etapa. */
+export type FuturePhase = 'E' | 'F' | 'G' | 'L' | 'M'
+
+/** Nome legível da etapa (o que o usuário lê no lugar de "fase E"). */
+export const PHASE_NAMES: Record<FuturePhase, string> = {
+  E: 'Tendências e histórico',
+  F: 'Alertas e diagnóstico avançado',
+  G: 'Comunicação com o KCM',
+  L: 'Saúde e registros',
+  M: 'Relatórios, backup e usuários',
+}
+
+export function phaseName(phase: FuturePhase | string | undefined | null): string | null {
+  if (!phase) return null
+  return (PHASE_NAMES as Record<string, string>)[phase] ?? null
+}
+
 export interface NavItem {
   slug: string
   label: string
@@ -33,7 +50,7 @@ export interface NavItem {
   /** Monta o href. Itens por equipamento precisam do id selecionado. */
   to: (equipmentId: string | null) => string | null
   /** Fase em que a tela ganha backend. Ausente = já funciona. */
-  phase?: 'E' | 'F' | 'G' | 'L' | 'M'
+  phase?: FuturePhase
   /** Motivo curto para o estado vazio. */
   reason?: string
   kind: 'plant' | 'eq' | 'knowledge' | 'tools' | 'system'

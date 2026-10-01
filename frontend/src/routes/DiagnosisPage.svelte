@@ -148,6 +148,10 @@
               <div><dt>Id do diagnóstico</dt><dd class="num">{diagnosis.diagnosis_id}</dd></div>
               <div><dt>Código interno</dt><dd class="num">{diagnosis.summary.internal_code}</dd></div>
               <div><dt>Motor</dt><dd class="num">{diagnosis.engine_version}</dd></div>
+              <!-- ids que a tela em português não mostra (o painel usa título e "Verificação N") -->
+              <div><dt>Ids das fontes</dt><dd class="num">{diagnosis.sources.map((s) => s.id).join(' · ')}</dd></div>
+              <div><dt>Ids das verificações</dt><dd class="num">{diagnosis.next_checks.map((c) => `${c.id} = Verificação ${c.order}`).join(' · ')}</dd></div>
+              <div><dt>Ids das hipóteses</dt><dd class="num">{diagnosis.hypotheses.map((h) => h.id).join(' · ')}</dd></div>
             {/if}
             {#if event.diagnosis_ref}
               <div><dt>Entrada da biblioteca</dt><dd class="num">{event.diagnosis_ref}</dd></div>

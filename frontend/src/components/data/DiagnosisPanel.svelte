@@ -32,6 +32,13 @@
     [...diagnosis.next_checks].sort((a, b) => a.order - b.order),
   )
   const sourceById = $derived(new Map(diagnosis.sources.map((s) => [s.id, s])))
+  const checkOrderById = $derived(new Map(diagnosis.next_checks.map((c) => [c.id, c.order])))
+
+  /** "Verificação 3" no lugar de "V3". Se o id não estiver na lista, mostra o id (rastreável). */
+  function checkLabel(id: string): string {
+    const order = checkOrderById.get(id)
+    return order != null ? `Verificação ${order}` : id
+  }
   const tone = $derived(severityTone(diagnosis.summary.severity))
   const severityPt = $derived(
     diagnosis.summary.severity === 'CRITICAL'
@@ -152,19 +159,31 @@
                       <span class="refs">
                         <span class="refs-label">Verificar</span>
                         {#each h.verification_ids as vid (vid)}
-                          <a href={`#check-${vid}`} class="ref">{vid}</a>
-                        {/each}
-                      </span>
-                    {/if}
-                    {#if h.source_ids.length}
-                      <span class="refs">
-                        <span class="refs-label">Fontes</span>
-                        {#each h.source_ids as sid (sid)}
-                          <a href={`#source-${sid}`} class="ref" title={sourceById.get(sid)?.title ?? sid}>{sid}</a>
+                          <a href={`#check-${vid}`} class="ref">{checkLabel(vid)}</a>
                         {/each}
                       </span>
                     {/if}
                   </div>
+                  {#if h.source_ids.length}
+                    <div class="srcs">
+                      <span class="refs-label">Fontes</span>
+                      <ul class="src-list" aria-label="Fontes desta hipótese">
+                        {#each h.source_ids as sid (sid)}
+                          {@const src = sourceById.get(sid)}
+                          <li>
+                            <a href={`#source-${sid}`} class="src-ref" data-source={sid}>
+                              {#if src}
+                                <EvidenceBadge level={src.evidence_level} />
+                                <span class="src-title">{src.title}</span>
+                              {:else}
+                                <span class="src-title">Fonte não listada neste diagnóstico</span>
+                              {/if}
+                            </a>
+                          </li>
+                        {/each}
+                      </ul>
+                    </div>
+                  {/if}
                 </div>
               </li>
             {/each}
@@ -201,7 +220,6 @@
                   {/if}
                   <div class="item-meta">
                     <EvidenceBadge level={c.evidence_level} />
-                    <span class="refs id">{c.id}</span>
                   </div>
                 </div>
               </li>
@@ -235,10 +253,9 @@
                 <span class="kind">{SOURCE_KIND_PT[s.kind] ?? s.kind}</span>
                 {s.title}
               </p>
-              {#if s.reference}<p class="item-sub mono">{s.reference}</p>{/if}
+              {#if s.reference}<p class="item-sub ref-text">{s.reference}</p>{/if}
               <div class="item-meta">
                 <EvidenceBadge level={s.evidence_level} />
-                <span class="refs id">{s.id}</span>
               </div>
             </div>
           </li>
@@ -418,7 +435,8 @@
     color: var(--text-2);
     font: var(--fs-caption) / var(--lh-caption) var(--font-ui);
   }
-  .item-sub.mono { font-family: var(--font-mono); font-size: var(--fs-mono-sm); color: var(--text-3); }
+  /* referência da fonte (arquivo, seção do documento): legenda, não código */
+  .item-sub.ref-text { color: var(--text-3); overflow-wrap: anywhere; }
   .kv { color: var(--text-3); font-weight: 500; }
   .kind {
     display: inline-block;
@@ -440,7 +458,7 @@
     margin-top: var(--sp-1);
   }
   .meta-val { color: var(--text-2); font-size: var(--fs-mono-sm); }
-  /* referências V1…V5 / SRC-* como chips: alvo de toque, não texto miúdo */
+  /* "Verificação 3" como chip: alvo de toque, leva à verificação na seção 5 */
   .refs {
     display: inline-flex;
     flex-wrap: wrap;
@@ -449,26 +467,56 @@
     color: var(--text-3);
     font: var(--fs-caption) / var(--lh-caption) var(--font-ui);
   }
-  .refs.id { font-family: var(--font-mono); font-size: var(--fs-mono-sm); }
   .refs-label { margin-right: 2px; }
   .ref {
     display: inline-flex;
     align-items: center;
     min-height: 32px;
-    padding: 0 var(--sp-2);
+    padding: 0 var(--sp-3);
     border: 1px solid var(--border-1);
     border-radius: var(--r-pill);
     color: var(--text-2);
     text-decoration: none;
-    font: 500 var(--fs-mono-sm) / 1 var(--font-mono);
+    font: 500 var(--fs-caption) / 1 var(--font-ui);
+    white-space: nowrap;
     transition:
       border-color var(--dur-base) var(--ease-std),
       color var(--dur-base) var(--ease-std);
   }
   .ref:hover { border-color: var(--border-2); color: var(--text-1); }
+  /* fontes da hipótese: uma linha por fonte, selo de evidência + título em português.
+     O id (SRC-*) fica só em "Detalhes técnicos". */
+  .srcs {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+    margin-top: var(--sp-2);
+    color: var(--text-3);
+    font: var(--fs-caption) / var(--lh-caption) var(--font-ui);
+  }
+  .src-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  .src-ref {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-1) var(--sp-2);
+    min-height: 32px;
+    padding: var(--sp-1) var(--sp-2);
+    margin-left: calc(-1 * var(--sp-2));
+    border-radius: var(--r-2);
+    color: var(--text-2);
+    text-decoration: none;
+    max-width: 80ch;
+    transition:
+      background-color var(--dur-base) var(--ease-std),
+      color var(--dur-base) var(--ease-std);
+  }
+  .src-ref:hover { background: var(--surf-2); color: var(--text-1); }
+  .src-title { flex: 1 1 200px; min-width: 0; }
   @media (max-width: 767px), (pointer: coarse) {
     .toc-link,
-    .ref { min-height: var(--touch); }
+    .ref,
+    .src-ref { min-height: var(--touch); }
     .ref { min-width: var(--touch); justify-content: center; }
   }
 

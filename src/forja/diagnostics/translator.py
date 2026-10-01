@@ -6,6 +6,7 @@ CLI sem --json e para impressao; a UI nunca reparseia este texto.
 
 from __future__ import annotations
 
+from datetime import tzinfo
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from forja.config.loader import load_yaml_file
 from forja.domain import OFFICIAL_SECTIONS_PT, ConfigError, Diagnosis
+from forja.events.plant_time import DEFAULT_TIMEZONE, fmt_datetime_pt, resolve_zone, zone_note_pt
 from forja.events.what_changed import fmt_number_pt, with_unit
 
 DEFAULT_I18N_FILENAME = "pt_BR.yaml"
@@ -79,13 +81,22 @@ def load_translator(dir_or_file: Path) -> Translator:
         raise ConfigError(f"{path.name}: {msg}") from exc
 
 
-def render_diagnosis_pt(diagnosis: Diagnosis, translator: Translator | None = None) -> str:
-    """Texto em portugues com as 7 secoes oficiais, na ordem oficial. Nunca JSON."""
+def render_diagnosis_pt(
+    diagnosis: Diagnosis,
+    translator: Translator | None = None,
+    timezone: str | tzinfo = DEFAULT_TIMEZONE,
+) -> str:
+    """Texto em portugues com as 7 secoes oficiais, na ordem oficial. Nunca JSON.
+
+    Horarios no fuso da planta (`timezone`, padrao America/Sao_Paulo). Ids e codigos ficam na
+    linha final 'Detalhes tecnicos'.
+    """
     tr = translator or Translator()
+    zone = resolve_zone(timezone)
     lines: list[str] = [
         f"Diagnóstico Forja — {diagnosis.summary.title_pt}",
-        f"Equipamento: {diagnosis.equipment_id} · Evento: {diagnosis.event_id}",
-        f"Gerado em: {diagnosis.generated_at_utc.isoformat()} (UTC)",
+        f"Equipamento: {diagnosis.equipment_id}",
+        f"Gerado em: {fmt_datetime_pt(diagnosis.generated_at_utc, zone)} ({zone_note_pt(zone)})",
         "",
     ]
     for key, _ in OFFICIAL_SECTIONS_PT:
@@ -94,8 +105,8 @@ def render_diagnosis_pt(diagnosis: Diagnosis, translator: Translator | None = No
         lines.append("")
     lines.append(
         "Detalhes técnicos: código interno "
-        f"{diagnosis.summary.internal_code} · schema {diagnosis.diagnosis_schema_version} · "
-        f"motor {diagnosis.engine_version}"
+        f"{diagnosis.summary.internal_code} · evento {diagnosis.event_id} · "
+        f"schema {diagnosis.diagnosis_schema_version} · motor {diagnosis.engine_version}"
     )
     return "\n".join(lines)
 

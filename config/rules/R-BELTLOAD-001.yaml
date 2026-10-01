@@ -26,7 +26,7 @@ context_tags: [mass_flow, rpm, alarm_code]
 sources:
   - id: SRC-RULE-R-BELTLOAD-001
     kind: rule
-    title: "Regra Forja R-BELTLOAD-001 — Pouco material sobre a correia"
+    title: "Regra Forja 'Pouco material sobre a correia'"
     reference: "config/rules/R-BELTLOAD-001.yaml"
     evidence_level: FORJA_RULE
 summary_template_pt: >-

@@ -6,7 +6,7 @@
   import X from '@lucide/svelte/icons/x'
   import { NAV_GROUPS, type NavItem } from '../../lib/nav'
   import { live } from '../../lib/live.svelte'
-  import { routeSlug } from '../../lib/router'
+  import { href, routeSlug } from '../../lib/router'
   import { app } from '../../lib/state.svelte'
   import { TID } from '../../lib/testids'
 
@@ -14,7 +14,13 @@
 
   const collapsed = $derived(mode === 'rail' && app.sidebarCollapsed)
   const currentSlug = $derived(routeSlug(app.route))
-  const eqId = $derived(app.equipmentId ?? live.plant[0]?.id ?? null)
+  /** Links por equipamento: o da rota ou o último visto (localStorage); sem nenhum (ou se o
+   *  guardado não existe mais na planta), o primeiro perfil que não é de exemplo. */
+  const eqId = $derived.by(() => {
+    const wanted = app.equipmentId
+    if (wanted && (live.plant.length === 0 || live.plant.some((c) => c.id === wanted))) return wanted
+    return live.defaultEquipmentId
+  })
 
   function isActive(item: NavItem): boolean {
     return item.slug === currentSlug
@@ -24,7 +30,7 @@
   let tip = $state<{ text: string; top: number } | null>(null)
 
   function tipText(item: NavItem): string {
-    return item.phase ? `${item.label} · disponível na fase ${item.phase}` : item.label
+    return item.phase ? `${item.label} · em breve` : item.label
   }
   function showTip(e: Event, text: string): void {
     if (!collapsed) return
@@ -58,7 +64,18 @@
 >
   <div class="sb-top">
     {#if mode === 'drawer'}
-      <span class="sb-title">Menu</span>
+      <!-- no celular a marca sai do header (dá lugar ao seletor) e mora aqui -->
+      <a class="sb-brand" href={href.plant()} aria-label="Forja KCM Intelligence, ir para a planta">
+        <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+          <rect width="32" height="32" rx="7" fill="var(--accent)" />
+          <rect x="8" y="7" width="3.2" height="18" fill="var(--on-accent)" />
+          <rect x="8" y="7" width="10" height="3" fill="var(--on-accent)" />
+          <rect x="8" y="14" width="7.5" height="3" fill="var(--on-accent)" />
+          <rect x="20.5" y="7" width="3.2" height="18" fill="var(--on-accent)" />
+          <rect x="20.5" y="22" width="4.5" height="3" fill="var(--on-accent)" />
+        </svg>
+        <span class="sb-title">FORJA <strong>KCM</strong></span>
+      </a>
       <button
         type="button"
         class="sb-btn"
@@ -102,12 +119,7 @@
                   </span>
                   <span class="item-label">{item.label}</span>
                   {#if item.phase}
-                    <span
-                      class="item-phase"
-                      role="img"
-                      aria-label={`Disponível na fase ${item.phase}`}
-                      title={`Disponível na fase ${item.phase}`}
-                    ></span>
+                    <span class="item-phase">em breve</span>
                   {/if}
                 </a>
               {:else}
@@ -160,10 +172,22 @@
     flex: none;
   }
   .collapsed .sb-top { justify-content: center; padding: 0; }
+  .sb-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-3);
+    min-height: var(--touch);
+    padding-right: var(--sp-2);
+    color: inherit;
+    text-decoration: none;
+    border-radius: var(--r-2);
+  }
   .sb-title {
-    font: 600 var(--fs-h3) / var(--lh-h3) var(--font-ui);
+    font: 600 15px / 16px var(--font-ui);
+    letter-spacing: 0.02em;
     color: var(--text-1);
   }
+  .sb-title strong { color: var(--accent-text); font-weight: 600; }
   .sb-caption { white-space: nowrap; }
   .sb-btn {
     display: grid;
@@ -264,14 +288,15 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  /* tela que ainda depende de fase posterior: ponto discreto, não chip */
+  /* tela que ainda depende de fase posterior: "em breve" em legenda, não chip */
   .item-phase {
     flex: none;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--chumbo);
+    color: var(--text-3);
+    font: var(--fs-caption) / var(--lh-caption) var(--font-ui);
   }
+  .item.soon .item-label { color: var(--text-3); }
+  .item.soon:hover .item-label,
+  .item.soon.active .item-label { color: var(--text-1); }
   .collapsed .item { justify-content: center; padding: 0; min-height: 40px; }
   /* nome continua no DOM (nome acessível do link), só sai da tela */
   .collapsed .item-label {

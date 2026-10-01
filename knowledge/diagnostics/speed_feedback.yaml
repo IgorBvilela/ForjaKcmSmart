@@ -12,17 +12,17 @@ text_pt: >-
 sources:
   - id: SRC-RULE-R-SPEED-001
     kind: rule
-    title: "Regra Forja R-SPEED-001: Leitura de velocidade inconsistente"
+    title: "Regra Forja 'Leitura de velocidade inconsistente'"
     reference: "config/rules/R-SPEED-001.yaml"
     evidence_level: FORJA_RULE
   - id: SRC-CASE-GTEX-2026-09
     kind: field_observation
-    title: "Caso de campo GTEX/PHA Pó Base, 09/2026 (conjunto girando com RPM 0; causa confirmada UNKNOWN)"
+    title: "Caso de campo GTEX/PHA Pó Base, 09/2026 (conjunto girando com velocidade indicada em zero; causa confirmada desconhecida)"
     reference: "knowledge/cases/2026-09_gtex_pha_po_base_velocidade.yaml"
     evidence_level: FIELD_OBSERVED
   - id: SRC-OPINION-SPEED-FEEDBACK
     kind: opinion
-    title: "Opinião técnica Forja sobre o padrão RUN + Drive Command > 0 + RPM = 0"
+    title: "Opinião técnica Forja sobre o padrão máquina em operação, esforço do acionamento presente e velocidade indicada em zero"
     reference: "Documento Mestre §17.2 e §18.2"
     evidence_level: TECHNICAL_OPINION
 hypotheses:
@@ -84,7 +84,7 @@ next_checks:
   - id: V7
     order: 7
     text_pt: "Verificar a interface/SIB, se aplicável nesta instalação."
-    how_pt: "A presença de SIB nesta instalação é UNKNOWN; confirmar antes de procurar."
+    how_pt: "A presença de SIB nesta instalação ainda não é conhecida; confirmar antes de procurar."
     safety_pt: "Conforme procedimento da planta."
     evidence_level: TECHNICAL_OPINION
     source_ids: [SRC-OPINION-SPEED-FEEDBACK]

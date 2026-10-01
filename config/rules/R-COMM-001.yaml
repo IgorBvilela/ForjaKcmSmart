@@ -20,12 +20,12 @@ context_tags: [mass_flow, machine_state]
 sources:
   - id: SRC-RULE-R-COMM-001
     kind: rule
-    title: "Regra Forja R-COMM-001 — Comunicação degradada"
+    title: "Regra Forja 'Comunicação degradada'"
     reference: "config/rules/R-COMM-001.yaml"
     evidence_level: FORJA_RULE
 summary_template_pt: >-
-  Sem comunicação com o equipamento há pelo menos 15 s: as tentativas de leitura falharam
-  (COMM_ERROR). Última vazão conhecida antes da falha: {mass_flow_before} kg/h.
+  Sem comunicação com o equipamento há pelo menos 15 s: as tentativas de leitura falharam.
+  Última vazão conhecida antes da falha: {mass_flow_before_pt}.
 threshold_basis: FORJA_RULE
 threshold_note_pt: >-
   Janela de 15 s definida pela Forja. Não é parâmetro do KCM.

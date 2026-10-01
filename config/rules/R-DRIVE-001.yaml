@@ -20,7 +20,7 @@ context_tags: [mass_flow, setpoint, belt_load]
 sources:
   - id: SRC-RULE-R-DRIVE-001
     kind: rule
-    title: "Regra Forja R-DRIVE-001 — Esforço do acionamento alto"
+    title: "Regra Forja 'Esforço do acionamento alto'"
     reference: "config/rules/R-DRIVE-001.yaml"
     evidence_level: FORJA_RULE
 summary_template_pt: >-

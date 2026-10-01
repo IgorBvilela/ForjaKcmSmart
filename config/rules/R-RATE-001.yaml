@@ -21,7 +21,7 @@ context_tags: [drive_command, belt_load]
 sources:
   - id: SRC-RULE-R-RATE-001
     kind: rule
-    title: "Regra Forja R-RATE-001 — Vazão abaixo do esperado"
+    title: "Regra Forja 'Vazão abaixo do esperado'"
     reference: "config/rules/R-RATE-001.yaml"
     evidence_level: FORJA_RULE
 summary_template_pt: >-

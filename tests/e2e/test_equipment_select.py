@@ -57,18 +57,38 @@ def test_select_keeps_screen_and_returns_to_plant(desktop_1366: Page) -> None:
     expect(page).to_have_title(f"Planta · {PRODUCT}")
 
 
-def test_select_options_on_mobile_keep_name_and_state_glyph(mobile_375: Page) -> None:
-    """Abaixo de 1280 px o build atual omite a palavra do estado e deixa só o glifo (● / ○)."""
+def test_select_options_on_mobile_keep_name_and_state_word(mobile_375: Page) -> None:
+    """Contrato (rodada 3, 2026-10-01, apontamento da Edith): o glifo sozinho não diz nada a
+    leitor de tela. Abaixo de 1280 px a opção mantém a PALAVRA do estado ("○ KCM 03 · Sem
+    comunicação") e perde só o sufixo "(exemplo)" do nome. O estado nunca é abreviado; o texto
+    inteiro cabe no campo a 375 px (medido com a fonte real)."""
     page = mobile_375
     open_route(page, "/app/plant", "plant")
     select = page.get_by_test_id("header-equipment-select")
     expect(select.locator("option")).to_have_count(4)
-    expect(select.locator(f"option[value='{EQ_KCM03}']")).to_contain_text("KCM 03 (exemplo)")
-    expect(select.locator(f"option[value='{EQ_MAIN}']")).to_contain_text("Dosador Pó Base")
+    kcm03 = select.locator(f"option[value='{EQ_KCM03}']")
+    expect(kcm03).to_contain_text("KCM 03 · Sem comunicação")
+    expect(select.locator(f"option[value='{EQ_MAIN}']")).to_contain_text("Dosador Pó Base · Normal")
+    expect(select.locator(f"option[value='{EQ_BARRILHA}']")).to_contain_text("Barrilha · ")
+    expect(kcm03).not_to_contain_text("exemplo")
     glyphs = select.locator("option[value]:not([value='__plant__'])").evaluate_all(
         "els => els.map(e => e.textContent.trim().charAt(0))"
     )
     assert all(g and not g.isalnum() for g in glyphs), glyphs
+    # nenhuma opção mais larga que o espaço útil do campo (fonte e padding reais)
+    overflow = select.evaluate(
+        """(sel) => {
+          const cs = getComputedStyle(sel);
+          const c = document.createElement('canvas').getContext('2d');
+          c.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+          const inner = sel.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+          const width = (o) => Math.round(c.measureText(o.textContent.trim()).width);
+          return [...sel.options]
+            .map(o => [o.textContent.trim(), width(o), Math.round(inner)])
+            .filter(([, w, inner]) => w > inner);
+        }"""
+    )
+    assert overflow == [], f"opção não cabe no campo: {overflow}"
     expect(select).to_be_visible()
 
 

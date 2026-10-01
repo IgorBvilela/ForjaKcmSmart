@@ -198,8 +198,13 @@ async def build_container(paths: ForjaPaths | None = None, clock: Clock | None =
         ev.post_window_s,
         ev.buffer_s,
         profiles=store.profiles,
+        timezone=store.config.edge.timezone,
     )
-    diagnosis_engine = DiagnosisEngine(load_library(paths.knowledge_dir / "diagnostics"), clock)
+    diagnosis_engine = DiagnosisEngine(
+        load_library(paths.knowledge_dir / "diagnostics"),
+        clock,
+        timezone=store.config.edge.timezone,
+    )
     manager = EquipmentManager(store, registry, historian, bus, clock)
 
     container = Container(

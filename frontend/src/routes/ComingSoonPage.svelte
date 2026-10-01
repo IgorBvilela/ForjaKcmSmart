@@ -1,7 +1,7 @@
 <script lang="ts">
   /** Rota prevista no contrato mas sem backend nesta fase. Estado vazio honesto, sem botão falso. */
   import Inbox from '@lucide/svelte/icons/inbox'
-  import type { NavItem } from '../lib/nav'
+  import { phaseName, type NavItem } from '../lib/nav'
   import { live } from '../lib/live.svelte'
   import EmptyState from '../components/ui/EmptyState.svelte'
 
@@ -11,6 +11,7 @@
   const name = $derived(equipmentId ? (live.cardOf(equipmentId)?.name ?? equipmentId) : null)
   const title = $derived(item?.label ?? 'Página')
   const phase = $derived(item?.phase ?? undefined)
+  const phaseText = $derived(phaseName(phase))
   const reason = $derived(item?.reason ?? 'Esta tela depende de uma fase posterior do plano.')
 </script>
 
@@ -22,6 +23,7 @@
   <EmptyState
     title={phase ? `${title} ainda não está disponível` : `${title} não está configurado`}
     {phase}
+    {phaseText}
     text={`${reason} Nenhuma função desta tela comanda o KCM: a Forja só lê.`}
   >
     {#snippet icon()}

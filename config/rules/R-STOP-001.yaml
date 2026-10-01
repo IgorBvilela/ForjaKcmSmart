@@ -20,7 +20,7 @@ context_tags: [mass_flow, drive_command, rpm, stop_by]
 sources:
   - id: SRC-RULE-R-STOP-001
     kind: rule
-    title: "Regra Forja R-STOP-001 — Equipamento parado"
+    title: "Regra Forja 'Equipamento parado'"
     reference: "config/rules/R-STOP-001.yaml"
     evidence_level: FORJA_RULE
 summary_template_pt: >-

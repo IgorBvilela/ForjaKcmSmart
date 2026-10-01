@@ -16,7 +16,7 @@ sources:
     evidence_level: TECHNICAL_OPINION
   - id: SRC-CASE-GTEX-2026-09
     kind: field_observation
-    title: "Caso de campo GTEX/PHA Pó Base, 09/2026 (statuses observados em bruto; causa confirmada UNKNOWN)"
+    title: "Caso de campo GTEX/PHA Pó Base, 09/2026 (status observados em bruto; causa confirmada desconhecida)"
     reference: "knowledge/cases/2026-09_gtex_pha_po_base_velocidade.yaml"
     evidence_level: FIELD_OBSERVED
 hypotheses:
@@ -70,6 +70,6 @@ next_checks:
     source_ids: [SRC-OPINION-SFT]
 caveats:
   - "Os bits do status SFT não são decodificados: sem documento da versão instalada, qualquer leitura de bit seria invenção."
-  - "O código de alarme 8 (BAD SFT STATUS) é HYPOTHESIS no catálogo; o simulador o usa como valor SIMULADO."
+  - "O código de alarme 8 (texto exibido pelo KCM: 'BAD SFT STATUS') está no catálogo apenas como hipótese; o simulador o usa como valor simulado."
 related_rules: []
 related_cases: [CASE-2026-09-GTEX-PHA-PO-BASE-VELOCIDADE]

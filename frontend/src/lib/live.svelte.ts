@@ -133,6 +133,10 @@ class LiveStore {
   plantError = $state<string | null>(null)
   #explicitSource = $state<DataSource | null>(null)
   dataSource: DataSource | null = $derived(this.#explicitSource ?? sourceOf(this.plant))
+  /** Equipamento para links sem seleção: o primeiro perfil real; só se não houver, um de exemplo. */
+  defaultEquipmentId: string | null = $derived(
+    this.plant.find((c) => !c.is_example)?.id ?? this.plant[0]?.id ?? null,
+  )
 
   #es: EventSource | null = null
   #watchdog: number | undefined

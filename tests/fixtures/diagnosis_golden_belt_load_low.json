@@ -14,7 +14,7 @@
   "evidence": [
     {
       "id": "EV-RULE",
-      "text_pt": "Regra Forja R-BELTLOAD-001 v1 ('Pouco material sobre a correia') atendida a partir de 2026-01-01T12:01:53+00:00.",
+      "text_pt": "Regra Forja 'Pouco material sobre a correia' atendida a partir de 09:01:53.",
       "tag": null,
       "value": null,
       "unit": null,
@@ -34,7 +34,7 @@
     },
     {
       "id": "EV-DRIVE_COMMAND",
-      "text_pt": "Esforço do acionamento: Antes: 50,0 % · Agora: 71,3 % · ↑ 21 pontos",
+      "text_pt": "Esforço do acionamento: Antes: 50,0% · Agora: 71,3% · ↑ 21 pontos",
       "tag": "drive_command",
       "value": 71.267,
       "unit": "%",
@@ -54,23 +54,13 @@
     },
     {
       "id": "EV-ALARM_CODE",
-      "text_pt": "Código de alarme: Antes: 0 · Agora: 56 · ↑ 56",
+      "text_pt": "Código de alarme: passou de nenhum alarme para alarme 56 (Pouco material sobre a correia)",
       "tag": "alarm_code",
       "value": 56.0,
       "unit": null,
       "quality": "SIMULATED",
       "evidence_level": "FORJA_RULE",
       "ts_utc": "2026-01-01T12:01:50Z"
-    },
-    {
-      "id": "EV-MACHINE_STATE",
-      "text_pt": "Estado da máquina: Antes: 1 · Agora: 1 · = 0",
-      "tag": "machine_state",
-      "value": 1.0,
-      "unit": null,
-      "quality": "SIMULATED",
-      "evidence_level": "FORJA_RULE",
-      "ts_utc": "2026-01-01T12:01:53Z"
     },
     {
       "id": "EV-MASS_FLOW",
@@ -116,7 +106,7 @@
       "delta_kind": "points",
       "changed_first": false,
       "ts_start_utc": "2026-01-01T12:01:08Z",
-      "text_pt": "Antes: 50,0 % · Agora: 71,3 % · ↑ 21 pontos"
+      "text_pt": "Antes: 50,0% · Agora: 71,3% · ↑ 21 pontos"
     },
     {
       "tag": "rpm",
@@ -136,23 +126,11 @@
       "unit": "",
       "before": 0.0,
       "now": 56.0,
-      "delta": 56.0,
-      "delta_kind": "abs",
+      "delta": null,
+      "delta_kind": "none",
       "changed_first": false,
       "ts_start_utc": "2026-01-01T12:01:50Z",
-      "text_pt": "Antes: 0 · Agora: 56 · ↑ 56"
-    },
-    {
-      "tag": "machine_state",
-      "label_pt": "Estado da máquina",
-      "unit": "",
-      "before": 1.0,
-      "now": 1.0,
-      "delta": 0.0,
-      "delta_kind": "abs",
-      "changed_first": false,
-      "ts_start_utc": null,
-      "text_pt": "Antes: 1 · Agora: 1 · = 0"
+      "text_pt": "passou de nenhum alarme para alarme 56 (Pouco material sobre a correia)"
     },
     {
       "tag": "mass_flow",
@@ -262,7 +240,7 @@
       "id": "V5",
       "order": 5,
       "text_pt": "Verificar a interface da balança (SIB/Scale), se aplicável nesta instalação.",
-      "how_pt": "A presença de SIB nesta instalação é UNKNOWN; confirmar antes de procurar.",
+      "how_pt": "A presença de SIB nesta instalação ainda não é conhecida; confirmar antes de procurar.",
       "safety_pt": "Conforme procedimento da planta.",
       "evidence_level": "TECHNICAL_OPINION",
       "source_ids": [
@@ -296,21 +274,21 @@
     {
       "id": "SRC-RULE-R-BELTLOAD-001",
       "kind": "rule",
-      "title": "Regra Forja R-BELTLOAD-001: Pouco material sobre a correia",
+      "title": "Regra Forja 'Pouco material sobre a correia'",
       "reference": "config/rules/R-BELTLOAD-001.yaml",
       "evidence_level": "FORJA_RULE"
     },
     {
       "id": "SRC-CASE-GTEX-2026-09",
       "kind": "field_observation",
-      "title": "Caso de campo GTEX/PHA Pó Base, 09/2026 (alarme 56 observado; causa confirmada UNKNOWN)",
+      "title": "Caso de campo GTEX/PHA Pó Base, 09/2026 (alarme 56 observado; causa confirmada desconhecida)",
       "reference": "knowledge/cases/2026-09_gtex_pha_po_base_velocidade.yaml",
       "evidence_level": "FIELD_OBSERVED"
     },
     {
       "id": "SRC-OPINION-BELT-LOAD",
       "kind": "opinion",
-      "title": "Opinião técnica Forja sobre o padrão Belt Load em queda com Drive Command em alta",
+      "title": "Opinião técnica Forja sobre o padrão material na correia em queda com esforço do acionamento em alta",
       "reference": "Documento Mestre §18.1",
       "evidence_level": "TECHNICAL_OPINION"
     }
@@ -320,26 +298,26 @@
       "text_pt": "Hipóteses não representam causa confirmada."
     },
     {
-      "text_pt": "O alarme 56 (BELTLOAD LOW), quando informado pelo KCM, é dado do KCM com limite interno desconhecido pela Forja."
+      "text_pt": "O alarme 56 (texto exibido pelo KCM: 'BELTLOAD LOW'), quando informado pelo KCM, é dado do KCM com limite interno desconhecido pela Forja."
     },
     {
-      "text_pt": "O simulador reproduz este padrão de forma simplificada (Mass Flow ≈ Belt Load × Belt Speed); o KCM real usa algoritmo proprietário."
+      "text_pt": "O simulador reproduz este padrão com um modelo simplificado (vazão ≈ material na correia × velocidade da correia); o KCM real usa algoritmo proprietário."
     },
     {
-      "text_pt": "Os limiares que abriram este evento são regras Forja (FORJA_RULE), relativos ao próprio comportamento do equipamento ou ao cenário simulado. Não são limites do KCM."
+      "text_pt": "Os limiares que abriram este evento são regras Forja, relativos ao próprio comportamento do equipamento ou ao cenário simulado. Não são limites do KCM."
     },
     {
       "text_pt": "Os dados deste evento são SIMULADOS pela Forja. Não representam o KCM da GTEX nem qualquer equipamento real."
     },
     {
-      "text_pt": "A causa confirmada permanece UNKNOWN até evidência de campo que feche a cadeia causal."
+      "text_pt": "A causa confirmada permanece desconhecida até haver evidência de campo que feche a cadeia causal."
     }
   ],
   "evidence_summary": {
     "weakest_level": "HYPOTHESIS",
     "strongest_level": "FIELD_OBSERVED",
     "counts": {
-      "FORJA_RULE": 9,
+      "FORJA_RULE": 8,
       "HYPOTHESIS": 3,
       "TECHNICAL_OPINION": 8,
       "FIELD_OBSERVED": 1

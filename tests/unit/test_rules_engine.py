@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import UTC, timedelta
 
 import pytest
 
@@ -94,7 +94,36 @@ async def test_beltload_low_context_pre_window_and_timeline(clock: FakeClock) ->
     assert len(kcm) == 1
     assert "56" in kcm[0].text_pt
     assert "observado nesta aplicação" in kcm[0].text_pt
-    assert "Pouco material sobre a correia · alarme do KCM · observado nesta aplicação" in kcm[0].text_pt
+    assert (
+        "Pouco material sobre a correia · alarme do KCM · observado nesta aplicação"
+        in kcm[0].text_pt
+    )
+    # a regra aparece pelo titulo; o id fica em event.rule_id ('Detalhes tecnicos')
+    assert "Regra Forja 'Pouco material sobre a correia' atendida" in texts
+    assert any(
+        t.startswith("Forja abriu o evento 'Pouco material sobre a correia' após 10 s")
+        for t in texts
+    )
+    assert not any("R-BELTLOAD-001" in t for t in texts)
+    assert event.rule_id == "R-BELTLOAD-001"
+    # o alarme so fala na voz do KCM: sem ponto duplicado da Forja para alarm_code
+    assert sum(1 for p in ctx.timeline if p.tag == "alarm_code") == 1
+
+
+async def test_beltload_low_discrete_tags_in_words(clock: FakeClock) -> None:
+    _, event, _ = await open_beltload_low_event(clock)
+    wc = {i.tag: i for i in event.context.what_changed}
+    # estado da maquina nao mudou (sempre em operacao): nao entra em 'O que mudou'
+    assert "machine_state" not in wc
+    alarm = wc["alarm_code"]
+    assert alarm.delta_kind == "none"
+    assert alarm.delta is None
+    assert (
+        alarm.text_pt == "passou de nenhum alarme para alarme 56 (Pouco material sobre a correia)"
+    )
+    assert alarm.ts_start_utc == at(110)
+    for item in event.context.what_changed:
+        assert "1,00" not in item.text_pt or item.tag in ("belt_load", "mass_flow")
 
 
 async def test_open_happens_only_after_persistence(clock: FakeClock) -> None:
@@ -152,7 +181,14 @@ async def test_update_while_persisting_then_close_after_clear(clock: FakeClock) 
     assert closed.resolution.resolved_at_utc == cleared_at + timedelta(seconds=30)
     assert closed.context.post_samples
     assert all(s.ts_utc < cleared_at for s in closed.context.during_samples)
-    assert any("encerrou o evento" in p.text_pt for p in closed.context.timeline)
+    texts = [p.text_pt for p in closed.context.timeline]
+    assert "Regra Forja 'Pouco material sobre a correia' deixou de ser atendida" in texts
+    assert "Forja encerrou o evento após 30 s sem a condição" in texts
+    # horario em texto no fuso da planta (12:02:05Z = 09:02:05 em Sao Paulo); end_utc segue UTC
+    assert closed.resolution.note_pt == (
+        "Encerrado automaticamente: a condição deixou de ser observada a partir de 09:02:05."
+    )
+    assert closed.end_utc == at(125)
     assert engine.open_events(GTEX_ID) == []
 
 
@@ -212,7 +248,20 @@ async def test_comm_degraded_opens_after_15s_of_comm_error(clock: FakeClock) -> 
     assert flow.before == 1300.0
     assert flow.now is None
     assert flow.delta_kind == "none"
-    assert "1300" in event.summary_pt
+    assert "Última vazão conhecida antes da falha: 1300 kg/h." in event.summary_pt
+    assert "Agora: sem leitura" in flow.text_pt
+
+
+async def test_comm_degraded_without_any_prior_reading_says_so_in_words() -> None:
+    """Falha desde a primeira leitura: nada a comparar, e o resumo diz 'sem leitura', nunca '—'."""
+    engine = build_engine(FakeClock(T0))
+    transitions = await feed(engine, [comm_error_batch(at(t)) for t in range(0, 40)])
+    (event,) = opens(transitions, "COMM_DEGRADED")
+    assert "Última vazão conhecida antes da falha: sem leitura." in event.summary_pt
+    assert "—" not in event.summary_pt
+    assert "kg/h" not in event.summary_pt
+    # continua sem nenhuma leitura utilizavel (antes ou agora) fica fora de 'O que mudou'
+    assert [i.tag for i in event.context.what_changed] == []
 
 
 async def test_machine_stopped_opens_on_transition_and_closes_next_batch(clock: FakeClock) -> None:
@@ -227,8 +276,32 @@ async def test_machine_stopped_opens_on_transition_and_closes_next_batch(clock: 
     assert event.start_utc == at(6)
     assert "Motivo desconhecido" in event.summary_pt
     assert "STOP BY" in event.summary_pt
+    assert "código 3" in event.summary_pt
+    assert "UNKNOWN" not in event.summary_pt
     kcm = [p for p in event.context.timeline if p.kind == "kcm"]
-    assert any("STOP BY" in p.text_pt for p in kcm)
+    assert len(kcm) == 1
+    assert kcm[0].text_pt == (
+        "KCM informou motivo da parada (STOP BY): código 3 · Motivo desconhecido "
+        "(a Forja ainda não tem fonte para classificar este motivo)"
+    )
+    # estado da maquina mudou: primeiro a mudar, em palavras
+    first = event.context.what_changed[0]
+    assert first.tag == "machine_state"
+    assert first.changed_first is True
+    assert first.text_pt == "passou de Em operação para Parado"
+    assert first.delta_kind == "none"
+    stop_item = next(i for i in event.context.what_changed if i.tag == "stop_by")
+    assert stop_item.text_pt == "passou de nenhum para código 3 (Motivo desconhecido)"
+    texts = [p.text_pt for p in event.context.timeline]
+    assert "Primeiro a mudar: Estado da máquina passou de Em operação para Parado" in texts
+    # STOP BY fala so na voz do KCM
+    assert sum(1 for p in event.context.timeline if p.tag == "stop_by") == 1
+    assert (
+        "Forja abriu o evento 'Equipamento parado' na primeira leitura em que a condição apareceu"
+        in texts
+    )
+    closed_texts = [p.text_pt for p in stop[1].event.context.timeline]
+    assert "Forja encerrou o evento na primeira leitura sem a condição" in closed_texts
     assert stop[1].event.end_utc == at(7)
     # outras regras nao abrem com a maquina parada
     assert {e.type for e in opens(transitions)} == {"MACHINE_STOPPED"}
@@ -279,3 +352,7 @@ def test_engine_signature_matches_contract() -> None:
     assert engine.pre_window_s == 60
     assert engine.post_window_s == 30
     assert engine.buffer_s == 180
+    # fuso da planta: padrao America/Sao_Paulo, configuravel por nome IANA
+    assert getattr(engine.zone, "key", None) == "America/Sao_Paulo"
+    utc_engine = RuleEngine([], engine.alarms, engine.stop_by, clock, timezone="UTC")
+    assert utc_engine.zone is UTC

@@ -211,10 +211,14 @@ async def run_offline_simulation(
         events_cfg.post_window_s,
         events_cfg.buffer_s,
         profiles={demo_profile.id: demo_profile},
+        timezone=store.config.edge.timezone,
     )
     diagnosis_engine = (
         DiagnosisEngine(
-            load_library(paths.knowledge_dir / "diagnostics"), clock, _translator(paths)
+            load_library(paths.knowledge_dir / "diagnostics"),
+            clock,
+            _translator(paths),
+            timezone=store.config.edge.timezone,
         )
         if diagnose
         else None
@@ -295,13 +299,25 @@ def diagnosis_json_text(diagnosis: Diagnosis) -> str:
     return json.dumps(diagnosis_json(diagnosis), ensure_ascii=False, indent=2)
 
 
-def diagnosis_text_pt(diagnosis: Diagnosis, translator: Any | None) -> str:
+def _fmt_plant_time(when: datetime, timezone: str) -> str:
+    """Hora legível no fuso da planta; cai para UTC marcado se o fuso não existir."""
+    try:
+        from zoneinfo import ZoneInfo
+
+        return when.astimezone(ZoneInfo(timezone)).strftime("%d/%m/%Y %H:%M:%S")
+    except Exception:
+        return when.strftime("%d/%m/%Y %H:%M:%S UTC")
+
+
+def diagnosis_text_pt(
+    diagnosis: Diagnosis, translator: Any | None, timezone: str = "America/Sao_Paulo"
+) -> str:
     """Texto em português nas sete seções. Nunca JSON."""
     try:
         from forja.diagnostics.translator import render_diagnosis_pt
     except ImportError:
         return _render_fallback_pt(diagnosis)
-    return render_diagnosis_pt(diagnosis, translator)
+    return render_diagnosis_pt(diagnosis, translator, timezone=timezone)
 
 
 def _render_fallback_pt(d: Diagnosis) -> str:
@@ -331,6 +347,7 @@ def _validate_seconds(seconds: float) -> float:
 
 def cmd_diagnose(args: argparse.Namespace) -> int:
     paths = _paths(args)
+    store = _load_store(paths)
     if args.event_id:
         diagnosis = asyncio.run(_diagnosis_from_store(paths, args.event_id))
         if diagnosis is None:
@@ -338,7 +355,6 @@ def cmd_diagnose(args: argparse.Namespace) -> int:
             return EXIT_ERROR
     else:
         seconds = _validate_seconds(args.seconds)
-        store = _load_store(paths)
         profile = _pick_simulator_profile(store, args.equipment)
         scenario = _parse_scenario(args.demo)
         run = asyncio.run(
@@ -358,12 +374,13 @@ def cmd_diagnose(args: argparse.Namespace) -> int:
             _eprint(
                 f"Simulação offline: {profile.id} · cenário {run.scenario_code} · "
                 f"{run.batches} leituras · relógio simulado a partir de "
-                f"{run.started_utc.isoformat()}. DADOS SIMULADOS."
+                f"{_fmt_plant_time(run.started_utc, store.config.edge.timezone)} "
+                "(horário da planta). DADOS SIMULADOS."
             )
     if args.json:
         print(diagnosis_json_text(diagnosis))
     else:
-        print(diagnosis_text_pt(diagnosis, _translator(paths)))
+        print(diagnosis_text_pt(diagnosis, _translator(paths), store.config.edge.timezone))
     return EXIT_OK
 
 

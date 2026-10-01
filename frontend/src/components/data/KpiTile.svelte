@@ -69,6 +69,18 @@
   const usable = $derived(isUsable(quality))
   const showsValue = $derived(usable || quality === 'STALE')
   const staleValue = $derived(quality === 'STALE' ? fmtNumber(value, decimals) : null)
+  /** Legenda de estado da leitura. No compacto ela NÃO aparece: a pill de qualidade já diz
+   *  "Sem comunicação" / "Valor antigo" / "Inválido" e a explicação abre no toque; repetir ao lado
+   *  só truncava ("S..."). */
+  const statusText = $derived(
+    quality === 'COMM_ERROR'
+      ? 'Sem comunicação'
+      : quality === 'STALE'
+        ? 'Último valor conhecido. Não é o estado atual.'
+        : quality === 'BAD'
+          ? 'Leitura inválida'
+          : null,
+  )
 
   /** Explicação da qualidade para o popover de toque (a razão do backend tem prioridade). */
   const qualityText = $derived(
@@ -142,14 +154,10 @@
     {#if !compact}{@render qbadge()}{/if}
   </div>
 
-  <p class="tile-sub">
+  <p class="tile-sub" class:status={statusText != null}>
     {#if compact}{@render qbadge()}{/if}
-    {#if quality === 'COMM_ERROR'}
-      <span class="sub">Sem comunicação</span>
-    {:else if quality === 'STALE'}
-      <span class="sub" title="Último valor conhecido. Não é o estado atual.">{compact ? 'valor antigo' : 'Último valor conhecido. Não é o estado atual.'}</span>
-    {:else if quality === 'BAD'}
-      <span class="sub">Leitura inválida</span>
+    {#if statusText}
+      {#if !compact}<span class="sub">{statusText}</span>{/if}
     {:else if caption}
       <span class="sub" title={captionTitle ?? undefined}>{caption}</span>
     {:else}
@@ -325,6 +333,8 @@
     gap: var(--sp-2);
     min-height: 20px;
   }
+  /* só a pill: ela pode ocupar a linha inteira sem nada cortado ao lado */
+  .compact .tile-sub.status { justify-content: flex-start; }
   .compact .tile-sub .sub {
     flex: 1 1 auto;
     min-width: 0;

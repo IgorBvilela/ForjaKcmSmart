@@ -34,4 +34,4 @@ Python 3.14 (`.venv`), FastAPI + uvicorn embutido, Pydantic v2, SQLite WAL em do
 Contrato entre módulos: `docs/contracts/CONTRATOS_A1.md`. Auditoria inicial: `docs/auditoria/2026-09-30_auditoria_inicial.md`. Documento Mestre original: `doc/*.docx` (derivado em `docs/derived/`).
 
 ## Fases
-A0 fundação ✔ · A1 núcleo ✔ (2026-10-01, 528 testes) · B shell/design · C planta/dashboard · D dosador animado · E tendências/timeline · F diagnóstico UX · G comunicação/wizard/mapping · H multi-equipamento · I abstrações de driver · J Modbus TCP · K EtherNet/IP · L saúde/logs · M relatórios/backup/usuários · N instalador Windows · O campo GTEX · P pós-campo. Nenhuma fase avança com teste vermelho.
+A0 fundação ✔ · A1 núcleo ✔ (2026-10-01, 528 testes) · B shell/design ✔ · C planta/dashboard ✔ · D dosador animado ✔ (2026-10-01, 566+ testes incl. 38 e2e) · E tendências/timeline · F diagnóstico UX · G comunicação/wizard/mapping · H multi-equipamento · I abstrações de driver · J Modbus TCP · K EtherNet/IP · L saúde/logs · M relatórios/backup/usuários · N instalador Windows · O campo GTEX · P pós-campo. Nenhuma fase avança com teste vermelho.

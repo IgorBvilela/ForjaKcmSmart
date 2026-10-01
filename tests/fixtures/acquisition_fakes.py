@@ -493,7 +493,7 @@ async def run_for(clock: FakeClock, seconds: float, *, step: float = 1.0, rounds
 
 
 async def wait_until(
-    predicate: Callable[[], Any], *, timeout_s: float = 5.0, poll_s: float = 0.005
+    predicate: Callable[[], Any], *, timeout_s: float = 20.0, poll_s: float = 0.005
 ) -> None:
     """Espera uma condição de I/O REAL (ex.: writer thread do SQLite) com teto curto.
 

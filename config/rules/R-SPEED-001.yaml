@@ -25,7 +25,7 @@ context_tags: [mass_flow, belt_load]
 sources:
   - id: SRC-RULE-R-SPEED-001
     kind: rule
-    title: "Regra Forja R-SPEED-001 — Leitura de velocidade inconsistente"
+    title: "Regra Forja 'Leitura de velocidade inconsistente'"
     reference: "config/rules/R-SPEED-001.yaml"
     evidence_level: FORJA_RULE
 summary_template_pt: >-

@@ -9,11 +9,10 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, tzinfo
 from uuid import NAMESPACE_URL, uuid5
 
 from forja.domain import (
-    UNKNOWN,
     AlarmCatalog,
     AlarmKey,
     AlarmLookup,
@@ -23,26 +22,54 @@ from forja.domain import (
     EventContext,
     EventStatus,
     EventTransition,
+    KnowledgeState,
     Quality,
     Resolution,
     Sample,
     SampleBatch,
     StopByCatalog,
+    TagKind,
     TimelinePoint,
     WhatChangedItem,
     get_tag,
     worst,
 )
 from forja.events.conditions import EvalContext, evaluate
+from forja.events.plant_time import DEFAULT_TIMEZONE, fmt_time_pt, resolve_zone
 from forja.events.prewindow import SampleBuffer
 from forja.events.rules import ANY_TAG, Rule
-from forja.events.what_changed import compute_what_changed, delta_text_pt, fmt_number_pt
+from forja.events.what_changed import (
+    NO_READING_PT,
+    DetailFor,
+    compute_what_changed,
+    delta_text_pt,
+    discrete_value_pt,
+    fmt_number_pt,
+    value_pt,
+)
 
 ALARM_CODE_TAG = "alarm_code"
 ALARM_ACTIVE_TAG = "alarm_active"
 STOP_BY_TAG = "stop_by"
 MACHINE_STATE_TAG = "machine_state"
+KCM_VOICE_TAGS: frozenset[str] = frozenset({ALARM_CODE_TAG, ALARM_ACTIVE_TAG, STOP_BY_TAG})
+"""Tags cuja mudanca a linha do tempo conta na voz do KCM (ponto kind='kcm'), nao da Forja."""
 FORJA_ACTOR = "forja"
+MISSING_PT = "desconhecido"
+"""Placeholder de resumo sem valor. Em portugues: o texto do resumo e voz do produto."""
+NO_FIRST_CHANGE_PT = "nenhuma variável saiu do padrão"
+
+_KNOWLEDGE_STATE_PT: dict[KnowledgeState, str] = {
+    KnowledgeState.FACT: "fato",
+    KnowledgeState.OFFICIAL_DOC: "documento oficial",
+    KnowledgeState.MACHINE_DOC: "documento da máquina",
+    KnowledgeState.FIELD_CONFIRMED: "confirmado em campo",
+    KnowledgeState.FIELD_OBSERVED: "observado em campo",
+    KnowledgeState.FORJA_RULE: "regra Forja",
+    KnowledgeState.TECHNICAL_OPINION: "opinião técnica",
+    KnowledgeState.HYPOTHESIS: "hipótese",
+    KnowledgeState.UNKNOWN: "sem fonte",
+}
 
 
 @dataclass
@@ -66,10 +93,10 @@ class _EquipmentState:
 
 
 class _SafeFormat(dict[str, str]):
-    """Placeholders ausentes no template viram UNKNOWN em vez de KeyError."""
+    """Placeholders ausentes no template viram 'desconhecido' em vez de KeyError."""
 
     def __missing__(self, key: str) -> str:
-        return UNKNOWN
+        return MISSING_PT
 
 
 def event_id_for(dedupe_key: str, start_utc: datetime) -> str:
@@ -90,6 +117,7 @@ class RuleEngine:
         post_window_s: int = 30,
         buffer_s: int = 180,
         profiles: Mapping[str, EquipmentProfile] | None = None,
+        timezone: str | tzinfo = DEFAULT_TIMEZONE,
     ) -> None:
         if buffer_s < pre_window_s:
             raise ValueError("buffer_s precisa ser >= pre_window_s")
@@ -100,6 +128,8 @@ class RuleEngine:
         self.pre_window_s = pre_window_s
         self.post_window_s = post_window_s
         self.buffer_s = buffer_s
+        self.zone: tzinfo = resolve_zone(timezone)
+        """Fuso da planta (config edge.timezone): todo horario em texto *_pt sai neste fuso."""
         self._profiles: dict[str, EquipmentProfile] = dict(profiles or {})
         self._state: dict[str, _EquipmentState] = {}
 
@@ -245,10 +275,12 @@ class RuleEngine:
         analysis = buffer.between(
             detect_ts - timedelta(seconds=self.buffer_s), detect_ts, include_end=False
         )
-        what_changed = compute_what_changed(analysis, now, tags)
+        profile = self._profiles.get(batch.equipment_id)
+        what_changed = compute_what_changed(
+            analysis, now, tags, detail_for=self._detail_for(profile)
+        )
         quality = self._event_quality(rule, batch, now)
         dedupe_key = f"{batch.equipment_id}:{rule.id}"
-        profile = self._profiles.get(batch.equipment_id)
         timeline = self._timeline(
             rule, start, detect_ts, what_changed, (*pre_samples, *during), profile
         )
@@ -299,13 +331,15 @@ class RuleEngine:
             *event.context.timeline,
             TimelinePoint(
                 ts_utc=cleared_at,
-                text_pt=f"Condições da regra {rule.id} deixaram de ser atendidas",
+                text_pt=f"Regra Forja '{rule.title_pt}' deixou de ser atendida",
                 kind="forja",
             ),
             TimelinePoint(
                 ts_utc=ts,
                 text_pt=(
                     f"Forja encerrou o evento após {rule.close_when_clear_for_s} s sem a condição"
+                    if rule.close_when_clear_for_s > 0
+                    else "Forja encerrou o evento na primeira leitura sem a condição"
                 ),
                 kind="forja",
             ),
@@ -313,11 +347,15 @@ class RuleEngine:
         context = event.context.model_copy(
             update={"during_samples": during, "post_samples": post, "timeline": timeline}
         )
+        cleared_pt = fmt_time_pt(cleared_at, self.zone, reference=ts)
         resolution = Resolution(
             resolved_at_utc=self._clock.now_utc(),
             resolved_by=FORJA_ACTOR,
             resolution_class="UNKNOWN",
-            note_pt="Encerrado automaticamente: a condição deixou de ser observada.",
+            note_pt=(
+                "Encerrado automaticamente: a condição deixou de ser observada "
+                f"a partir de {cleared_pt}."
+            ),
         )
         return event.model_copy(
             update={
@@ -347,21 +385,41 @@ class RuleEngine:
         self, rule: Rule, what_changed: Sequence[WhatChangedItem], now: Mapping[str, Sample]
     ) -> str:
         vars_: _SafeFormat = _SafeFormat()
+        # Toda tag da regra tem placeholder, mesmo sem item em 'O que mudou' (ex.: sem leitura
+        # alguma antes e depois): o resumo diz 'sem leitura', nunca um traco ou 'desconhecido'.
+        for tag in rule.tags:
+            for suffix in ("_before", "_now", "_before_pt", "_now_pt"):
+                vars_[f"{tag}{suffix}"] = NO_READING_PT
+            vars_[f"{tag}_delta_pt"] = ""
+            vars_[f"{tag}_unit"] = get_tag(tag).unit
         for item in what_changed:
             meta = get_tag(item.tag)
-            vars_[f"{item.tag}_before"] = fmt_number_pt(item.before, meta.decimals)
-            vars_[f"{item.tag}_now"] = fmt_number_pt(item.now, meta.decimals)
+            if meta.kind is TagKind.CONTINUOUS:
+                # {tag}_before / {tag}_now: so o numero (template poe a unidade).
+                # {tag}_before_pt / {tag}_now_pt: numero com unidade, ou 'sem leitura'.
+                vars_[f"{item.tag}_before"] = fmt_number_pt(item.before, meta.decimals)
+                vars_[f"{item.tag}_now"] = fmt_number_pt(item.now, meta.decimals)
+                vars_[f"{item.tag}_before_pt"] = value_pt(item.before, meta)
+                vars_[f"{item.tag}_now_pt"] = value_pt(item.now, meta)
+                vars_[f"{item.tag}_delta_pt"] = delta_text_pt(
+                    item.delta, item.delta_kind, meta.unit, meta.decimals
+                )
+            else:
+                words_before = discrete_value_pt(item.tag, item.before)
+                words_now = discrete_value_pt(item.tag, item.now)
+                vars_[f"{item.tag}_before"] = words_before
+                vars_[f"{item.tag}_now"] = words_now
+                vars_[f"{item.tag}_before_pt"] = words_before
+                vars_[f"{item.tag}_now_pt"] = words_now
+                vars_[f"{item.tag}_delta_pt"] = ""
             vars_[f"{item.tag}_unit"] = meta.unit
-            vars_[f"{item.tag}_delta_pt"] = delta_text_pt(
-                item.delta, item.delta_kind, meta.unit, meta.decimals
-            )
         stop = now.get(STOP_BY_TAG)
         raw = _raw_label(stop)
         entry = self.stop_by.classify(raw)
-        vars_["stop_by_raw"] = raw or UNKNOWN
+        vars_["stop_by_raw"] = _stop_by_raw_pt(raw)
         vars_["stop_by_pt"] = entry.classification.label_pt
         first = next((i for i in what_changed if i.changed_first), None)
-        vars_["changed_first_pt"] = first.label_pt if first is not None else UNKNOWN
+        vars_["changed_first_pt"] = first.label_pt if first is not None else NO_FIRST_CHANGE_PT
         return rule.summary_template_pt.format_map(vars_)
 
     def _timeline(
@@ -377,10 +435,16 @@ class RuleEngine:
         for item in what_changed:
             if item.ts_start_utc is None:
                 continue
+            # Alarme e STOP BY ja tem ponto do KCM (kind='kcm'); nao repetir em voz da Forja.
+            if item.tag in KCM_VOICE_TAGS and not item.changed_first:
+                continue
             prefix = "Primeiro a mudar: " if item.changed_first else ""
             meta = get_tag(item.tag)
-            variation = delta_text_pt(item.delta, item.delta_kind, meta.unit, meta.decimals)
-            text = f"{prefix}{item.label_pt} saiu do padrão ({variation} até a detecção)"
+            if meta.kind is TagKind.CONTINUOUS:
+                variation = delta_text_pt(item.delta, item.delta_kind, meta.unit, meta.decimals)
+                text = f"{prefix}{item.label_pt} saiu do padrão ({variation} até a detecção)"
+            else:
+                text = f"{prefix}{item.label_pt} {item.text_pt}"
             points.append(
                 TimelinePoint(ts_utc=item.ts_start_utc, text_pt=text, kind="forja", tag=item.tag)
             )
@@ -388,17 +452,19 @@ class RuleEngine:
         points.append(
             TimelinePoint(
                 ts_utc=start,
-                text_pt=f"Condições da regra {rule.id} atendidas",
+                text_pt=f"Regra Forja '{rule.title_pt}' atendida",
                 kind="forja",
             )
+        )
+        opened = (
+            f"após {rule.persist_s} s de persistência"
+            if rule.persist_s > 0
+            else "na primeira leitura em que a condição apareceu"
         )
         points.append(
             TimelinePoint(
                 ts_utc=detect_ts,
-                text_pt=(
-                    f"Forja abriu o evento '{rule.title_pt}' "
-                    f"após {rule.persist_s} s de persistência"
-                ),
+                text_pt=f"Forja abriu o evento '{rule.title_pt}' {opened}",
                 kind="forja",
             )
         )
@@ -417,33 +483,59 @@ class RuleEngine:
             code = _value_at(samples, ALARM_CODE_TAG, alarm_ts)
             if code is not None:
                 lookup = self.alarm_lookup(profile, _fmt_code(code))
-                points.append(
-                    TimelinePoint(
-                        ts_utc=alarm_ts,
-                        text_pt=(
-                            f"KCM informou alarme {lookup.code}: {lookup.title_pt} "
-                            f"· alarme do KCM · {lookup.qualifier_pt.lower()}"
-                        ),
-                        kind="kcm",
-                        tag=ALARM_CODE_TAG,
+                if lookup.definition is not None:
+                    text = (
+                        f"KCM informou alarme {lookup.code}: {lookup.title_pt} "
+                        f"· alarme do KCM · {lookup.qualifier_pt.lower()}"
                     )
+                else:
+                    text = (
+                        f"KCM informou alarme {lookup.code} · alarme do KCM · "
+                        "não catalogado para esta aplicação/versão"
+                    )
+                points.append(
+                    TimelinePoint(ts_utc=alarm_ts, text_pt=text, kind="kcm", tag=ALARM_CODE_TAG)
                 )
         if any(c.tag == MACHINE_STATE_TAG and c.op == "changed" for c in rule.conditions):
             stop_sample = _last_sample(samples, STOP_BY_TAG)
             raw = _raw_label(stop_sample)
             entry = self.stop_by.classify(raw)
+            if raw:
+                if entry.evidence is KnowledgeState.UNKNOWN:
+                    basis = "a Forja ainda não tem fonte para classificar este motivo"
+                else:
+                    basis = _knowledge_state_pt(entry.evidence)
+                text = (
+                    f"KCM informou motivo da parada (STOP BY): {_stop_by_raw_pt(raw)} · "
+                    f"{entry.classification.label_pt} ({basis})"
+                )
+            else:
+                label = entry.classification.label_pt
+                text = f"KCM não informou motivo da parada (STOP BY) · {label}"
             points.append(
                 TimelinePoint(
                     ts_utc=stop_sample.ts_utc if stop_sample is not None else samples[-1].ts_utc,
-                    text_pt=(
-                        f"KCM informou STOP BY = {raw or UNKNOWN} "
-                        f"({entry.classification.label_pt}; classificação {entry.evidence.value})"
-                    ),
+                    text_pt=text,
                     kind="kcm",
                     tag=STOP_BY_TAG,
                 )
             )
         return points
+
+    def _detail_for(self, profile: EquipmentProfile | None) -> DetailFor:
+        """Complemento em palavras para valores discretos: titulo do alarme, classe do STOP BY."""
+
+        def detail(tag: str, value: float) -> str | None:
+            if not value:
+                return None
+            if tag == ALARM_CODE_TAG:
+                lookup = self.alarm_lookup(profile, _fmt_code(value))
+                return lookup.definition.title_pt if lookup.definition is not None else None
+            if tag == STOP_BY_TAG:
+                return self.stop_by.classify(_fmt_code(value)).classification.label_pt
+            return None
+
+        return detail
 
     @staticmethod
     def _alarm_key(profile: EquipmentProfile | None, code: str) -> AlarmKey:
@@ -474,6 +566,19 @@ def _raw_label(sample: Sample | None) -> str | None:
     if sample is None or sample.value is None or not sample.quality.counts_for_rules:
         return None
     return _fmt_code(float(sample.value))
+
+
+def _stop_by_raw_pt(raw: str | None) -> str:
+    """Rotulo bruto do STOP BY em palavras: numero vira 'código N', texto vai entre aspas."""
+    if not raw:
+        return "não informado"
+    if raw.lstrip("-").isdigit():
+        return "nenhum" if int(raw) == 0 else f"código {int(raw)}"
+    return f"'{raw}'"
+
+
+def _knowledge_state_pt(state: KnowledgeState) -> str:
+    return _KNOWLEDGE_STATE_PT.get(state, "sem fonte")
 
 
 def _first_active_alarm(samples: Iterable[Sample]) -> datetime | None:

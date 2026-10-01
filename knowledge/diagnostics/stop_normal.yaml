@@ -11,7 +11,7 @@ text_pt: >-
 sources:
   - id: SRC-RULE-R-STOP-001
     kind: rule
-    title: "Regra Forja R-STOP-001: Equipamento parado"
+    title: "Regra Forja 'Equipamento parado'"
     reference: "config/rules/R-STOP-001.yaml"
     evidence_level: FORJA_RULE
   - id: SRC-OPINION-STOP
@@ -61,6 +61,6 @@ next_checks:
     evidence_level: TECHNICAL_OPINION
     source_ids: [SRC-OPINION-STOP]
 caveats:
-  - "A classificação de STOP BY é UNKNOWN para todos os rótulos até haver fonte; Calib e Tare são candidatos a procedimento (decisão pendente)."
+  - "A classificação de STOP BY é 'Motivo desconhecido' para todos os rótulos até haver fonte; Calib e Tare são candidatos a procedimento (decisão pendente)."
 related_rules: [R-STOP-001]
 related_cases: []

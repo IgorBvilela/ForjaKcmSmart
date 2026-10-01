@@ -10,7 +10,7 @@ text_pt: >-
 sources:
   - id: SRC-RULE-R-COMM-001
     kind: rule
-    title: "Regra Forja R-COMM-001: Comunicação degradada"
+    title: "Regra Forja 'Comunicação degradada'"
     reference: "config/rules/R-COMM-001.yaml"
     evidence_level: FORJA_RULE
   - id: SRC-OPINION-COMM
@@ -34,7 +34,7 @@ hypotheses:
   - id: H3
     text_pt: "Comportamento compatível com configuração de comunicação da Forja incompatível com o equipamento (protocolo, IP, unidade, porta)."
     evidence_level: HYPOTHESIS
-    rationale_pt: "Protocolo, IP e porta da GTEX ainda são UNKNOWN; uma configuração errada falha do mesmo jeito que um cabo solto."
+    rationale_pt: "Protocolo, IP e porta da GTEX ainda não são conhecidos; uma configuração errada falha do mesmo jeito que um cabo solto."
     verification_ids: [V5]
     source_ids: [SRC-OPINION-COMM]
 next_checks:
@@ -69,12 +69,12 @@ next_checks:
   - id: V5
     order: 5
     text_pt: "Conferir a configuração de comunicação do equipamento na Forja: protocolo, IP, porta, unidade."
-    how_pt: "Campos UNKNOWN exigem configuração de campo antes de qualquer leitura real."
+    how_pt: "Campos ainda não conhecidos exigem configuração de campo antes de qualquer leitura real."
     safety_pt: "Conforme procedimento da planta."
     evidence_level: TECHNICAL_OPINION
     source_ids: [SRC-OPINION-COMM]
 caveats:
-  - "COMM_ERROR significa que a tentativa de leitura falhou; não é valor antigo (STALE). Nenhum valor foi interpolado durante a falha."
-  - "Protocolo, IP e porta da GTEX são UNKNOWN até a validação de campo."
+  - "'Sem comunicação' significa que a tentativa de leitura falhou; não é valor antigo. Nenhum valor foi interpolado durante a falha."
+  - "Protocolo, IP e porta da GTEX só serão conhecidos na validação de campo."
 related_rules: [R-COMM-001]
 related_cases: []

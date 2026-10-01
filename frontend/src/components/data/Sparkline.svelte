@@ -75,14 +75,14 @@
     }
   })
 
-  /** Janela coberta pelos pontos: "90 s", "4 min", "2 h". */
+  /** Janela coberta pelos pontos, rotulada: "janela 90 s", "janela 2 min", "janela 2 h". */
   const windowText = $derived.by(() => {
     if (points.length < 2) return null
     const span = (points[points.length - 1].t - points[0].t) / 1000
     if (!Number.isFinite(span) || span <= 0) return null
-    if (span < 120) return `${Math.round(span)} s`
-    if (span < 7200) return `${Math.round(span / 60)} min`
-    return `${Math.round(span / 3600)} h`
+    const span_pt =
+      span < 120 ? `${Math.round(span)} s` : span < 7200 ? `${Math.round(span / 60)} min` : `${Math.round(span / 3600)} h`
+    return `janela ${span_pt}`
   })
 </script>
 
@@ -180,8 +180,8 @@
   .spark-window {
     align-self: flex-end;
     color: var(--text-3);
-    font: 500 var(--fs-label) / var(--lh-label) var(--font-ui);
-    letter-spacing: var(--ls-label);
+    font: var(--fs-caption) / var(--lh-caption) var(--font-ui);
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 </style>

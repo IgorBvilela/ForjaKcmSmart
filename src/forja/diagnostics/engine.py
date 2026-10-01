@@ -8,13 +8,13 @@ verificacoes e fontes vem da biblioteca. Toda saida passa pela validacao estrutu
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import tzinfo
 from uuid import NAMESPACE_URL, uuid5
 
 from forja.diagnostics.library import DiagnosisEntry, DiagnosisLibrary
 from forja.diagnostics.translator import Translator
 from forja.domain import (
     MANDATORY_CAVEAT_PT,
-    UNKNOWN,
     Caveat,
     Clock,
     Diagnosis,
@@ -29,6 +29,7 @@ from forja.domain import (
     SourceRef,
     get_tag,
 )
+from forja.events.plant_time import DEFAULT_TIMEZONE, fmt_time_pt, resolve_zone
 from forja.version import ENGINE_VERSION
 
 FALLBACK_REF = "sem_entrada_biblioteca"
@@ -45,11 +46,12 @@ UNCERTAIN_CAVEAT_PT = (
     "a tela do KCM."
 )
 THRESHOLD_CAVEAT_PT = (
-    "Os limiares que abriram este evento são regras Forja (FORJA_RULE), relativos ao próprio "
-    "comportamento do equipamento ou ao cenário simulado. Não são limites do KCM."
+    "Os limiares que abriram este evento são regras Forja, relativos ao próprio comportamento "
+    "do equipamento ou ao cenário simulado. Não são limites do KCM."
 )
 CAUSE_UNKNOWN_CAVEAT_PT = (
-    "A causa confirmada permanece UNKNOWN até evidência de campo que feche a cadeia causal."
+    "A causa confirmada permanece desconhecida até haver evidência de campo que feche a "
+    "cadeia causal."
 )
 
 
@@ -71,11 +73,17 @@ class DiagnosisEngine:
     """Produz o Diagnosis v1.0 de um Event, sem rede, sem IA, sem escrita no KCM."""
 
     def __init__(
-        self, library: DiagnosisLibrary, clock: Clock, translator: Translator | None = None
+        self,
+        library: DiagnosisLibrary,
+        clock: Clock,
+        translator: Translator | None = None,
+        timezone: str | tzinfo = DEFAULT_TIMEZONE,
     ) -> None:
         self.library = library
         self._clock = clock
         self.translator = translator or Translator()
+        self.zone: tzinfo = resolve_zone(timezone)
+        """Fuso da planta (config edge.timezone): todo horario em texto *_pt sai neste fuso."""
 
     def diagnose(self, event: Event) -> Diagnosis:
         entry = self.library.find(event.diagnosis_ref, event.type) or self._fallback_entry(event)
@@ -111,13 +119,12 @@ class DiagnosisEngine:
 
     def _evidence(self, event: Event) -> tuple[EvidenceItem, ...]:
         ctx = event.context
+        # Id e versao da regra ficam em event.rule_id / rule_version ('Detalhes tecnicos').
+        since_pt = fmt_time_pt(event.start_utc, self.zone, reference=self._clock.now_utc())
         items: list[EvidenceItem] = [
             EvidenceItem(
                 id="EV-RULE",
-                text_pt=(
-                    f"Regra Forja {event.rule_id} v{event.rule_version} ('{event.title_pt}') "
-                    f"atendida a partir de {event.start_utc.isoformat()}."
-                ),
+                text_pt=f"Regra Forja '{event.title_pt}' atendida a partir de {since_pt}.",
                 evidence_level=EvidenceLevel.FORJA_RULE,
                 ts_utc=event.start_utc,
             )
@@ -164,8 +171,8 @@ class DiagnosisEngine:
                 EvidenceItem(
                     id="EV-COMM",
                     text_pt=(
-                        f"{ctx.comm_error_count} leitura(s) sem comunicação na janela analisada "
-                        "(COMM_ERROR: a tentativa falhou; não é valor antigo)."
+                        f"{ctx.comm_error_count} leitura(s) sem comunicação na janela analisada: "
+                        "a tentativa de leitura falhou; não é valor antigo."
                     ),
                     quality=Quality.COMM_ERROR,
                     evidence_level=EvidenceLevel.FORJA_RULE,
@@ -176,7 +183,10 @@ class DiagnosisEngine:
             out.append(
                 EvidenceItem(
                     id="EV-STALE",
-                    text_pt=f"{ctx.stale_count} valor(es) antigo(s) (STALE) na janela analisada.",
+                    text_pt=(
+                        f"{ctx.stale_count} valor(es) antigo(s) na janela analisada: a leitura "
+                        "não foi renovada e nada foi gravado como novo."
+                    ),
                     quality=Quality.STALE,
                     evidence_level=EvidenceLevel.FORJA_RULE,
                     ts_utc=event.start_utc,
@@ -187,7 +197,9 @@ class DiagnosisEngine:
             out.append(
                 EvidenceItem(
                     id="EV-GAP",
-                    text_pt=f"{gaps} buraco(s) de leitura (GAP) na janela; nada foi interpolado.",
+                    text_pt=(
+                        f"{gaps} leitura(s) ausente(s) na janela analisada; nada foi interpolado."
+                    ),
                     evidence_level=EvidenceLevel.FORJA_RULE,
                     ts_utc=event.start_utc,
                 )
@@ -211,7 +223,7 @@ class DiagnosisEngine:
             SourceRef(
                 id=f"SRC-RULE-{event.rule_id}",
                 kind="rule",
-                title=f"Regra Forja {event.rule_id}",
+                title=f"Regra Forja '{event.title_pt}'",
                 reference=f"config/rules/{event.rule_id}.yaml",
                 evidence_level=EvidenceLevel.FORJA_RULE,
             )
@@ -235,8 +247,8 @@ class DiagnosisEngine:
                 )
             ],
             caveats=[
-                f"Sem entrada na biblioteca para '{event.type}' "
-                f"(ref {event.diagnosis_ref or UNKNOWN})."
+                "Sem entrada na biblioteca de diagnóstico para o evento "
+                f"'{event.title_pt}'; o código interno fica em 'Detalhes técnicos'."
             ],
         )
 

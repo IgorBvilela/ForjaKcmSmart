@@ -111,7 +111,9 @@ def test_mandatory_caveat_and_simulated_caveat(diagnosis: Diagnosis) -> None:
     assert MANDATORY_CAVEAT_PT in texts
     assert any("SIMULADOS" in t for t in texts)
     assert any("regras Forja" in t for t in texts)
-    assert any("UNKNOWN" in t for t in texts)
+    assert any("causa confirmada permanece desconhecida" in t for t in texts)
+    # codigo tecnico nao e voz do produto: fica em 'Detalhes tecnicos', nunca na ressalva
+    assert not any("UNKNOWN" in t or "FORJA_RULE" in t for t in texts)
     assert len(texts) == len(set(texts))
 
 
@@ -138,12 +140,47 @@ def test_evidence_items_follow_quality(diagnosis: Diagnosis) -> None:
     assert "EV-BELT_LOAD" in ids
     assert "EV-DRIVE_COMMAND" in ids
     assert "EV-KCM-1" in ids
+    # estado da maquina nao mudou no cenario: discreta sem mudanca nao vira evidencia
+    assert "EV-MACHINE_STATE" not in ids
     for item in diagnosis.evidence:
         if item.tag is not None:
             assert item.quality == Quality.SIMULATED
             assert item.evidence_level == EvidenceLevel.FORJA_RULE
     kcm = next(e for e in diagnosis.evidence if e.id == "EV-KCM-1")
     assert "56" in kcm.text_pt
+    alarm = next(e for e in diagnosis.evidence if e.id == "EV-ALARM_CODE")
+    assert alarm.text_pt == (
+        "Código de alarme: passou de nenhum alarme para alarme 56 (Pouco material sobre a correia)"
+    )
+
+
+def test_rule_evidence_uses_plant_time_and_keeps_utc_in_fields(
+    library: DiagnosisLibrary, beltload_event: Event
+) -> None:
+    """Texto no fuso da planta (America/Sao_Paulo = UTC-3 em janeiro); ts_utc segue ISO UTC."""
+    clock = FakeClock(T0)
+    clock.set_wall(at(125))
+    diagnosis = DiagnosisEngine(library, clock).diagnose(beltload_event)
+    rule_ev = diagnosis.evidence[0]
+    assert rule_ev.text_pt == (
+        "Regra Forja 'Pouco material sobre a correia' atendida a partir de 09:01:53."
+    )
+    assert rule_ev.ts_utc == beltload_event.start_utc
+    assert rule_ev.ts_utc is not None
+    assert rule_ev.ts_utc.utcoffset() is not None
+    assert "R-BELTLOAD-001" not in rule_ev.text_pt
+    assert "T12:" not in rule_ev.text_pt
+    assert "+00:00" not in rule_ev.text_pt
+    # dia diferente da referencia: o dia entra no texto
+    clock.set_wall(at(125 + 86_400))
+    later = DiagnosisEngine(library, clock).diagnose(beltload_event)
+    assert later.evidence[0].text_pt.endswith("a partir de 1 de jan., 09:01:53.")
+    # fuso explicito UTC marca o texto para nao enganar
+    utc = DiagnosisEngine(library, FakeClock(at(125)), timezone="UTC").diagnose(beltload_event)
+    assert utc.evidence[0].text_pt.endswith("a partir de 12:01:53 UTC.")
+    # fuso desconhecido nao derruba o motor: cai para UTC marcado
+    odd = DiagnosisEngine(library, FakeClock(at(125)), timezone="Planeta/Inexistente")
+    assert odd.diagnose(beltload_event).evidence[0].text_pt.endswith("12:01:53 UTC.")
 
 
 def test_no_hypothesis_claims_cause(diagnosis: Diagnosis, library: DiagnosisLibrary) -> None:
@@ -323,6 +360,12 @@ def test_render_text_has_seven_sections_and_is_not_json(diagnosis: Diagnosis) ->
         assert f"== {label} ==" in text
     assert "← primeiro a mudar" in text
     assert "Detalhes técnicos: código interno BELT_LOAD_LOW" in text
+    assert f"evento {diagnosis.event_id}" in text.splitlines()[-1]
+    # cabecalho no fuso da planta; nada de ISO UTC cru no texto
+    assert "Gerado em: 1 de jan. de 2026, 09:02:05 (horário da planta)" in text
+    assert "+00:00" not in text
+    assert "T12:" not in text
+    assert "Evento:" not in text.splitlines()[1]
     with pytest.raises(json.JSONDecodeError):
         json.loads(text)
 
@@ -360,7 +403,7 @@ def test_gtex_case_is_field_observed_with_unknown_cause() -> None:
     values = {m.what_pt: m for m in case.measurements}
     assert "4,9 V" in values["Alimentação do encoder"].value
     assert "0,125 mm" in values["Gap do sensor de velocidade"].value
-    assert "não é threshold" in values["Alimentação do encoder"].nature_pt.lower()
+    assert "não é limite" in values["Alimentação do encoder"].nature_pt.lower()
     assert "não é valor universal" in values["Gap do sensor de velocidade"].nature_pt.lower()
     assert values["PICK UP TEETH"].value == UNKNOWN
     for m in case.measurements:

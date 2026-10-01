@@ -4,6 +4,7 @@
   import Menu from '@lucide/svelte/icons/menu'
   import PanelLeftClose from '@lucide/svelte/icons/panel-left-close'
   import PanelLeftOpen from '@lucide/svelte/icons/panel-left-open'
+  import Server from '@lucide/svelte/icons/server'
   import { fmtClock, fmtDate } from '../../lib/format'
   import { live } from '../../lib/live.svelte'
   import { href } from '../../lib/router'
@@ -26,14 +27,29 @@
           ? 'RECONECTANDO'
           : 'CONECTANDO',
   )
-  /** Celular: texto curto; a cor do ponto diz o resto e o toque abre a explicação. */
-  const edgeShort = $derived(live.edge === 'online' ? 'ON' : live.edge === 'offline' ? 'OFF' : '…')
+  /** Celular: sem texto. Ícone de serviço + ponto; o nome acessível e o toque dizem o resto. */
+  const edgeShortPt = $derived(
+    live.edge === 'online'
+      ? 'Edge respondendo'
+      : live.edge === 'offline'
+        ? 'Edge sem resposta'
+        : 'Edge conectando',
+  )
+  /** Este sinal fala do Forja Edge (este programa), não do KCM. O chip "Conectado" do dashboard
+   *  fala do equipamento. Dois sinais, duas explicações. */
   const edgeTitle = $derived(
     live.edge === 'online'
-      ? 'Edge local respondendo. Tempo real ativo.'
+      ? 'O Forja Edge (este programa) está respondendo. Não significa que o KCM está conectado.'
       : live.edge === 'offline'
-        ? 'Sem heartbeat do serviço local há mais de 12 s. Os valores na tela são os últimos recebidos.'
-        : 'Aguardando o serviço local.',
+        ? 'O Forja Edge (este programa) parou de responder há mais de 12 s. Os valores na tela são os últimos recebidos. Não diz nada sobre o KCM.'
+        : 'Aguardando o Forja Edge (este programa) responder.',
+  )
+  const edgeTitleMobile = $derived(
+    live.edge === 'online'
+      ? 'Edge respondendo: este programa está no ar. Não significa que o KCM está conectado.'
+      : live.edge === 'offline'
+        ? 'Edge sem resposta: este programa parou de responder. Os valores na tela são os últimos recebidos.'
+        : 'Edge conectando: aguardando este programa responder.',
   )
   const toggleLabel = $derived(
     app.isNarrow ? 'Abrir menu' : app.sidebarCollapsed ? 'Expandir menu' : 'Recolher menu',
@@ -81,11 +97,18 @@
   </div>
 
   <div class="hdr-right">
-    <span class="online" data-testid={TID.header.online} data-state={live.edge}>
-      <Tooltip label={`Estado do serviço local: ${edgeText}`} text={edgeTitle} align="end">
-        <StatusDot state={edgeTone} pulse={live.edge === 'online'} size={app.isMobile ? 10 : 8} />
-        <span class="online-text">{app.isMobile ? edgeShort : edgeText}</span>
-      </Tooltip>
+    <span class="online" class:icon={app.isMobile} data-testid={TID.header.online} data-state={live.edge}>
+      {#if app.isMobile}
+        <Tooltip label={edgeShortPt} text={edgeTitleMobile} align="end">
+          <Server size={18} strokeWidth={1.75} aria-hidden="true" />
+          <StatusDot state={edgeTone} pulse={live.edge === 'online'} size={8} />
+        </Tooltip>
+      {:else}
+        <Tooltip label={`Forja Edge: ${edgeShortPt}`} text={edgeTitle} align="end">
+          <StatusDot state={edgeTone} pulse={live.edge === 'online'} size={8} />
+          <span class="online-text">{edgeText}</span>
+        </Tooltip>
+      {/if}
     </span>
     {#if !app.isMobile}
       <ReadOnlyBadge />
@@ -167,6 +190,22 @@
   .online :global(.tip-btn) { gap: var(--sp-2); }
   .online[data-state='online'] .online-text { color: var(--st-ok); }
   .online[data-state='offline'] .online-text { color: var(--st-crit); }
+  /* celular: ícone de serviço com o ponto de estado encostado no canto, num alvo de 44 px */
+  .online.icon :global(.tip-btn) {
+    position: relative;
+    width: var(--touch);
+    min-height: var(--touch);
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+    color: var(--text-2);
+  }
+  .online.icon :global(.dot) {
+    position: absolute;
+    right: 9px;
+    top: 10px;
+    box-shadow: 0 0 0 2px var(--surf-1);
+  }
 
   /* data em fonte da interface; só a hora é número (mono) */
   .clock {
@@ -197,9 +236,13 @@
       padding: 0 var(--sp-2);
       gap: var(--sp-2);
     }
+    .hdr-left { gap: var(--sp-2); }
     .hdr-center { justify-content: stretch; }
   }
+  /* celular estreito: o seletor precisa de ~250 px para "nome · estado" inteiro; a marca sai
+     do header (mora no topo do drawer) e o relógio também */
   @media (max-width: 479px) {
     .clock { display: none; }
+    .brand { display: none; }
   }
 </style>

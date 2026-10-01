@@ -7,6 +7,7 @@
     title,
     text,
     phase,
+    phaseText,
     icon,
     children,
     compact = false,
@@ -15,7 +16,10 @@
   }: {
     title: string
     text?: string
+    /** Código da fase (vai para data-phase; os testes leem). */
     phase?: string
+    /** Nome legível da etapa ("Tendências e histórico"). Sem ele, o estado vazio não cita fase. */
+    phaseText?: string | null
     icon?: Snippet
     children?: Snippet
     compact?: boolean
@@ -32,7 +36,9 @@
     </div>
   {/if}
   <h2 class="title">{title}</h2>
-  {#if phase}<p class="phase label">Disponível na fase {phase}</p>{/if}
+  {#if phase && phaseText}
+    <p class="phase"><span class="label">Em desenvolvimento</span> · próxima etapa: <strong>{phaseText}</strong></p>
+  {/if}
   {#if text}<p class="text">{text}</p>{/if}
   {@render children?.()}
 </div>
@@ -71,7 +77,13 @@
     font: 600 var(--fs-h3) / var(--lh-h3) var(--font-ui);
     color: var(--text-1);
   }
-  .phase { margin: 0; color: var(--text-3); }
+  .phase {
+    margin: 0;
+    color: var(--text-3);
+    font: var(--fs-caption) / var(--lh-caption) var(--font-ui);
+  }
+  .phase .label { color: var(--accent-text); }
+  .phase strong { color: var(--text-2); font-weight: 500; }
   .inline {
     align-items: flex-start;
     text-align: left;
