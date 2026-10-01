@@ -109,7 +109,7 @@
       <dl class="facts">
         <div><dt class="label">Início</dt><dd class="num">{fmtDateTime(event.start_utc)}</dd></div>
         <div><dt class="label">Fim</dt>{#if event.end_utc}<dd class="num">{fmtDateTime(event.end_utc)}</dd>{:else}<dd class="plain">em aberto</dd>{/if}</div>
-        <div><dt class="label">Duração</dt><dd class="num">{duration}{#if !event.end_utc}<span class="plain"> · em aberto</span>{/if}</dd></div>
+        <div><dt class="label">Duração</dt><dd class="num">{duration}{#if !event.end_utc}<span class="plain">&nbsp;· em aberto</span>{/if}</dd></div>
         <div><dt class="label">Amostras guardadas</dt><dd class="num">{event.context.pre_sample_count} antes · {event.context.during_sample_count} durante · {event.context.post_sample_count} depois</dd></div>
         {#if event.context.gap_count || event.context.stale_count || event.context.comm_error_count}
           <div><dt class="label">Qualidade na janela</dt><dd class="num">{event.context.gap_count} buracos · {event.context.stale_count} antigos · {event.context.comm_error_count} sem comunicação</dd></div>

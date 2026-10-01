@@ -1,4 +1,8 @@
 <script lang="ts">
+  /** Referência que é caminho de arquivo, id ou código técnico fica só em "Detalhes técnicos". */
+  function isTechnicalRef(ref: string): boolean {
+    return /\.(ya?ml|json|py|md)$|^SRC-|R-[A-Z]+-\d+|^[A-Z_]{4,}$|\//.test(ref.trim())
+  }
   /** Diagnóstico v1.0 nas 7 seções oficiais, na ordem do contrato. A UI consome o JSON como veio.
    *  Em ≥ 1280 px: Resumo em largura total; [Evidências, O que mudou] | [Hipóteses, Próximas verificações];
    *  Fontes e Ressalvas em largura total. A ordem no DOM continua 1…7. */
@@ -253,7 +257,7 @@
                 <span class="kind">{SOURCE_KIND_PT[s.kind] ?? s.kind}</span>
                 {s.title}
               </p>
-              {#if s.reference}<p class="item-sub ref-text">{s.reference}</p>{/if}
+              {#if s.reference && !isTechnicalRef(s.reference)}<p class="item-sub ref-text">{s.reference}</p>{/if}
               <div class="item-meta">
                 <EvidenceBadge level={s.evidence_level} />
               </div>

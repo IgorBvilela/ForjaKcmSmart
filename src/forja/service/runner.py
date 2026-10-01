@@ -23,7 +23,9 @@ from forja.domain import (
     Event,
     EventBus,
     EventRepository,
+    EventStatus,
     EventTransition,
+    Resolution,
     SampleBatch,
 )
 from forja.infra import AsyncBus, SystemClock
@@ -249,7 +251,42 @@ async def start(container: Container) -> None:
     rt.tasks.extend(rt.jobs.start_tasks())
     await container.manager.start_all()
     rt.started = True
+    await _expire_stale_open_events(container)
     logger.info("serviço iniciado com %d equipamento(s)", len(container.store.profiles))
+
+
+async def _expire_stale_open_events(container: Container) -> None:
+    """Eventos deixados em aberto por uma execução anterior nao sao acompanhados por este processo.
+
+    Encerra-os como EXPIRED com nota em portugues. Se a condicao persistir, a regra reabre um evento
+    novo nos primeiros lotes; se nao, o historico fica honesto em vez de 'em aberto para sempre'.
+    """
+    try:
+        abertos = await container.events_repo.list(open_only=True, limit=10_000)
+    except Exception:
+        logger.exception("serviço: não foi possível listar eventos em aberto na partida")
+        return
+    if not abertos:
+        return
+    agora = container.clock.now_utc()
+    for ev in abertos:
+        encerrado = ev.model_copy(
+            update={
+                "end_utc": agora,
+                "status": EventStatus.EXPIRED,
+                "resolution": Resolution(
+                    resolved_at_utc=agora,
+                    resolved_by="sistema",
+                    resolution_class="UNKNOWN",
+                    note_pt=(
+                        "Encerrado automaticamente: o Forja Edge foi reiniciado e deixou de "
+                        "acompanhar esta condição. Se ela persistir, um novo evento será aberto."
+                    ),
+                ),
+            }
+        )
+        await container.events_repo.save(encerrado)
+    logger.info("serviço: %d evento(s) de execução anterior encerrados como EXPIRED", len(abertos))
 
 
 async def stop(container: Container, timeout_s: float = 10) -> None:
