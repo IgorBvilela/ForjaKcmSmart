@@ -1,0 +1,134 @@
+/* Forja KCM Intelligence — tokens de design (rascunho Shuri, 2026-09-30)
+   Escuro é o padrão. Claro entra por [data-theme="light"] e é forçado na impressão.
+   Contrastes WCAG calculados em scratchpad/contraste.py. */
+
+
+:root {
+  /* ---- fundo em camadas (escuro) ---- */
+  --bg-0: #141516;        /* canvas do app */
+  --surf-1: #1F1F1F;      /* Grafite (marca): card, sidebar, header */
+  --surf-2: #26282B;      /* 1 nível dentro do card: input, linha hover, tile interno */
+  --surf-3: #2E3135;      /* popover, dropdown, modal, tooltip */
+  --border-1: #2C2F33;    /* divisória, borda de card (decorativa) */
+  --border-2: #3A3E44;    /* borda em hover, separador forte */
+  --border-input: #6B7078;/* controles de formulário: 3,3:1 sobre surf-1 (WCAG 1.4.11) */
+  --chumbo: #4B4F56;      /* Chumbo (marca): ícone inativo, texto desabilitado, trilho */
+
+  /* ---- texto ---- */
+  --text-1: #ECEDEE;      /* 14,1:1 sobre surf-1 */
+  --text-2: #A6ABB2;      /* 7,1:1 */
+  --text-3: #858B93;      /* 4,8:1 sobre surf-1; sobre surf-2 cai a 4,3 -> usar text-2 */
+  --text-disabled: var(--chumbo);
+
+  /* ---- cobre: onde a Forja aponta ou age. Nunca status. ---- */
+  --accent: #C46A2E;      /* Cobre (marca): preenchimento, barra nav ativa, foco, seleção */
+  --accent-text: #E0904F; /* cobre para texto/ícone pequeno: 6,5:1 (o puro dá 4,3) */
+  --accent-soft: rgba(196,106,46,.14);
+  --on-accent: #141516;   /* texto sobre cobre: 4,7:1 (branco daria 3,85) */
+
+  /* ---- estados de processo ---- */
+  --st-ok: #4FB37F;       --st-ok-bg: rgba(79,179,127,.12);     /* Normal      6,4:1 */
+  --st-warn: #E3AE2F;     --st-warn-bg: rgba(227,174,47,.12);   /* Atenção     8,1:1 */
+  --st-crit: #EC6B62;     --st-crit-bg: rgba(236,107,98,.12);   /* Crítico     5,4:1 */
+  --st-crit-fill: #D9463C;                                      /* só preenchimento não-texto */
+  --st-info: #4FB3D9;     --st-info-bg: rgba(79,179,217,.12);   /* Informação/comunicação 6,9:1 */
+
+  /* ---- qualidade do dado (forma + cor) ---- */
+  --q-good: var(--text-2);          /* ponto discreto, "Validado" */
+  --q-sim: #B79CF2;                 /* lilás RESERVADO a simulado, 7,1:1 */
+  --q-sim-hatch: repeating-linear-gradient(135deg, transparent 0 6px, rgba(183,156,242,.18) 6px 8px);
+  --q-uncertain: var(--st-warn);    /* borda tracejada, "Não validado" */
+  --q-stale: var(--text-3);         /* desbotado + tracejado + contador de idade */
+  --q-comm: var(--st-info);         /* anel oco, "Sem comunicação" */
+  --q-bad: var(--st-crit);          /* contorno + X, valor vira travessão */
+
+  /* ---- séries de gráfico ---- */
+  --s1: #E8E8E8;   /* variável em foco */
+  --s2: #D98A4E;   /* Drive Command (esforço do KCM) */
+  --s3: #7FA6C9;   /* azul-aço */
+  --s4: #9BA8B5;   /* cinza frio */
+  --s-ref: #8B9097;/* setpoint / baseline, tracejado */
+  --chart-grid: var(--border-1);
+  --chart-gap: var(--st-info-bg);
+
+  /* ---- espaçamento (base 4) ---- */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px;
+  --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px; --sp-16: 64px;
+
+  /* ---- raio ---- */
+  --r-1: 4px; --r-2: 6px; --r-3: 8px; --r-4: 12px; --r-pill: 999px;
+
+  /* ---- elevação ---- */
+  --elev-1: none;                                  /* card: só borda 1px */
+  --elev-2: 0 8px 24px rgba(0,0,0,.45);            /* dropdown, popover, tooltip, toast */
+  --elev-3: 0 24px 64px rgba(0,0,0,.60);           /* modal, drawer */
+  --scrim: rgba(10,10,11,.64);
+  --focus: 0 0 0 2px var(--bg-0), 0 0 0 4px var(--accent);
+
+  /* ---- tipografia ---- */
+  --font-ui: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", Consolas, monospace;
+  --fs-num-xl: 32px; --lh-num-xl: 36px;   /* valor KPI desktop, mono 500 tnum */
+  --fs-num-lg: 24px; --lh-num-lg: 28px;   /* valor KPI compacto/celular */
+  --fs-h1: 22px; --lh-h1: 28px;           /* título de página, 600 */
+  --fs-h2: 17px; --lh-h2: 24px;           /* seção, 600 */
+  --fs-h3: 14px; --lh-h3: 20px;           /* título de card, 600 */
+  --fs-body-lg: 16px; --lh-body-lg: 24px; /* texto de diagnóstico */
+  --fs-body: 14px; --lh-body: 20px;
+  --fs-caption: 12px; --lh-caption: 16px;
+  --fs-label: 11px; --lh-label: 16px; --ls-label: .08em; /* caixa alta, 500 */
+  --fs-mono: 13px; --lh-mono: 20px;       /* tabela, código, endereço */
+  --fs-mono-sm: 12px; --lh-mono-sm: 16px;
+
+  /* ---- larguras ---- */
+  --sidebar-w: 264px; --sidebar-w-collapsed: 64px; --drawer-w: 280px;
+  --header-h: 56px; --banner-h: 32px;
+  --content-max: 1600px; --tile-min: 220px; --card-min: 320px;
+  --touch: 44px;
+
+  /* ---- movimento ---- */
+  --dur-micro: 120ms; --dur-base: 200ms; --dur-screen: 280ms; --dur-num: 350ms;
+  --dur-draw: 500ms; --dur-scenario: 600ms; --pulse-cycle: 2.4s; --stagger: 40ms;
+  --ease-out: cubic-bezier(.2,0,0,1); --ease-in: cubic-bezier(.4,0,1,1);
+  --ease-std: cubic-bezier(.4,0,.2,1);
+
+  color-scheme: dark;
+}
+
+/* ---- tema claro: preferência do usuário ---- */
+:root[data-theme="light"] {
+  --bg-0: #F3F3F2; --surf-1: #FFFFFF; --surf-2: #F7F7F6; --surf-3: #FFFFFF;
+  --border-1: #E4E4E3; --border-2: #D9D9D9; /* Cinza Técnico (marca) */ --border-input: #8A8F96;
+  --chumbo: #4B4F56;
+  --text-1: #1F1F1F; --text-2: #4B4F56; /* Chumbo, 8,2:1 */ --text-3: #6B7078; /* 5,0:1 */
+  --accent-text: #9E5220; /* 5,7:1 sobre branco */ --accent-soft: rgba(196,106,46,.12); --on-accent: #141516;
+  --st-ok: #2E7D53; --st-ok-bg: rgba(46,125,83,.10);
+  --st-warn: #8A5B00; --st-warn-bg: rgba(138,91,0,.10);
+  --st-crit: #B8322A; --st-crit-bg: rgba(184,50,42,.10); --st-crit-fill: #B8322A;
+  --st-info: #1F6F8B; --st-info-bg: rgba(31,111,139,.10);
+  --q-sim: #6446B8; --q-sim-hatch: repeating-linear-gradient(135deg, transparent 0 6px, rgba(100,70,184,.16) 6px 8px);
+  --s1: #1F1F1F; --s2: #9E5220; --s3: #3A6A8F; --s4: #6B7078; --s-ref: #8A8F96;
+  --elev-2: 0 8px 24px rgba(31,31,31,.12); --elev-3: 0 24px 64px rgba(31,31,31,.18); --scrim: rgba(31,31,31,.40);
+  color-scheme: light;
+}
+
+/* ---- impressão: sempre claro, sem movimento ---- */
+@media print {
+  :root { --bg-0: #FFFFFF; --surf-1: #FFFFFF; --surf-2: #F7F7F6; --surf-3: #FFFFFF;
+    --border-1: #D9D9D9; --border-2: #4B4F56; --text-1: #1F1F1F; --text-2: #4B4F56; --text-3: #6B7078;
+    --accent-text: #9E5220; --st-ok: #2E7D53; --st-warn: #8A5B00; --st-crit: #B8322A; --st-info: #1F6F8B; --q-sim: #6446B8;
+    --s1: #1F1F1F; --s2: #9E5220; --s3: #3A6A8F; --s4: #6B7078; }
+  * { animation: none !important; transition: none !important; box-shadow: none !important; }
+}
+
+/* ---- reduced motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-micro: 0ms; --dur-base: 80ms; --dur-screen: 80ms; --dur-num: 0ms;
+    --dur-draw: 0ms; --dur-scenario: 0ms; --stagger: 0ms; }
+  .pulse, .belt, .particles, .draw { animation: none !important; }
+}
+
+/* ---- utilitários mínimos ---- */
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.label { font: 500 var(--fs-label)/var(--lh-label) var(--font-ui); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--text-3); }
+:focus-visible { outline: none; box-shadow: var(--focus); }
