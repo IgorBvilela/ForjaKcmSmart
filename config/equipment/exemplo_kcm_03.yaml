@@ -1,0 +1,19 @@
+# PERFIL DE EXEMPLO (demo multi-equipamento). Nao e equipamento confirmado na GTEX.
+schema_version: 1
+id: EXEMPLO_KCM_03
+name: "KCM 03 (exemplo)"
+plant: GTEX
+area: PHA
+line: UNKNOWN
+application: UNKNOWN
+controller:
+  manufacturer: "Coperion K-Tron"
+  model: KCM
+communication:
+  driver: simulator
+  options:
+    scenario: COMMUNICATION_FAILURE
+    seed: 13
+mapping_profile: simulator_wbf
+is_example: true
+notes_pt: "Exemplo da especificação §47/§48 em 'Sem comunicação'. Existência real: UNKNOWN."

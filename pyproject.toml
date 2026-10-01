@@ -1,0 +1,82 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "forja-kcm"
+version = "0.1.0"
+description = "Forja KCM Intelligence: observador read-only de controladores Coperion K-Tron KCM (historian, eventos, diagnostico)."
+readme = "README.md"
+requires-python = ">=3.13,<3.15"
+license = { text = "Proprietary" }
+authors = [{ name = "Forja Logica" }]
+dependencies = [
+  "pymodbus==3.15.0",
+  "fastapi==0.142.2",
+  "uvicorn==0.54.0",
+  "pydantic==2.13.5",
+  "pydantic-settings==2.15.0",
+  "PyYAML==6.0.3",
+  "sse-starlette==3.5.0",
+  "httpx==0.28.1",
+  "pywin32==312; sys_platform == 'win32'",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==9.1.1",
+  "pytest-asyncio==1.4.0",
+  "pytest-cov==7.1.0",
+  "pytest-socket==0.8.1",
+  "hypothesis==6.168.3",
+  "freezegun==1.5.5",
+  "ruff==0.16.9",
+  "mypy==2.3.1",
+  "pyinstaller==6.22.3",
+]
+
+[project.scripts]
+forja = "forja.tools.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+addopts = "-q"
+markers = [
+  "unit: teste unitario puro",
+  "integration: usa SQLite em pasta temporaria ou servidor fake em 127.0.0.1",
+  "contract: contratos estruturais (read-only, fronteiras de import, schema v1.0, OpenAPI)",
+  "readonly: prova de somente leitura",
+  "e2e: Playwright",
+  "slow: acima de 5 s",
+]
+filterwarnings = ["error::DeprecationWarning:forja.*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "S", "T20", "PT", "ARG", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003", "RUF012", "S101", "N818"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "ARG001", "ARG002", "PT011", "T20"]
+"src/forja/tools/**" = ["T20"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["src/forja"]
+warn_unused_ignores = true
+ignore_missing_imports = true
+
+[tool.coverage.run]
+branch = true
+source = ["src/forja"]

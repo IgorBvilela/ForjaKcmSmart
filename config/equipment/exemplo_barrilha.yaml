@@ -1,0 +1,24 @@
+# PERFIL DE EXEMPLO (demo multi-equipamento). Nao e equipamento confirmado na GTEX.
+schema_version: 1
+id: EXEMPLO_BARRILHA
+name: "Barrilha (exemplo)"
+plant: GTEX
+area: PHA
+line: UNKNOWN
+application: WBF
+application_evidence: HYPOTHESIS
+controller:
+  manufacturer: "Coperion K-Tron"
+  model: KCM
+communication:
+  driver: simulator
+  options:
+    scenario: BELTLOAD_LOW
+    seed: 11
+mapping_profile: simulator_wbf
+is_example: true
+reference_values:
+  setpoint_ref: 900
+  belt_load_ref: 1.5
+  rpm_ref: 55
+notes_pt: "Exemplo da especificação §47. Existência real: UNKNOWN."

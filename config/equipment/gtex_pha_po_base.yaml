@@ -1,0 +1,55 @@
+# Perfil do primeiro equipamento alvo. TUDO que depende de campo esta UNKNOWN de proposito.
+# Fonte das observacoes: fotos de campo (FIELD_OBSERVED). Nada aqui veio de inferencia.
+schema_version: 1
+id: GTEX_PHA_PO_BASE
+name: "Dosador Pó Base"
+plant: GTEX
+area: PHA
+line: UNKNOWN
+application: WBF
+application_evidence: FIELD_OBSERVED       # tela do KCM fotografada
+controller:
+  manufacturer: "Coperion K-Tron"
+  model: KCM
+  software_version: UNKNOWN               # 'Ver 2.5' na etiqueta da CPU NAO vale como versao global
+  kgr: UNKNOWN
+  host_file: UNKNOWN
+host_interface:
+  type: "Anybus-S"
+  slot: "J3 HOST"
+  model: UNKNOWN
+  part_number: UNKNOWN
+  mac: UNKNOWN
+  evidence: FIELD_OBSERVED                # modulo e RJ45 ocupado vistos em foto
+communication:
+  driver: simulator                       # ate a validacao em campo, o Po Base roda no simulador
+  protocol: UNKNOWN                       # RJ45 nao confirma protocolo
+  ip: UNKNOWN
+  subnet: UNKNOWN
+  gateway: UNKNOWN
+  port: UNKNOWN
+  unit_id: UNKNOWN
+  poll_interval_s: 1.0
+  timeout_s: 2.0
+  connect_timeout_s: 3.0
+  stale_after_s: 5.0
+  max_block_size: UNKNOWN
+  options:
+    scenario: NORMAL_OPERATION
+    seed: 7
+mapping_profile: simulator_wbf            # trocar para gtex_pha_po_base quando o mapping real for validado
+components:
+  - { type: KCM, evidence: FIELD_OBSERVED }
+  - { type: Anybus, model: "Anybus-S", evidence: FIELD_OBSERVED, note_pt: "Instalado em J3 HOST; cabo verde conectado" }
+  - { type: MDU, evidence: FIELD_OBSERVED, note_pt: "MDU STATUS observado 0046 / 2006 / 2046 (bruto, sem decodificar)" }
+  - { type: SFT, quantity: null, evidence: UNKNOWN }
+  - { type: SIB, evidence: UNKNOWN }
+  - { type: Encoder, evidence: FIELD_OBSERVED, note_pt: "Substituído no atendimento de 09/2026; causa confirmada UNKNOWN" }
+  - { type: Motor, evidence: UNKNOWN }
+is_example: false
+reference_values:
+  # Referencias do cenario simulado / UX (Documento Mestre §6.3). NAO sao limites do KCM.
+  setpoint_ref: 1300
+  belt_load_ref: 2.0
+  rpm_ref: 62
+notes_pt: "Alarme 56 = BELTLOAD LOW observado nesta aplicação (foto). Não é universal."

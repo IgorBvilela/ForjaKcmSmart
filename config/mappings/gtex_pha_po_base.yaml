@@ -1,0 +1,25 @@
+# Mapping REAL do Po Base. Nasce todo UNKNOWN e so sai de UNKNOWN com fonte rastreavel
+# (kgr/Host File documentado, captura autorizada ou teste autorizado) e validacao contra a tela do KCM.
+# Assembly 100/150, register 40001 etc. so podem existir aqui como conteudo, nunca no driver.
+schema_version: 1
+mapping_id: gtex_pha_po_base
+version: 1
+equipment_id: GTEX_PHA_PO_BASE
+driver: UNKNOWN            # modbus_tcp | ethernet_ip, quando o protocolo for confirmado
+source: UNKNOWN
+entries:
+  - { semantic_tag: machine_state }
+  - { semantic_tag: setpoint }
+  - { semantic_tag: mass_flow }
+  - { semantic_tag: drive_command }
+  - { semantic_tag: rpm }
+  - { semantic_tag: belt_load }
+  - { semantic_tag: net_weight }
+  - { semantic_tag: alarm_code }
+  - { semantic_tag: alarm_active }
+  - { semantic_tag: stop_by }
+  - { semantic_tag: sft_status }
+  - { semantic_tag: mdu_status }
+  - { semantic_tag: int_channel_pct }
+  - { semantic_tag: control_mode }
+notes_pt: "FIELD_REQUIRED: protocolo, enderecos, datatypes, byte order e scale dependem do kgr/Host File real da GTEX."

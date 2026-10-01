@@ -1,0 +1,36 @@
+# Configuracao do Forja Edge. Semente de desenvolvimento.
+# Em producao, copiada para %ProgramData%\ForjaKCM\config (fase N).
+schema_version: 1
+edge:
+  name: "Forja Edge (desenvolvimento)"
+  bind_host: 127.0.0.1        # nunca 0.0.0.0 por padrao
+  bind_port: 8765
+  data_dir: var
+  timezone: America/Sao_Paulo
+historian:
+  raw_retention_days: 30
+  raw_simulated_retention_days: 7
+  rollup_1m_retention_days: 180
+  rollup_1h_retention_days: null   # sem limite
+  flush_interval_s: 1.0
+  store_on_change: true
+  forced_sample_every_s: 60
+  max_points_per_query: 2000
+  max_historian_gb: 20
+events:
+  pre_window_s: 60
+  post_window_s: 30
+  buffer_s: 180
+backup:
+  auto: true
+  schedule: "02:00"
+  keep_last: 14
+security:
+  session_ttl_min: 480
+  first_admin_setup: true
+logging:
+  level: INFO
+  rotate_mb: 20
+  keep: 10
+rag:
+  provider: NONE

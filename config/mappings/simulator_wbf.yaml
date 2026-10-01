@@ -1,0 +1,24 @@
+# Mapping identidade do simulador WBF. O simulador tambem passa pelo pipeline de mapping:
+# nao existe caminho especial no codigo. Qualidade de tudo que vem daqui: SIMULATED.
+schema_version: 1
+mapping_id: simulator_wbf
+version: 1
+equipment_id: "*"
+driver: simulator
+source: "Forja: simulador WBF (modelo simplificado Mass Flow ≈ Belt Load × Belt Speed, DM §8.1)"
+entries:
+  - { semantic_tag: machine_state,   protocol_address: "sim:machine_state",   datatype: int16,   endianness: big, scale: { factor: 1, offset: 0 }, source: simulador, evidence: FORJA_RULE }
+  - { semantic_tag: setpoint,        protocol_address: "sim:setpoint",        datatype: float32, endianness: big, scale: { factor: 1, offset: 0 }, source: simulador, evidence: FORJA_RULE }
+  - { semantic_tag: mass_flow,       protocol_address: "sim:mass_flow",       datatype: float32, endianness: big, scale: { factor: 1, offset: 0 }, source: simulador, evidence: FORJA_RULE }
+  - { semantic_tag: drive_command,   protocol_address: "sim:drive_command",   datatype: float32, endianness: big, scale: { factor: 1, offset: 0 }, source: simulador, evidence: FORJA_RULE }
+  - { semantic_tag: rpm,             protocol_address: "sim:rpm",             datatype: float32, endianness: big, scale: { factor: 1, offset: 0 }, source: simulador, evidence: FORJA_RULE }
+  - { semantic_tag: belt_load,       protocol_address: "sim:belt_load",       datatype: float32, endianness: big, scale: { factor: 1, offset: 0 }, source: simulador, evidence: FORJA_RULE }
+  - { semantic_tag: net_weight,      protocol_address: "sim:net_weight",      datatype: float32, endianness: big, scale: { factor: 1, offset: 0 }, source: simulador, evidence: FORJA_RULE }
+  - { semantic_tag: alarm_code,      protocol_address: "sim:alarm_code",      datatype: int16,   endianness: big, scale: { factor: 1, offset: 0 }, source: simulador, evidence: FORJA_RULE }
+  - { semantic_tag: alarm_active,    protocol_address: "sim:alarm_active",    datatype: bool,    endianness: big, scale: { factor: 1, offset: 0 }, source: simulador, evidence: FORJA_RULE }
+  - { semantic_tag: stop_by,         protocol_address: "sim:stop_by",         datatype: int16,   endianness: big, scale: { factor: 1, offset: 0 }, source: simulador, evidence: FORJA_RULE }
+  - { semantic_tag: sft_status,      protocol_address: "sim:sft_status",      datatype: bitfield32, endianness: big, scale: { factor: 1, offset: 0 }, source: simulador, evidence: FORJA_RULE }
+  - { semantic_tag: mdu_status,      protocol_address: "sim:mdu_status",      datatype: bitfield16, endianness: big, scale: { factor: 1, offset: 0 }, source: simulador, evidence: FORJA_RULE }
+  - { semantic_tag: int_channel_pct, protocol_address: "sim:int_channel_pct", datatype: float32, endianness: big, scale: { factor: 1, offset: 0 }, source: simulador, evidence: FORJA_RULE }
+  - { semantic_tag: control_mode,    protocol_address: "sim:control_mode",    datatype: int16,   endianness: big, scale: { factor: 1, offset: 0 }, source: simulador, evidence: FORJA_RULE }
+notes_pt: "Entradas sem endereco real. Nenhum valor daqui representa o KCM da GTEX."
