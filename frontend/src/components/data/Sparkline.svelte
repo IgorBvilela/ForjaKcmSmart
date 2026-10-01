@@ -1,5 +1,6 @@
 <script lang="ts">
-  /** Mini-tendência SVG. Buraco (value null) quebra a linha e ganha marca de GAP; nunca interpola. */
+  /** Mini-tendência SVG. Buraco (value null) quebra a linha e vira faixa de GAP de x(i-1) a x(i+1);
+   *  nunca interpola. A janela coberta ("90 s") aparece em caption no canto direito. */
   import type { SeriesPoint } from '../../lib/live.svelte'
 
   let {
@@ -9,6 +10,7 @@
     refValue = null,
     faded = false,
     label = 'Mini-tendência dos últimos pontos',
+    showWindow = true,
   }: {
     points?: SeriesPoint[]
     height?: number
@@ -16,6 +18,7 @@
     refValue?: number | null
     faded?: boolean
     label?: string
+    showWindow?: boolean
   } = $props()
 
   let width = $state(0)
@@ -42,13 +45,18 @@
     const y = (v: number) => PAD_Y + (h - PAD_Y * 2) * (1 - (v - min) / (max - min))
     let d = ''
     let pen = false
-    const gaps: number[] = []
+    /** Faixas de GAP: do ponto anterior ao seguinte; buracos vizinhos viram uma faixa só. */
+    const bands: Array<{ x1: number; x2: number }> = []
     let lastX = 0
     let lastY = 0
     points.forEach((p, i) => {
       if (p.v == null || !Number.isFinite(p.v)) {
         pen = false
-        gaps.push(x(i))
+        const x1 = x(Math.max(0, i - 1))
+        const x2 = x(Math.min(n - 1, i + 1))
+        const prev = bands[bands.length - 1]
+        if (prev && x1 <= prev.x2) prev.x2 = Math.max(prev.x2, x2)
+        else bands.push({ x1, x2 })
         return
       }
       lastX = x(i)
@@ -60,59 +68,81 @@
       d,
       w,
       h,
-      gaps,
+      bands,
       lastX,
       lastY,
       refY: refValue != null && Number.isFinite(refValue) ? y(refValue) : null,
     }
   })
+
+  /** Janela coberta pelos pontos: "90 s", "4 min", "2 h". */
+  const windowText = $derived.by(() => {
+    if (points.length < 2) return null
+    const span = (points[points.length - 1].t - points[0].t) / 1000
+    if (!Number.isFinite(span) || span <= 0) return null
+    if (span < 120) return `${Math.round(span)} s`
+    if (span < 7200) return `${Math.round(span / 60)} min`
+    return `${Math.round(span / 3600)} h`
+  })
 </script>
 
-<div class="spark-wrap" bind:clientWidth={width} style:height={`${height}px`}>
-  {#if geo}
-    <svg
-      class="spark"
-      class:faded
-      viewBox={`0 0 ${geo.w} ${geo.h}`}
-      width={geo.w}
-      height={geo.h}
-      role="img"
-      aria-label={label}
-    >
-      {#each geo.gaps as gx (gx)}
-        <rect x={gx - 1} y="0" width="2" height={geo.h} fill="var(--chart-gap)" />
-      {/each}
-      {#if geo.refY != null}
-        <line
-          x1="0"
-          x2={geo.w}
-          y1={geo.refY}
-          y2={geo.refY}
-          stroke="var(--s-ref)"
-          stroke-width="1"
-          stroke-dasharray="3 4"
+<div class="spark-root">
+  <div class="spark-wrap" bind:clientWidth={width} style:height={`${height}px`}>
+    {#if geo}
+      <svg
+        class="spark"
+        class:faded
+        viewBox={`0 0 ${geo.w} ${geo.h}`}
+        width={geo.w}
+        height={geo.h}
+        role="img"
+        aria-label={label}
+      >
+        {#each geo.bands as b, i (i)}
+          <rect class="gap" x={b.x1.toFixed(1)} y="0" width={Math.max(2, b.x2 - b.x1).toFixed(1)} height={geo.h} />
+        {/each}
+        {#if geo.refY != null}
+          <line
+            x1="0"
+            x2={geo.w}
+            y1={geo.refY}
+            y2={geo.refY}
+            stroke="var(--s-ref)"
+            stroke-width="1"
+            stroke-dasharray="3 4"
+            vector-effect="non-scaling-stroke"
+          />
+        {/if}
+        <path
+          class="line draw"
+          d={geo.d}
+          fill="none"
+          stroke={color}
+          stroke-width="1.5"
+          stroke-linejoin="round"
+          stroke-linecap="round"
+          pathLength="1"
           vector-effect="non-scaling-stroke"
         />
-      {/if}
-      <path
-        class="line draw"
-        d={geo.d}
-        fill="none"
-        stroke={color}
-        stroke-width="1.5"
-        stroke-linejoin="round"
-        stroke-linecap="round"
-        pathLength="1"
-        vector-effect="non-scaling-stroke"
-      />
-      <circle cx={geo.lastX} cy={geo.lastY} r="2" fill={color} />
-    </svg>
-  {:else}
-    <div class="spark-empty" aria-hidden="true"></div>
+        <circle cx={geo.lastX} cy={geo.lastY} r="2" fill={color} />
+      </svg>
+    {:else}
+      <div class="spark-empty" aria-hidden="true"></div>
+    {/if}
+  </div>
+  {#if showWindow && geo && windowText}
+    <span class="spark-window">{windowText}</span>
   {/if}
 </div>
 
 <style>
+  .spark-root {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    min-width: 0;
+  }
   .spark-wrap {
     width: 100%;
     min-width: 0;
@@ -125,6 +155,7 @@
     transition: opacity var(--dur-base) var(--ease-std);
   }
   .spark.faded { opacity: 0.35; filter: saturate(0); }
+  .gap { fill: color-mix(in srgb, var(--st-info) 24%, transparent); }
   .line {
     stroke-dasharray: 1;
     stroke-dashoffset: 0;
@@ -145,5 +176,12 @@
     background-size: 100% 1px;
     background-position: center;
     background-repeat: no-repeat;
+  }
+  .spark-window {
+    align-self: flex-end;
+    color: var(--text-3);
+    font: 500 var(--fs-label) / var(--lh-label) var(--font-ui);
+    letter-spacing: var(--ls-label);
+    font-variant-numeric: tabular-nums;
   }
 </style>

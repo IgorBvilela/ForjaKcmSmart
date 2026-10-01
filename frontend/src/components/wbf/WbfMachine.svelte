@@ -5,6 +5,9 @@
   import { onMount, untrack } from 'svelte'
   import {
     BELT,
+    BELT_HALF,
+    BELT_INNER_PATH,
+    BELT_OUTER_PATH,
     BELT_PATH,
     CHUTE,
     ENCODER,
@@ -40,6 +43,7 @@
     beltLoadRef = null,
     scenario = undefined,
     reducedMotion = false,
+    frameless = false,
   }: {
     rpm?: number | null
     beltLoad?: number | null
@@ -52,6 +56,8 @@
     beltLoadRef?: number | null
     scenario?: string
     reducedMotion?: boolean
+    /** true: sem moldura própria (borda, fundo, padding) para encaixar dentro de um Card. */
+    frameless?: boolean
   } = $props()
 
   // ---- referências observadas (só usadas quando a prop *Ref vem nula) ------------------------
@@ -189,19 +195,22 @@
 
   /** Rótulos numerados: em container estreito viram marcadores ①…⑦ + legenda embaixo. */
   interface Callout { n: number; x: number; band: 'top' | 'bottom'; text: string; short?: string; warn?: boolean }
+  // Só nomes de peça: valor vivo em rótulo muda de largura e faz a página pular (Mística F7).
+  // rpm e esforço estão na legenda de estado (figcaption) e nos tiles da página.
   const callouts = $derived<Callout[]>([
     { n: 1, x: 200, band: 'top', text: 'Silo' },
     { n: 2, x: 300, band: 'top', text: 'Entrada' },
-    { n: 3, x: 460, band: 'top', text: `Correia · ${rpmText} rpm` },
+    { n: 3, x: 460, band: 'top', text: 'Correia' },
     { n: 4, x: ENCODER.cx, band: 'bottom', text: 'Encoder', warn: noSignal },
     { n: 5, x: SFT.cx, band: 'bottom', text: 'Célula de pesagem · SFT', short: 'Célula · SFT' },
-    { n: 6, x: MOTOR.arcCx, band: 'bottom', text: `Motor · ${driveText} %`, warn: driveHigh },
+    { n: 6, x: MOTOR.arcCx, band: 'bottom', text: 'Motor', warn: driveHigh },
     { n: 7, x: 583, band: 'bottom', text: 'Saída' },
   ])
 </script>
 
 <figure
   class="wbf"
+  class:frameless
   data-testid="wbf-root"
   data-state={vstate}
   data-speed={rpm ?? ''}
@@ -214,6 +223,7 @@
   aria-label={ariaLabel}
 >
   <div class="scene" class:unknown={vstate === 'unknown'}>
+   <div class="drawing">
     <div class="band" aria-hidden="true">
       {#each callouts.filter((c) => c.band === 'top') as c (c.n)}
         <span class="lbl {align(c.x)}" class:warn={c.warn} style:left={pct(c.x)}>
@@ -229,7 +239,7 @@
         <g class="guide">
           <line x1="200" y1={SILO.top} x2="200" y2="0" />
           <polyline points="{CHUTE.xOutRight},148 300,148 300,0" />
-          <line x1="460" y1={BELT.yTop - 3} x2="460" y2="0" />
+          <line x1="460" y1={BELT.yTop - BELT_HALF - 1} x2="460" y2="0" />
           <line x1={ENCODER.cx} y1={BELT.yBottom + 4} x2={ENCODER.cx} y2={VIEW_H} />
           <line x1={SFT.cx} y1="229" x2={SFT.cx} y2={VIEW_H} />
           <line x1={MOTOR.arcCx} y1={MOTOR.y + MOTOR.h} x2={MOTOR.arcCx} y2={VIEW_H} />
@@ -246,7 +256,7 @@
         <!-- silo -->
         <g data-part="silo">
           <polygon
-            class="metal"
+            class="shell"
             points="{SILO.xTopLeft},{SILO.top} {SILO.xTopRight},{SILO.top} {SILO.xBottomRight},{SILO.bottom} {SILO.xBottomLeft},{SILO.bottom}"
           />
           <polygon
@@ -259,40 +269,43 @@
         <!-- entrada (calha) -->
         <g data-part="entrada">
           <polygon
-            class="metal"
+            class="shell"
             points="{CHUTE.xLeft},{CHUTE.top} {CHUTE.xRight},{CHUTE.top} {CHUTE.xOutRight},{CHUTE.bottom} {CHUTE.xOutLeft},{CHUTE.bottom}"
           />
           <line class="hl" x1={CHUTE.xLeft + 2} y1={CHUTE.top + 2} x2={CHUTE.xRight - 2} y2={CHUTE.top + 2} />
         </g>
 
-        <!-- correia: corpo (as marcas em movimento ficam na outra camada) -->
-        <path class="belt-body" class:inferred data-part="correia" d={BELT_PATH} />
+        <!-- correia: as duas bordas da banda (as marcas em movimento ficam na outra camada) -->
+        <g class="belt-body" class:inferred data-part="correia">
+          <path d={BELT_OUTER_PATH} />
+          <path d={BELT_INNER_PATH} />
+        </g>
 
         <!-- célula de pesagem (SFT): ponte de pesagem sob o trecho superior -->
         <g data-part="celula-sft" class="sft">
-          <rect class="metal" x={SFT.x} y={SFT.y} width={SFT.w} height="4" />
-          <rect class="metal" x={SFT.cx - 18} y={SFT.y + 4} width="10" height="12" />
-          <rect class="metal" x={SFT.cx + 8} y={SFT.y + 4} width="10" height="12" />
+          <rect class="shell" x={SFT.x} y={SFT.y} width={SFT.w} height="4" />
+          <rect class="shell" x={SFT.cx - 18} y={SFT.y + 4} width="10" height="12" />
+          <rect class="shell" x={SFT.cx + 8} y={SFT.y + 4} width="10" height="12" />
           <line x1={SFT.cx} y1={SFT.y + 16} x2={SFT.cx} y2={SFT.y + 21} />
           <polygon class="arrow" points="{SFT.cx - 4},{SFT.y + 20} {SFT.cx + 4},{SFT.y + 20} {SFT.cx},{SFT.y + 25}" />
         </g>
 
         <!-- encoder: cabeça do sensor (o disco dentado gira com o rolete, na outra camada) -->
         <g data-part="encoder" class="encoder" class:nosignal={noSignal}>
-          <rect class="metal" x={ENCODER.headX} y={ENCODER.headY} width={ENCODER.headW} height={ENCODER.headH} />
+          <rect class="shell" x={ENCODER.headX} y={ENCODER.headY} width={ENCODER.headW} height={ENCODER.headH} />
           <line x1={ENCODER.cx} y1={ENCODER.headY + ENCODER.headH} x2={ENCODER.cx} y2={BELT.yTop - 2} />
         </g>
 
         <!-- motor + redutor + arco de esforço -->
         <g data-part="motor" class="motor" class:high={driveHigh}>
-          <rect class="metal body" x={MOTOR.x} y={MOTOR.y} width={MOTOR.w} height={MOTOR.h} rx="2" />
+          <rect class="shell body" x={MOTOR.x} y={MOTOR.y} width={MOTOR.w} height={MOTOR.h} rx="2" />
           <line class="hl" x1={MOTOR.x + 2} y1={MOTOR.y + 2} x2={MOTOR.x + MOTOR.w - 2} y2={MOTOR.y + 2} />
           <g class="fins">
             <line x1="488" y1="254" x2="488" y2="282" />
             <line x1="492" y1="254" x2="492" y2="282" />
             <line x1="496" y1="254" x2="496" y2="282" />
           </g>
-          <rect class="metal" x={MOTOR.gearX} y={MOTOR.gearY} width={MOTOR.gearW} height={MOTOR.gearH} />
+          <rect class="shell" x={MOTOR.gearX} y={MOTOR.gearY} width={MOTOR.gearW} height={MOTOR.gearH} />
           <line class="link" x1={MOTOR.gearX + MOTOR.gearW} y1={MOTOR.gearY + 6} x2={BELT.x2 - 8} y2={BELT.yBottom - 2} />
           <circle class="arc-track" cx={MOTOR.arcCx} cy={MOTOR.arcCy} r={MOTOR.arcR} />
           <circle
@@ -367,10 +380,12 @@
       {/each}
     </div>
 
-    <!-- Legenda numerada: só aparece quando o container é estreito (celular). -->
+   </div>
+
+    <!-- Legenda numerada: só em container estreito. Só nomes: altura fixa, a página não pula. -->
     <ol class="legend">
       {#each callouts as c (c.n)}
-        <li class:warn={c.warn}><span class="idx">{c.n}</span>{c.text}</li>
+        <li class:warn={c.warn}><span class="idx">{c.n}</span>{c.short ?? c.text}</li>
       {/each}
     </ol>
   </div>
@@ -397,6 +412,18 @@
     display: grid;
     gap: var(--sp-2);
   }
+  /* Dentro de um Card do dashboard: o Card já é a moldura. */
+  .wbf.frameless {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+  }
+  .wbf.frameless .caption {
+    margin: 0;
+    border-top: 0;
+    border-radius: var(--r-2);
+  }
   .scene {
     display: grid;
     gap: 0;
@@ -406,10 +433,19 @@
     filter: saturate(0.2);
     opacity: 0.8;
   }
+  /* Desenho (faixas + palco): largura limitada para o palco nunca passar de 40vh.
+     Limitar pela LARGURA mantém os rótulos em HTML alinhados às linhas-guia do SVG. */
+  .drawing {
+    --bands-h: calc(2 * (var(--lh-label) + var(--sp-1)));
+    width: min(100%, calc((40vh - var(--bands-h)) * 640 / 300));
+    margin-inline: auto;
+    display: grid;
+  }
   .stage {
     position: relative;
     aspect-ratio: 640 / 300;
     width: 100%;
+    max-height: 40vh;
   }
   .layer {
     position: absolute;
@@ -423,23 +459,10 @@
     will-change: transform;
   }
 
-  /* ---- traços técnicos ---- */
-  .metal {
-    fill: var(--surf-2);
-    stroke: var(--text-2);
-    stroke-width: 1.5;
-    vector-effect: non-scaling-stroke;
-    stroke-linejoin: round;
-  }
-  .hl {
-    stroke: var(--border-2);
-    stroke-width: 1;
-    vector-effect: non-scaling-stroke;
-  }
-  .material {
-    fill: var(--chumbo);
-    opacity: 0.45;
-  }
+  /* ---- traços técnicos: três níveis (Shuri) ----
+     1. estrutura e guias: --border-2, 1 px
+     2. carcaças (silo, calha, SFT, motor, saída): --text-3, 1,25 px, fill --surf-2
+     3. o que se move (correia, marcas, roletes, material): --text-1/--text-2, 1,5 a 2 px */
   .guide line,
   .guide polyline {
     fill: none;
@@ -448,27 +471,45 @@
     vector-effect: non-scaling-stroke;
     stroke-dasharray: 3 3;
   }
-  .frame line {
+  .frame line,
+  .hl {
     stroke: var(--border-2);
-    stroke-width: 1.5;
+    stroke-width: 1;
     vector-effect: non-scaling-stroke;
+  }
+  .shell {
+    fill: var(--surf-2);
+    stroke: var(--text-3);
+    stroke-width: 1.25;
+    vector-effect: non-scaling-stroke;
+    stroke-linejoin: round;
   }
   .sft line,
   .encoder line,
   .outlet line,
-  .motor .fins line {
-    stroke: var(--text-2);
-    stroke-width: 1.5;
+  .motor .fins line,
+  .motor .link {
+    fill: none;
+    stroke: var(--text-3);
+    stroke-width: 1.25;
     vector-effect: non-scaling-stroke;
-  }
-  .sft .arrow {
-    fill: var(--text-2);
   }
   .motor .link {
+    stroke-dasharray: 2 2;
+  }
+  .sft .arrow {
+    fill: var(--text-3);
+  }
+  .material {
+    fill: var(--text-3);
+    opacity: 0.35;
+  }
+  .metal {
+    fill: var(--surf-3);
     stroke: var(--text-2);
     stroke-width: 1.5;
-    stroke-dasharray: 2 2;
     vector-effect: non-scaling-stroke;
+    stroke-linejoin: round;
   }
   .motor.high .body {
     stroke: var(--st-warn);
@@ -490,24 +531,24 @@
     stroke: var(--st-warn);
   }
 
-  /* ---- correia ---- */
-  .belt-body {
+  /* ---- correia: duas bordas da banda + marcas transversais entre elas ---- */
+  .belt-body path {
     fill: none;
-    stroke: var(--chumbo);
-    stroke-width: 6;
+    stroke: var(--text-2);
+    stroke-width: 1.5;
+    vector-effect: non-scaling-stroke;
     transition: stroke var(--dur-scenario) var(--ease-std);
   }
-  .belt-body.inferred {
+  .belt-body.inferred path {
     stroke: var(--st-warn);
     stroke-dasharray: 10 6;
-    opacity: 0.75;
   }
   .belt-marks {
     fill: none;
     stroke: var(--text-2);
     stroke-width: 6;
     stroke-dasharray: 2 22;
-    opacity: 0.8;
+    opacity: 0.85;
   }
   .belt-marks.inferred {
     stroke: var(--text-3);
@@ -518,14 +559,11 @@
     transform-box: fill-box;
     transform-origin: center;
   }
-  .roller .metal {
-    fill: var(--surf-3);
-  }
   .hub {
     fill: var(--text-2);
   }
   .spoke {
-    stroke: var(--text-3);
+    stroke: var(--text-2);
     stroke-width: 1.5;
     vector-effect: non-scaling-stroke;
   }
@@ -541,7 +579,7 @@
     stroke: var(--st-warn);
     stroke-dasharray: 1 4.236;
   }
-  .encoder.nosignal .metal {
+  .encoder.nosignal .shell {
     stroke: var(--st-warn);
     stroke-dasharray: 3 2;
   }
@@ -552,7 +590,7 @@
 
   /* ---- partículas: nunca coloridas ---- */
   .particle {
-    fill: var(--text-2);
+    fill: var(--text-1);
     transition: opacity var(--dur-scenario) var(--ease-std);
   }
 
@@ -595,7 +633,7 @@
   }
   .legend {
     display: none;
-    flex-wrap: wrap;
+    grid-template-columns: 1fr 1fr;
     gap: var(--sp-1) var(--sp-3);
     margin: 0;
     padding: var(--sp-2) 0 0;
@@ -617,8 +655,8 @@
   .legend .idx {
     display: inline-grid;
   }
-  /* médio: nome curto da célula para não encostar no motor */
-  @container (max-width: 720px) {
+  /* 440–600 px de container: nome curto da célula para não encostar no motor */
+  @container (max-width: 600px) {
     .lbl .long {
       display: none;
     }
@@ -626,8 +664,14 @@
       display: inline;
     }
   }
-  /* estreito: marcadores numerados nas âncoras + legenda embaixo */
-  @container (max-width: 560px) {
+  /* < 440 px (celular): marcadores numerados nas âncoras + legenda em 2 colunas (altura fixa).
+     Em 454 px os rótulos curtos inline cabem (menor vão 10 px, medido no Edge).
+     O desenho encolhe para figura + legenda caberem em 40vh (4 linhas × --lh-label + vãos). */
+  @container (max-width: 439px) {
+    .drawing {
+      --legend-h: calc(4 * var(--lh-label) + 3 * var(--sp-1) + var(--sp-2));
+      width: min(100%, calc((40vh - var(--bands-h) - var(--legend-h)) * 640 / 300));
+    }
     .lbl .txt {
       display: none;
     }
@@ -640,7 +684,7 @@
       transform: translateX(-50%);
     }
     .legend {
-      display: flex;
+      display: grid;
     }
   }
 

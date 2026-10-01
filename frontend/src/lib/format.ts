@@ -28,10 +28,11 @@ export function fmtNumber(
   return numberFormat(d, opts.signed ?? false).format(value)
 }
 
-/** Idade relativa curta: "há 12 s", "há 3 min", "há 2 h", "há 3 d". */
+/** Idade relativa curta: "agora" (< 2 s), "há 12 s", "há 3 min", "há 2 h", "há 3 d". */
 export function fmtAge(seconds: number | null | undefined): string {
   if (seconds == null || !Number.isFinite(seconds)) return 'sem leitura'
   const s = Math.max(0, Math.round(seconds))
+  if (s < 2) return 'agora'
   if (s < 60) return `há ${s} s`
   const m = Math.floor(s / 60)
   if (m < 60) return `há ${m} min`
@@ -127,13 +128,15 @@ export interface DeltaLike {
   unit?: string
 }
 
-/** Variação em português: "↓ 47,4 %", "↑ 35 pontos", "↑ 54 rpm", "sem variação". */
+/** Variação em português: "↓ 47,4 %", "↑ 35 pontos", "↑ 54 rpm"; sem variação vira "—". */
 export function fmtDelta(item: DeltaLike): string {
   if (item.delta == null || !Number.isFinite(item.delta) || item.delta_kind === 'none') {
-    return 'sem variação'
+    return '—'
   }
-  const arrow = item.delta > 0 ? '↑' : item.delta < 0 ? '↓' : '→'
   const abs = Math.abs(item.delta)
+  // zero, ou tão perto de zero que o texto mostraria "0,0": não há variação a anunciar
+  if (abs < (item.delta_kind === 'pct' || item.delta_kind === 'points' ? 0.05 : 0.005)) return '—'
+  const arrow = item.delta > 0 ? '↑' : '↓'
   switch (item.delta_kind) {
     case 'pct':
       return `${arrow} ${fmtNumber(abs, 1)} %`

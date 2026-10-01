@@ -80,10 +80,6 @@
     font-size: var(--fs-caption);
     line-height: var(--lh-caption);
   }
-  @media (max-width: 767px), (pointer: coarse) {
-    .btn { min-height: var(--touch); }
-    .btn[data-size='sm'] { min-height: 40px; }
-  }
   .btn[data-variant='primary'] {
     background: var(--accent);
     color: var(--on-accent);
@@ -116,5 +112,15 @@
     border-color: var(--border-1);
     background: transparent;
     filter: none;
+  }
+  /* toque e celular: tudo com 44 px; o link ganha área por padding e devolve o espaço com margem negativa */
+  @media (max-width: 767px), (pointer: coarse) {
+    .btn { min-height: var(--touch); }
+    .btn[data-size='sm'] { min-height: var(--touch); }
+    .btn[data-variant='link'] {
+      min-height: var(--touch);
+      padding: 12px var(--sp-2);
+      margin: -12px calc(-1 * var(--sp-2));
+    }
   }
 </style>

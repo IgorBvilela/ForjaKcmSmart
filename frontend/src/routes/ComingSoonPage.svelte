@@ -38,4 +38,7 @@
     font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui);
     color: var(--text-1);
   }
+  @media (min-width: 1024px) {
+    .soon-title { font-size: var(--fs-display); line-height: var(--lh-display); }
+  }
 </style>

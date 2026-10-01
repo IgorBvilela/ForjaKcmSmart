@@ -330,13 +330,23 @@ class LiveStore {
     }
   }
 
-  /** Semeia a mini-tendência com pontos do histórico (mantém os mais novos já recebidos). */
+  /** Semeia a mini-tendência com pontos do histórico (mantém os mais novos já recebidos).
+   *
+   *  O `/history` devolve bucket sem linha como GAP (`value: null`, COMM_ERROR). No rabo da janela
+   *  isso costuma ser só atraso de gravação do historiador (amostras ainda em memória quando a
+   *  página pediu o histórico), não falta de comunicação. O presente vem do stream: por isso os
+   *  nulos do rabo e os nulos já cobertos por pontos ao vivo são descartados. Nenhum valor é
+   *  inventado: um GAP real no meio da janela continua GAP. */
   seedSeries(equipmentId: string, tag: string, points: SeriesPoint[]): void {
     const byTag = (this.series[equipmentId] ??= {})
     const existing = byTag[tag] ?? []
-    const seeded = points.filter((p) => Number.isFinite(p.t))
-    const newest = seeded.length ? seeded[seeded.length - 1].t : -Infinity
-    const merged = [...seeded, ...existing.filter((p) => p.t > newest)]
+    const liveStart = existing.length ? existing[0].t : Infinity
+    const seeded = points.filter((p) => Number.isFinite(p.t) && !(p.v == null && p.t >= liveStart))
+    let end = seeded.length
+    while (end > 0 && seeded[end - 1].v == null) end -= 1
+    const trimmed = seeded.slice(0, end)
+    const newest = trimmed.length ? trimmed[trimmed.length - 1].t : -Infinity
+    const merged = [...trimmed, ...existing.filter((p) => p.t > newest)]
     byTag[tag] = merged.slice(-SERIES_MAX)
   }
 

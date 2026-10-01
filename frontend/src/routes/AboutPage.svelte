@@ -109,6 +109,9 @@
     font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui);
     color: var(--text-1);
   }
+  @media (min-width: 1024px) {
+    .about-title { font-size: var(--fs-display); line-height: var(--lh-display); }
+  }
   .phrase {
     margin: 0;
     max-width: 60ch;
@@ -154,11 +157,17 @@
   .lic-name { color: var(--text-1); font: 500 var(--fs-body) / var(--lh-body) var(--font-ui); }
   .lic-use { color: var(--text-3); font: var(--fs-caption) / var(--lh-caption) var(--font-ui); }
   .lic-link {
+    display: inline-flex;
+    align-items: center;
+    align-self: stretch;
+    justify-content: center;
+    min-width: var(--touch);
+    min-height: var(--touch);
     color: var(--accent-text);
     text-decoration: none;
     font: 500 var(--fs-caption) / var(--lh-caption) var(--font-mono);
     border-radius: var(--r-1);
-    padding: var(--sp-1) var(--sp-2);
+    padding: 0 var(--sp-2);
   }
   .lic-link:hover { text-decoration: underline; }
   @media (max-width: 479px) {

@@ -1,5 +1,9 @@
 <script lang="ts">
-  /** Dashboard do equipamento: condição, dosador animado, 6 indicadores, eventos e diagnóstico aberto. */
+  /** Dashboard do equipamento em 12 colunas (≥ 1280 px):
+   *  linha 1 — "O que o sistema está vendo" em largura total, compacto;
+   *  linha 2 — os 6 indicadores numa linha (variante compacta);
+   *  linha 3 — dosador animado (5/12) ao lado de eventos + diagnóstico (7/12).
+   *  Abaixo de 1280 px tudo empilha: sistema, indicadores, dosador, eventos, diagnóstico. */
   import { untrack } from 'svelte'
   import ArrowRight from '@lucide/svelte/icons/arrow-right'
   import Eye from '@lucide/svelte/icons/eye'
@@ -17,7 +21,7 @@
     type Quality,
     type StateTone,
   } from '../lib/api'
-  import { ageSince, fmtAge, fmtNumber, fmtTime, fmtWhen } from '../lib/format'
+  import { ageSince, fmtDuration, fmtNumber, fmtTime, fmtWhen } from '../lib/format'
   import { live } from '../lib/live.svelte'
   import { href } from '../lib/router'
   import { app } from '../lib/state.svelte'
@@ -26,6 +30,7 @@
   import KpiTile from '../components/data/KpiTile.svelte'
   import Timeline from '../components/data/Timeline.svelte'
   import WhatChanged from '../components/data/WhatChanged.svelte'
+  import ReadOnlyBadge from '../components/shell/ReadOnlyBadge.svelte'
   import Badge from '../components/ui/Badge.svelte'
   import Button from '../components/ui/Button.svelte'
   import Card from '../components/ui/Card.svelte'
@@ -65,6 +70,8 @@
   const connectionPt = $derived(eq?.connection_pt ?? card?.connection_pt ?? 'Sem informação')
   const statePt = $derived(card?.state_pt ?? null)
   const stateT: StateTone = $derived(stateTone(statePt))
+  /** ≥ 1280 px: 6 indicadores numa linha, na variante compacta. */
+  const compactTiles = $derived(app.isDesktop)
 
   function tagOf(tag: string) {
     return eq?.tags[tag]
@@ -109,6 +116,7 @@
   })
   const openDiagnosis = $derived(openAnomaly && diagnosisFor === openAnomaly.id ? diagnosis : null)
 
+  /** Chip = estado do equipamento, sempre. Quem indica diagnóstico é o link "Abrir diagnóstico". */
   const condition = $derived.by(() => {
     const mf = tagOf('mass_flow')
     const sp = tagOf('setpoint')
@@ -131,11 +139,7 @@
         const text = ev
           ? `${ev.title_pt}. ${ev.summary_pt}`
           : `${card?.active_anomaly_pt ?? 'Condição fora do padrão'}. Detalhes na lista de eventos.`
-        return {
-          chip: openDiagnosis ? 'DIAGNÓSTICO DISPONÍVEL' : statePt.toUpperCase(),
-          tone: stateT,
-          text,
-        }
+        return { chip: statePt.toUpperCase(), tone: stateT, text }
       }
       case 'Parado':
         return {
@@ -164,14 +168,17 @@
     }
   })
 
+  /** Desvio da vazão em relação ao setpoint: texto completo e versão curta para o tile compacto. */
   const flowCaption = $derived.by(() => {
     const mf = tagOf('mass_flow')
     const sp = tagOf('setpoint')
     if (!mf || !sp || !isUsable(mf.quality) || !isUsable(sp.quality)) return null
     if (mf.value == null || sp.value == null || sp.value === 0) return null
     const pct = ((mf.value - sp.value) / sp.value) * 100
-    if (Math.abs(pct) < 0.05) return 'no setpoint'
-    return `${fmtNumber(Math.abs(pct), 1)} % ${pct < 0 ? 'abaixo' : 'acima'} do setpoint`
+    if (Math.abs(pct) < 0.05) return { full: 'no setpoint', short: '= setpoint' }
+    const dir = pct < 0 ? 'abaixo' : 'acima'
+    // curta (tile de ~170 px útil): seta + percentual, no mesmo vocabulário das variações do diagnóstico
+    return { full: `${fmtNumber(Math.abs(pct), 1)} % ${dir} do setpoint`, short: `${pct < 0 ? '↓' : '↑'} ${fmtNumber(Math.abs(pct), 1)} %` }
   })
 
   const setpointRef = $derived.by(() => {
@@ -179,16 +186,18 @@
     return sp && isUsable(sp.quality) ? sp.value : null
   })
 
+  /** Linha do tempo do dashboard: só título, hora e duração/encerramento. O resumo fica na página Eventos. */
   const timelineItems: TimelineItem[] = $derived(
     events.slice(0, 8).map((e) => ({
       id: e.id,
       ts_utc: e.start_utc,
       title: e.title_pt,
-      text: e.summary_pt,
       tone: severityTone(e.severity),
       href: href.event(equipmentId, e.id),
       muted: !e.is_open,
-      meta: e.end_utc ? `Encerrado às ${fmtTime(e.end_utc)}` : null,
+      meta: e.end_utc
+        ? `Encerrado às ${fmtTime(e.end_utc)} · durou ${fmtDuration(e.duration_s)}`
+        : `em aberto · ${fmtDuration(ageSince(e.start_utc, app.now))}`,
     })),
   )
 
@@ -285,6 +294,7 @@
 <section class="dash" data-equipment={equipmentId} data-state={statePt ?? ''}>
   <header class="dash-head">
     <div class="dash-title">
+      {#if card?.display_path}<p class="dash-crumb">{card.display_path}</p>{/if}
       <h1>{name}</h1>
       <div class="dash-meta">
         <span>{applicationText}</span>
@@ -295,12 +305,15 @@
           <StatusDot state={connectionTone(connection)} hollow={connection !== 'CONNECTED'} size={8} />
           {connectionPt}
         </span>
+        {#if !app.isMobile}
+          <!-- no celular o selo já está na faixa de fonte de dados, logo acima -->
+          <ReadOnlyBadge size="sm" compact align="start" testid="dashboard-readonly-badge" />
+        {/if}
         {#if isExample}
           <Badge tone="ghost" title="Perfil de exemplo: existência real não confirmada">exemplo</Badge>
         {/if}
         {#if simulated}<Badge tone="sim" hatch>Simulado</Badge>{/if}
       </div>
-      {#if card?.display_path}<p class="dash-path">{card.display_path}</p>{/if}
     </div>
     <div class="dash-actions">
       <Button href={href.eq(equipmentId, 'events')} variant="ghost" size="sm">Eventos</Button>
@@ -313,31 +326,8 @@
   {#if detailError && !card && !eq}
     <EmptyState title="Equipamento indisponível" text={detailError} />
   {:else}
-    <div class="dash-grid">
-      <!-- Dosador animado -->
-      <Card class="area-machine machine-card" padded={false} testid="dashboard-machine">
-        <div class="machine-head">
-          <span class="label">Dosador de correia · corte lateral</span>
-          <span class="machine-note">Desenho reage a velocidade e material na correia</span>
-        </div>
-        <div class="machine-body">
-          <WbfMachine
-            rpm={numOf('rpm')}
-            beltLoad={numOf('belt_load')}
-            driveCommand={numOf('drive_command')}
-            massFlow={numOf('mass_flow')}
-            {machineState}
-            quality={machineQuality}
-            connection={connection ?? 'DISCONNECTED'}
-            rpmRef={refs.rpm_ref ?? null}
-            beltLoadRef={refs.belt_load_ref ?? null}
-            {scenario}
-            reducedMotion={app.reducedMotion}
-          />
-        </div>
-      </Card>
-
-      <!-- O que o sistema está vendo -->
+    <div class="dash-grid" data-layout={compactTiles ? 'desktop' : 'stacked'}>
+      <!-- Linha 1: o que o sistema está vendo -->
       <Card class="area-system system-card" testid={TID.systemView.root}>
         <header class="sys-head">
           <span class="sys-icon" aria-hidden="true"><Eye size={18} strokeWidth={1.75} /></span>
@@ -355,8 +345,8 @@
         {/if}
       </Card>
 
-      <!-- 6 indicadores -->
-      <div class="area-tiles tiles" data-testid={TID.kpi.grid}>
+      <!-- Linha 2: 6 indicadores -->
+      <div class="area-tiles tiles" data-testid={TID.kpi.grid} data-variant={compactTiles ? 'compact' : 'full'}>
         {#each TILES as spec, i (spec.tag)}
           {@const t = tagOf(spec.tag)}
           <KpiTile
@@ -372,69 +362,98 @@
             explanation={t?.explanation_pt ?? ''}
             points={live.seriesFor(equipmentId, spec.tag)}
             refValue={spec.tag === 'mass_flow' ? setpointRef : null}
-            caption={spec.tag === 'mass_flow' ? flowCaption : null}
+            caption={spec.tag === 'mass_flow' ? (compactTiles ? flowCaption?.short : flowCaption?.full) ?? null : null}
+            captionTitle={spec.tag === 'mass_flow' && compactTiles ? flowCaption?.full ?? null : null}
             color={spec.color}
             index={i}
             animate={!app.reducedMotion}
+            compact={compactTiles}
+            explainQuality
+            popoverAlign={i >= 3 ? 'end' : 'start'}
           />
         {/each}
       </div>
 
-      <!-- Linha do tempo -->
-      <Card class="area-timeline" title="Sequência de eventos" kicker="Linha do tempo">
-        {#snippet actions()}
-          <Button href={href.eq(equipmentId, 'events')} variant="link" size="sm">
-            Ver todos <ArrowRight size={14} aria-hidden="true" />
-          </Button>
-        {/snippet}
-        {#if eventsError}
-          <p class="err">{eventsError}</p>
-        {:else}
-          <Timeline items={timelineItems} emptyText="Nenhum evento registrado para este equipamento." />
-        {/if}
+      <!-- Linha 3, esquerda: dosador animado -->
+      <Card class="area-machine machine-card" padded={false} testid="dashboard-machine">
+        <div class="machine-head">
+          <span class="label">Dosador de correia · corte lateral</span>
+          <span class="machine-note">Reage à velocidade e ao material</span>
+        </div>
+        <div class="machine-body">
+          <WbfMachine
+            rpm={numOf('rpm')}
+            beltLoad={numOf('belt_load')}
+            driveCommand={numOf('drive_command')}
+            massFlow={numOf('mass_flow')}
+            {machineState}
+            quality={machineQuality}
+            connection={connection ?? 'DISCONNECTED'}
+            rpmRef={refs.rpm_ref ?? null}
+            beltLoadRef={refs.belt_load_ref ?? null}
+            {scenario}
+            reducedMotion={app.reducedMotion}
+            frameless
+          />
+        </div>
       </Card>
 
-      <!-- Diagnóstico aberto -->
-      <Card class="area-diagnosis" title="Diagnóstico" kicker="Condição aberta" testid={TID.diagnosisSummary}>
-        {#if openAnomaly && openDiagnosis}
-          <div class="diag">
-            <div class="diag-head">
-              <Badge tone={severityTone(openAnomaly.severity)}>{openAnomaly.severity_pt}</Badge>
-              <span class="diag-since">desde {fmtWhen(openAnomaly.start_utc, app.now)} · {fmtAge(ageSince(openAnomaly.start_utc, app.now)).replace('há ', '')} em aberto</span>
+      <!-- Linha 3, direita: eventos + diagnóstico -->
+      <div class="area-side">
+        <Card class="area-timeline" title="Sequência de eventos" kicker="Linha do tempo">
+          {#snippet actions()}
+            <Button href={href.eq(equipmentId, 'events')} variant="link" size="sm">
+              Ver todos <ArrowRight size={14} aria-hidden="true" />
+            </Button>
+          {/snippet}
+          {#if eventsError}
+            <p class="err">{eventsError}</p>
+          {:else}
+            <Timeline items={timelineItems} emptyText="Nenhum evento registrado para este equipamento." />
+          {/if}
+        </Card>
+
+        <Card class="area-diagnosis" title="Diagnóstico" kicker="Condição aberta" testid={TID.diagnosisSummary}>
+          {#if openAnomaly && openDiagnosis}
+            <div class="diag">
+              <div class="diag-head">
+                <Badge tone={severityTone(openAnomaly.severity)}>{openAnomaly.severity_pt}</Badge>
+                <span class="diag-since">desde {fmtWhen(openAnomaly.start_utc, app.now)} · {fmtDuration(ageSince(openAnomaly.start_utc, app.now))} em aberto</span>
+              </div>
+              <h3 class="diag-title">{openDiagnosis.summary.title_pt}</h3>
+              <p class="diag-text">{openDiagnosis.summary.text_pt}</p>
+              <p class="label">O que mudou</p>
+              <WhatChanged items={openDiagnosis.what_changed} limit={3} compact />
+              <div class="diag-actions">
+                <Button href={href.event(equipmentId, openAnomaly.id)} variant="primary">
+                  Abrir diagnóstico <ArrowRight size={16} aria-hidden="true" />
+                </Button>
+                <span class="diag-note">{openDiagnosis.hypotheses.length} hipóteses · {openDiagnosis.next_checks.length} verificações</span>
+              </div>
             </div>
-            <h3 class="diag-title">{openDiagnosis.summary.title_pt}</h3>
-            <p class="diag-text">{openDiagnosis.summary.text_pt}</p>
-            <p class="label">O que mudou</p>
-            <WhatChanged items={openDiagnosis.what_changed} limit={3} compact />
-            <div class="diag-actions">
-              <Button href={href.event(equipmentId, openAnomaly.id)} variant="primary">
-                Abrir diagnóstico <ArrowRight size={16} aria-hidden="true" />
-              </Button>
-              <span class="diag-note">{openDiagnosis.hypotheses.length} hipóteses · {openDiagnosis.next_checks.length} verificações</span>
+          {:else if openAnomaly}
+            <div class="diag">
+              <div class="diag-head">
+                <Badge tone={severityTone(openAnomaly.severity)}>{openAnomaly.severity_pt}</Badge>
+                <span class="diag-since">desde {fmtWhen(openAnomaly.start_utc, app.now)}</span>
+              </div>
+              <h3 class="diag-title">{openAnomaly.title_pt}</h3>
+              <p class="diag-text">{openAnomaly.summary_pt}</p>
+              <p class="diag-pending">Ainda não há diagnóstico para este evento. O motor publica o JSON v1.0 logo após a detecção.</p>
+              <div class="diag-actions">
+                <Button href={href.event(equipmentId, openAnomaly.id)} variant="ghost">Ver evento</Button>
+              </div>
             </div>
-          </div>
-        {:else if openAnomaly}
-          <div class="diag">
-            <div class="diag-head">
-              <Badge tone={severityTone(openAnomaly.severity)}>{openAnomaly.severity_pt}</Badge>
-              <span class="diag-since">desde {fmtWhen(openAnomaly.start_utc, app.now)}</span>
-            </div>
-            <h3 class="diag-title">{openAnomaly.title_pt}</h3>
-            <p class="diag-text">{openAnomaly.summary_pt}</p>
-            <p class="diag-pending">Ainda não há diagnóstico para este evento. O motor publica o JSON v1.0 logo após a detecção.</p>
-            <div class="diag-actions">
-              <Button href={href.event(equipmentId, openAnomaly.id)} variant="ghost">Ver evento</Button>
-            </div>
-          </div>
-        {:else}
-          <EmptyState
-            compact
-            title="Nenhum diagnóstico aberto"
-            text="Quando uma condição sair do padrão, aparece aqui o que mudou, as hipóteses e o que verificar primeiro."
-            testid="dashboard-diagnosis-empty"
-          />
-        {/if}
-      </Card>
+          {:else}
+            <EmptyState
+              inline
+              title="Nenhum diagnóstico aberto"
+              text="Quando uma condição sair do padrão, aparece aqui o que mudou, as hipóteses e o que verificar primeiro."
+              testid="dashboard-diagnosis-empty"
+            />
+          {/if}
+        </Card>
+      </div>
     </div>
   {/if}
 </section>
@@ -450,6 +469,11 @@
     flex-wrap: wrap;
   }
   .dash-title { display: flex; flex-direction: column; gap: var(--sp-1); min-width: 0; }
+  .dash-crumb {
+    margin: 0;
+    color: var(--text-3);
+    font: var(--fs-caption) / var(--lh-caption) var(--font-ui);
+  }
   .dash-title h1 {
     margin: 0;
     font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui);
@@ -465,83 +489,96 @@
   }
   .sep { color: var(--border-2); }
   .conn { display: inline-flex; align-items: center; gap: var(--sp-2); }
-  .dash-path {
-    margin: 0;
-    color: var(--text-3);
-    font: var(--fs-caption) / var(--lh-caption) var(--font-ui);
-  }
   .dash-actions { display: flex; gap: var(--sp-2); flex: none; }
+  @media (min-width: 1024px) {
+    .dash-title h1 { font-size: var(--fs-display); line-height: var(--lh-display); }
+  }
+  @media (min-width: 1280px) {
+    .dash-meta { flex-wrap: nowrap; white-space: nowrap; }
+  }
 
+  /* ---- grade: empilhada por padrão, 12 colunas a partir de 1280 px ---- */
   .dash-grid {
     display: grid;
     gap: var(--sp-5);
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    grid-template-areas:
-      'machine system'
-      'machine tiles'
-      'timeline diagnosis';
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
   }
-  .dash-grid :global(.area-machine) { grid-area: machine; align-self: stretch; }
-  .dash-grid :global(.area-system) { grid-area: system; }
-  .area-tiles { grid-area: tiles; }
-  .dash-grid :global(.area-timeline) { grid-area: timeline; }
-  .dash-grid :global(.area-diagnosis) { grid-area: diagnosis; }
-
+  .area-side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-5);
+    min-width: 0;
+  }
   .tiles {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--sp-4);
   }
 
-  @media (max-width: 1279px) {
-    .dash-grid {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-areas:
-        'system'
-        'tiles'
-        'machine'
-        'timeline'
-        'diagnosis';
-    }
-    .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (min-width: 1280px) {
+    .dash-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+    .dash-grid :global(.area-system) { grid-column: 1 / -1; }
+    .area-tiles { grid-column: 1 / -1; }
+    .dash-grid :global(.area-machine) { grid-column: span 5; }
+    /* a coluna de eventos + diagnóstico estica até a altura da linha; o cartão do dosador não,
+       porque o desenho tem proporção fixa e esticar criaria vazio */
+    .area-side { grid-column: span 7; align-self: stretch; }
+    .area-side :global(.area-diagnosis) { flex: 1 1 auto; }
+    .tiles { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  }
+  /* 1280–1599 (1366×768 é o alvo): respiro menor para caber condição + indicadores + topo do dosador na dobra */
+  @media (min-width: 1280px) and (max-width: 1599px) {
+    .dash,
+    .dash-grid,
+    .area-side { gap: var(--sp-4); }
   }
   @media (max-width: 767px) {
-    .dash { gap: var(--sp-4); }
-    .dash-grid { gap: var(--sp-4); }
+    .dash,
+    .dash-grid,
+    .area-side { gap: var(--sp-4); }
     .tiles { grid-template-columns: minmax(0, 1fr); gap: var(--sp-3); }
     .dash-actions { width: 100%; }
+    /* celular: cabeçalho do dosador em duas linhas (nota alinhada à direita, abaixo do rótulo) */
+    .machine-head { flex-wrap: wrap; padding: var(--sp-4) var(--sp-4) var(--sp-2); }
+    .machine-note { flex: 1 1 100%; }
   }
 
-  /* dosador */
+  /* ---- dosador: o desenho preenche o cartão, cabeçalho numa linha ---- */
   .dash-grid :global(.machine-card) {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    align-self: start;
   }
   .machine-head {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
     gap: var(--sp-3);
-    padding: var(--sp-4) var(--sp-5) 0;
+    padding: var(--sp-4) var(--sp-5) var(--sp-2);
+    white-space: nowrap;
   }
+  .machine-head .label { flex: none; }
   .machine-note {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
     color: var(--text-3);
     font: var(--fs-caption) / var(--lh-caption) var(--font-ui);
     text-align: right;
   }
-  .machine-body {
-    flex: 1 1 auto;
-    min-height: 280px;
-    padding: var(--sp-3) var(--sp-4) var(--sp-4);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+  /* o desenho entra sem moldura própria (prop frameless); a moldura é a do cartão */
+  .machine-body { padding: 0 var(--sp-4) var(--sp-3); }
+  /* 1024–1279 (tablet paisagem, 1 coluna): o desenho não passa de 40 % da altura da tela */
+  @media (min-width: 1024px) and (max-width: 1279px) {
+    .machine-body :global(.wbf) {
+      max-width: min(100%, calc(40vh * 640 / 300 + 2 * var(--sp-4)));
+      margin: 0 auto;
+    }
   }
-  .machine-body > :global(*) { flex: 0 1 auto; width: 100%; }
 
-  /* o que o sistema está vendo */
+  /* ---- o que o sistema está vendo ---- */
   .sys-head {
     display: flex;
     align-items: center;
@@ -557,6 +594,7 @@
     border-radius: var(--r-3);
     background: var(--accent-soft);
     color: var(--accent-text);
+    flex: none;
   }
   .sys-title {
     margin: 0;
@@ -579,12 +617,48 @@
     font: 500 var(--fs-body) / var(--lh-body) var(--font-ui);
     text-decoration: none;
     border-radius: var(--r-1);
+    white-space: nowrap;
   }
   .sys-link:hover { text-decoration: underline; }
+  @media (max-width: 767px), (pointer: coarse) {
+    /* alvo de 44 px sem mexer no ritmo vertical */
+    .sys-link { padding: 12px 0; margin-bottom: -12px; }
+  }
+  /* faixa compacta: ícone + título em caixa alta + chip + frase + link, tudo numa linha */
+  @media (min-width: 1280px) {
+    .dash-grid :global(.system-card) {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-4);
+      padding: var(--sp-3) var(--sp-5);
+      min-height: 56px;
+    }
+    .sys-head { flex: none; flex-wrap: nowrap; margin: 0; }
+    .sys-title {
+      flex: none;
+      font: 500 var(--fs-label) / var(--lh-label) var(--font-ui);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--text-3);
+    }
+    .sys-text {
+      flex: 1 1 auto;
+      min-width: 0;
+      max-width: none;
+      font: var(--fs-body) / var(--lh-body) var(--font-ui);
+    }
+    .sys-link { flex: none; margin: 0; }
+  }
+  @media (min-width: 1280px) and (pointer: coarse) {
+    .sys-link { padding: 12px 0; margin: -12px 0; }
+  }
+  @media (min-width: 1600px) {
+    .sys-text { font: var(--fs-body-lg) / var(--lh-body-lg) var(--font-ui); }
+  }
 
   .err { margin: 0; color: var(--st-crit); font: var(--fs-caption) / var(--lh-caption) var(--font-ui); }
 
-  /* diagnóstico */
+  /* ---- diagnóstico ---- */
   .diag { display: flex; flex-direction: column; gap: var(--sp-3); }
   .diag-head { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
   .diag-since { color: var(--text-3); font: var(--fs-caption) / var(--lh-caption) var(--font-ui); }

@@ -10,6 +10,7 @@
     icon,
     children,
     compact = false,
+    inline = false,
     testid = TID.emptyState,
   }: {
     title: string
@@ -18,14 +19,18 @@
     icon?: Snippet
     children?: Snippet
     compact?: boolean
+    /** Dentro de um card: sem glifo, alinhado à esquerda, texto corrido. */
+    inline?: boolean
     testid?: string
   } = $props()
 </script>
 
-<div class="empty" class:compact data-testid={testid} data-phase={phase ?? ''}>
-  <div class="glyph" aria-hidden="true">
-    {#if icon}{@render icon()}{:else}<Inbox size={compact ? 20 : 28} strokeWidth={1.5} />{/if}
-  </div>
+<div class="empty" class:compact class:inline data-testid={testid} data-phase={phase ?? ''}>
+  {#if !inline}
+    <div class="glyph" aria-hidden="true">
+      {#if icon}{@render icon()}{:else}<Inbox size={compact ? 20 : 28} strokeWidth={1.5} />{/if}
+    </div>
+  {/if}
   <h2 class="title">{title}</h2>
   {#if phase}<p class="phase label">Disponível na fase {phase}</p>{/if}
   {#if text}<p class="text">{text}</p>{/if}
@@ -66,7 +71,20 @@
     font: 600 var(--fs-h3) / var(--lh-h3) var(--font-ui);
     color: var(--text-1);
   }
-  .phase { margin: 0; color: var(--accent-text); }
+  .phase { margin: 0; color: var(--text-3); }
+  .inline {
+    align-items: flex-start;
+    text-align: left;
+    gap: var(--sp-1);
+    padding: var(--sp-3) 0;
+    border: 0;
+    background: transparent;
+  }
+  .inline .title {
+    font: 500 var(--fs-body) / var(--lh-body) var(--font-ui);
+    color: var(--text-2);
+  }
+  .inline .text { color: var(--text-3); max-width: 60ch; }
   .text {
     margin: 0;
     max-width: 48ch;

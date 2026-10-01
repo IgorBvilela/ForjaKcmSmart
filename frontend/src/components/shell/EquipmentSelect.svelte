@@ -1,5 +1,6 @@
 <script lang="ts">
-  /** <select> nativo. Texto da opção carrega o estado: "● Dosador Pó Base · Normal". */
+  /** <select> nativo. Em desktop (≥ 1280 px) a opção carrega o estado: "● Dosador Pó Base · Normal";
+   *  abaixo disso só glifo + nome (o estado vai pela cor do glifo). Alvo de 44 px em toque e < 1024 px. */
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
   import { stateGlyph, stateTone } from '../../lib/api'
   import { href, type EqScreen } from '../../lib/router'
@@ -40,7 +41,7 @@
       <option value={PLANT_VALUE}>Visão da planta</option>
       {#each cards as c (c.id)}
         <option value={c.id}>
-          {stateGlyph(c.state_pt)} {c.name} · {c.state_pt}{c.is_example ? ' · exemplo' : ''}
+          {stateGlyph(c.state_pt)} {c.name}{app.isDesktop ? ` · ${c.state_pt}` : ''}
         </option>
       {/each}
     </select>
@@ -96,6 +97,10 @@
     color: var(--text-3);
     pointer-events: none;
   }
+  @media (max-width: 1023px), (pointer: coarse) {
+    /* o <select> é o alvo: 44 px dentro da borda de 1 px do campo */
+    .sel-field { height: calc(var(--touch) + 2px); }
+  }
   @media (max-width: 767px) {
     .sel { gap: 0; max-width: none; }
     .sel-label {
@@ -106,6 +111,5 @@
       clip: rect(0 0 0 0);
       white-space: nowrap;
     }
-    .sel-field { height: 40px; }
   }
 </style>

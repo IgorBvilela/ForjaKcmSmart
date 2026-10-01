@@ -1,6 +1,8 @@
 <script lang="ts">
-  /** Navegação em 7 grupos. Recolhida mostra só ícones (rótulo acessível continua). */
-  import ChevronRight from '@lucide/svelte/icons/chevron-right'
+  /** Navegação em 7 grupos. Recolhida (rail de 64 px) mostra só ícones: o nome continua acessível
+   *  (rótulo visualmente oculto) e aparece como tooltip no mouse e no foco. Sem hover (toque),
+   *  o toque num ícone expande o rail em vez de navegar às cegas. O único botão de recolher/expandir
+   *  é o do header. */
   import X from '@lucide/svelte/icons/x'
   import { NAV_GROUPS, type NavItem } from '../../lib/nav'
   import { live } from '../../lib/live.svelte'
@@ -17,6 +19,33 @@
   function isActive(item: NavItem): boolean {
     return item.slug === currentSlug
   }
+
+  /** Tooltip do rail: um só elemento, posicionado em `fixed` para escapar do overflow do rail. */
+  let tip = $state<{ text: string; top: number } | null>(null)
+
+  function tipText(item: NavItem): string {
+    return item.phase ? `${item.label} · disponível na fase ${item.phase}` : item.label
+  }
+  function showTip(e: Event, text: string): void {
+    if (!collapsed) return
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    tip = { text, top: r.top + r.height / 2 }
+  }
+  function hideTip(): void {
+    tip = null
+  }
+  /** Toque no rail recolhido: expande para mostrar os nomes; a navegação fica para o segundo toque. */
+  function onItemClick(e: MouseEvent): void {
+    if (collapsed && app.noHover) {
+      e.preventDefault()
+      hideTip()
+      app.toggleSidebar()
+    }
+  }
+
+  $effect(() => {
+    if (!collapsed) tip = null
+  })
 </script>
 
 <nav
@@ -39,21 +68,12 @@
       >
         <X size={20} aria-hidden="true" />
       </button>
-    {:else}
-      <button
-        type="button"
-        class="sb-btn sb-collapse"
-        aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
-        aria-expanded={!collapsed}
-        data-testid={TID.sidebar.toggle}
-        onclick={() => app.toggleSidebar()}
-      >
-        <span class="sb-collapse-icon" aria-hidden="true"><ChevronRight size={18} /></span>
-      </button>
+    {:else if !collapsed}
+      <span class="sb-caption label">Navegação</span>
     {/if}
   </div>
 
-  <div class="sb-scroll">
+  <div class="sb-scroll" onscroll={hideTip}>
     {#each NAV_GROUPS as group (group.id)}
       <section class="group" aria-labelledby={`sb-g-${group.id}`}>
         <h2 class="group-label label" id={`sb-g-${group.id}`}>{group.label}</h2>
@@ -71,16 +91,31 @@
                   aria-current={active ? 'page' : undefined}
                   data-testid={TID.sidebar.link(item.slug)}
                   data-phase={item.phase ?? ''}
-                  title={collapsed ? item.label : undefined}
+                  onmouseenter={(e) => showTip(e, tipText(item))}
+                  onmouseleave={hideTip}
+                  onfocus={(e) => showTip(e, tipText(item))}
+                  onblur={hideTip}
+                  onclick={onItemClick}
                 >
                   <span class="item-icon" aria-hidden="true">
                     <item.icon size={18} strokeWidth={1.75} />
                   </span>
                   <span class="item-label">{item.label}</span>
-                  {#if item.phase}<span class="item-phase" aria-label={`Disponível na fase ${item.phase}`}>{item.phase}</span>{/if}
+                  {#if item.phase}
+                    <span
+                      class="item-phase"
+                      role="img"
+                      aria-label={`Disponível na fase ${item.phase}`}
+                      title={`Disponível na fase ${item.phase}`}
+                    ></span>
+                  {/if}
                 </a>
               {:else}
-                <span class="item disabled" aria-disabled="true" title="Selecione um equipamento">
+                <span
+                  class="item disabled"
+                  aria-disabled="true"
+                  title={collapsed ? `${item.label} · selecione um equipamento` : 'Selecione um equipamento'}
+                >
                   <span class="item-icon" aria-hidden="true"><item.icon size={18} strokeWidth={1.75} /></span>
                   <span class="item-label">{item.label}</span>
                 </span>
@@ -96,6 +131,10 @@
     <span class="foot-line">Edge local · 127.0.0.1</span>
     <span class="foot-line">Observa. Não comanda.</span>
   </div>
+
+  {#if collapsed && tip}
+    <span class="rail-tip" aria-hidden="true" data-testid="sidebar-tooltip" style:top={`${tip.top}px`}>{tip.text}</span>
+  {/if}
 </nav>
 
 <style>
@@ -116,7 +155,7 @@
     align-items: center;
     justify-content: space-between;
     height: var(--header-h);
-    padding: 0 var(--sp-3);
+    padding: 0 var(--sp-3) 0 var(--sp-4);
     border-bottom: 1px solid var(--border-1);
     flex: none;
   }
@@ -124,8 +163,8 @@
   .sb-title {
     font: 600 var(--fs-h3) / var(--lh-h3) var(--font-ui);
     color: var(--text-1);
-    padding-left: var(--sp-2);
   }
+  .sb-caption { white-space: nowrap; }
   .sb-btn {
     display: grid;
     place-items: center;
@@ -141,16 +180,7 @@
       color var(--dur-base) var(--ease-std);
   }
   .sb-btn:hover { background: var(--surf-2); color: var(--text-1); }
-  .sb-collapse { margin-left: auto; }
-  .collapsed .sb-collapse { margin-left: 0; }
-  .sb-collapse-icon {
-    display: grid;
-    place-items: center;
-    transition: transform var(--dur-base) var(--ease-std);
-    transform: rotate(180deg);
-  }
-  .collapsed .sb-collapse-icon { transform: rotate(0deg); }
-  @media (max-width: 1023px) {
+  @media (max-width: 1023px), (pointer: coarse) {
     .sb-btn { width: var(--touch); height: var(--touch); }
   }
 
@@ -172,16 +202,18 @@
     white-space: nowrap;
     transition: opacity var(--dur-base) var(--ease-std);
   }
+  /* recolhido: o título do grupo vira um separador visível (o texto segue no DOM para leitor de tela) */
   .collapsed .group-label {
     height: 1px;
     padding: 0;
-    margin: var(--sp-2) var(--sp-2);
+    margin: var(--sp-2) var(--sp-3);
     overflow: hidden;
     color: transparent;
-    background: var(--border-1);
+    background: var(--border-2);
     font-size: 0;
     line-height: 0;
   }
+  .collapsed .group:first-child .group-label { display: none; }
   .items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
   .item {
     position: relative;
@@ -232,23 +264,32 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  /* tela que ainda depende de fase posterior: ponto discreto, não chip */
   .item-phase {
     flex: none;
-    min-width: 18px;
-    height: 18px;
-    display: grid;
-    place-items: center;
-    border-radius: var(--r-1);
-    border: 1px dashed var(--border-2);
-    color: var(--text-3);
-    font: 500 10px / 1 var(--font-mono);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--chumbo);
   }
   .collapsed .item { justify-content: center; padding: 0; min-height: 40px; }
-  .collapsed .item-label,
+  /* nome continua no DOM (nome acessível do link), só sai da tela */
+  .collapsed .item-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
   .collapsed .item-phase { display: none; }
-  .collapsed .item.active::before { top: 10px; bottom: 10px; }
-  @media (max-width: 1023px) {
+  .collapsed .item.active::before { top: 9px; bottom: 9px; width: 3px; }
+  @media (max-width: 1023px), (pointer: coarse) {
     .item { min-height: var(--touch); }
+    .collapsed .item { min-height: var(--touch); }
   }
 
   .sb-foot {
@@ -266,4 +307,38 @@
     overflow: hidden;
   }
   .collapsed .sb-foot { display: none; }
+
+  /* ---- tooltip do rail ---- */
+  .rail-tip {
+    position: fixed;
+    left: calc(var(--sidebar-w-collapsed) + var(--sp-2));
+    z-index: 40;
+    padding: var(--sp-1) var(--sp-3);
+    border: 1px solid var(--border-2);
+    border-radius: var(--r-2);
+    background: var(--surf-3);
+    box-shadow: var(--elev-2);
+    color: var(--text-1);
+    font: 500 var(--fs-caption) / var(--lh-caption) var(--font-ui);
+    white-space: nowrap;
+    pointer-events: none;
+    transform: translateY(-50%);
+    animation: tip-in var(--dur-micro) var(--ease-out) both;
+  }
+  .rail-tip::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    background: var(--surf-3);
+    border-left: 1px solid var(--border-2);
+    border-bottom: 1px solid var(--border-2);
+    transform: translateY(-50%) rotate(45deg);
+  }
+  @keyframes tip-in {
+    from { opacity: 0; transform: translate(-4px, -50%); }
+    to { opacity: 1; transform: translateY(-50%); }
+  }
 </style>

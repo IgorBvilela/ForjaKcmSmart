@@ -31,7 +31,7 @@
   const duration = $derived.by(() => {
     if (!event) return '—'
     if (event.end_utc) return fmtDuration(event.duration_s)
-    return `${fmtDuration(ageSince(event.start_utc, app.now))} (em aberto)`
+    return fmtDuration(ageSince(event.start_utc, app.now))
   })
 
   const contextTimeline: TimelineItem[] = $derived(
@@ -108,8 +108,8 @@
       <p class="ev-summary">{event.summary_pt}</p>
       <dl class="facts">
         <div><dt class="label">Início</dt><dd class="num">{fmtDateTime(event.start_utc)}</dd></div>
-        <div><dt class="label">Fim</dt><dd class="num">{event.end_utc ? fmtDateTime(event.end_utc) : 'em aberto'}</dd></div>
-        <div><dt class="label">Duração</dt><dd class="num">{duration}</dd></div>
+        <div><dt class="label">Fim</dt>{#if event.end_utc}<dd class="num">{fmtDateTime(event.end_utc)}</dd>{:else}<dd class="plain">em aberto</dd>{/if}</div>
+        <div><dt class="label">Duração</dt><dd class="num">{duration}{#if !event.end_utc}<span class="plain"> · em aberto</span>{/if}</dd></div>
         <div><dt class="label">Amostras guardadas</dt><dd class="num">{event.context.pre_sample_count} antes · {event.context.during_sample_count} durante · {event.context.post_sample_count} depois</dd></div>
         {#if event.context.gap_count || event.context.stale_count || event.context.comm_error_count}
           <div><dt class="label">Qualidade na janela</dt><dd class="num">{event.context.gap_count} buracos · {event.context.stale_count} antigos · {event.context.comm_error_count} sem comunicação</dd></div>
@@ -174,6 +174,9 @@
     border-radius: var(--r-2);
   }
   .back:hover { color: var(--text-1); }
+  @media (max-width: 767px), (pointer: coarse) {
+    .back { min-height: var(--touch); }
+  }
   .muted { margin: 0; color: var(--text-3); }
 
   .ev-head { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; margin-bottom: var(--sp-3); }
@@ -204,6 +207,8 @@
     font-size: var(--fs-mono);
     line-height: var(--lh-mono);
   }
+  /* texto, não número: fonte da interface */
+  .facts .plain { font-family: var(--font-ui); font-size: var(--fs-body); color: var(--text-2); }
   .sub { margin: var(--sp-5) 0 var(--sp-2); }
 
   .tech { padding: var(--sp-3) var(--sp-5); }

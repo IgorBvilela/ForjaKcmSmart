@@ -132,6 +132,9 @@
     font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui);
     color: var(--text-1);
   }
+  @media (min-width: 1024px) {
+    .events-title { font-size: var(--fs-display); line-height: var(--lh-display); }
+  }
   .events-sub {
     margin: var(--sp-1) 0 0;
     max-width: 72ch;

@@ -40,6 +40,10 @@ class AppState {
   isNarrow = $state(false)
   /** < 1440 px (inclui 1366×768): sidebar recolhida por padrão; 1920 abre. */
   isCompact = $state(false)
+  /** ≥ 1280 px: dashboard em 12 colunas, 6 indicadores numa linha, tiles compactos. */
+  isDesktop = $state(false)
+  /** Sem hover (toque): o rail recolhido expande no toque em vez de mostrar tooltip. */
+  noHover = $state(false)
   reducedMotion = $state(false)
 
   sidebarCollapsed = $state(false)
@@ -67,6 +71,8 @@ class AppState {
       if (!m) this.drawerOpen = false
     })
     this.#watch('(max-width: 1439px)', (m) => (this.isCompact = m))
+    this.#watch('(min-width: 1280px)', (m) => (this.isDesktop = m))
+    this.#watch('(hover: none)', (m) => (this.noHover = m))
     this.#watch('(prefers-reduced-motion: reduce)', (m) => (this.reducedMotion = m))
 
     const stored = readStorage(LS_SIDEBAR)

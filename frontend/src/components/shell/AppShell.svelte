@@ -27,7 +27,8 @@
     </aside>
   {/if}
 
-  <div class="main">
+  <!-- com o drawer aberto o resto da tela fica inerte: sem foco, sem clique, fora da árvore acessível -->
+  <div class="main" inert={app.drawerOpen}>
     <Header />
     <DataSourceBanner />
     <main id="conteudo" class="content" tabindex="-1">
@@ -42,7 +43,10 @@
     left: var(--sp-4);
     top: -100px;
     z-index: 100;
-    padding: var(--sp-2) var(--sp-4);
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--touch);
+    padding: 0 var(--sp-4);
     border-radius: var(--r-3);
     background: var(--accent);
     color: var(--on-accent);
@@ -64,6 +68,8 @@
   .rail {
     position: sticky;
     top: 0;
+    /* acima do conteúdo: o tooltip do rail recolhido (position: fixed) nasce dentro deste contexto */
+    z-index: 30;
     height: 100vh;
     height: 100dvh;
     min-width: 0;

@@ -58,7 +58,8 @@
     min-height: 36px;
   }
   @media (max-width: 767px), (pointer: coarse) {
-    .disc-btn { min-height: var(--touch); }
+    .disc .disc-btn,
+    .disc[data-size='md'] .disc-btn { min-height: var(--touch); }
   }
   .disc-btn:hover { color: var(--text-1); }
   .chev {

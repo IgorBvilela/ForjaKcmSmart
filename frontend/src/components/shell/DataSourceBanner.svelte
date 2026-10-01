@@ -61,6 +61,7 @@
 <style>
   .banner {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: var(--sp-3);
@@ -104,5 +105,10 @@
     .offline { padding-left: var(--sp-4); padding-right: var(--sp-4); }
     .banner { min-height: 40px; }
     .banner-detail { display: none; }
+  }
+  /* 320 px / zoom 200 %: o selo fica só com o cadeado (o nome acessível continua no botão) */
+  @media (max-width: 359px) {
+    .banner-ro :global(.txt) { display: none; }
+    .banner-ro :global(.tip-btn) { min-width: var(--touch); justify-content: center; }
   }
 </style>

@@ -1,5 +1,7 @@
 <script lang="ts">
-  /** Diagnóstico v1.0 nas 7 seções oficiais, na ordem do contrato. A UI consome o JSON como veio. */
+  /** Diagnóstico v1.0 nas 7 seções oficiais, na ordem do contrato. A UI consome o JSON como veio.
+   *  Em ≥ 1280 px: Resumo em largura total; [Evidências, O que mudou] | [Hipóteses, Próximas verificações];
+   *  Fontes e Ressalvas em largura total. A ordem no DOM continua 1…7. */
   import {
     EVIDENCE_PT,
     SOURCE_KIND_PT,
@@ -63,146 +65,152 @@
   >
     <header class="sec-head">
       <span class="sec-n num">1</span>
-      <h3 class="label" id={`${sectionId('summary')}-h`}>Resumo</h3>
+      <h3 class="sec-title" id={`${sectionId('summary')}-h`}>Resumo</h3>
       <Badge {tone} size="md">{severityPt}</Badge>
     </header>
     <h2 class="summary-title">{diagnosis.summary.title_pt}</h2>
     <p class="summary-text">{diagnosis.summary.text_pt}</p>
   </section>
 
-  <!-- 2. EVIDÊNCIAS -->
-  <section
-    class="sec"
-    id={sectionId('evidence')}
-    data-testid={TID.diagnosisSection('EVIDENCIAS')}
-    aria-labelledby={`${sectionId('evidence')}-h`}
-  >
-    <header class="sec-head">
-      <span class="sec-n num">2</span>
-      <h3 class="label" id={`${sectionId('evidence')}-h`}>Evidências</h3>
-      <span class="count num">{diagnosis.evidence.length}</span>
-    </header>
-    {#if diagnosis.evidence.length === 0}
-      <p class="muted">Nenhuma evidência registrada.</p>
-    {:else}
-      <ul class="list">
-        {#each diagnosis.evidence as ev (ev.id)}
-          <li class="item" data-id={ev.id}>
-            <div class="item-main">
-              <p class="item-text">{ev.text_pt}</p>
-              <div class="item-meta">
-                <EvidenceBadge level={ev.evidence_level} />
-                {#if ev.value != null}
-                  <span class="num meta-val">{fmtNumber(ev.value, 2)}{ev.unit ? ` ${ev.unit}` : ''}</span>
-                {/if}
-                {#if ev.quality}<QualityBadge quality={ev.quality} />{/if}
-              </div>
-            </div>
-          </li>
-        {/each}
-      </ul>
-    {/if}
-  </section>
+  <div class="cols">
+    <div class="col">
+      <!-- 2. EVIDÊNCIAS -->
+      <section
+        class="sec"
+        id={sectionId('evidence')}
+        data-testid={TID.diagnosisSection('EVIDENCIAS')}
+        aria-labelledby={`${sectionId('evidence')}-h`}
+      >
+        <header class="sec-head">
+          <span class="sec-n num">2</span>
+          <h3 class="sec-title" id={`${sectionId('evidence')}-h`}>Evidências</h3>
+          <span class="count num">{diagnosis.evidence.length}</span>
+        </header>
+        {#if diagnosis.evidence.length === 0}
+          <p class="muted">Nenhuma evidência registrada.</p>
+        {:else}
+          <ul class="list">
+            {#each diagnosis.evidence as ev (ev.id)}
+              <li class="item" data-id={ev.id}>
+                <div class="item-main">
+                  <p class="item-text">{ev.text_pt}</p>
+                  <div class="item-meta">
+                    <EvidenceBadge level={ev.evidence_level} />
+                    {#if ev.value != null}
+                      <span class="num meta-val">{fmtNumber(ev.value, 2)}{ev.unit ? ` ${ev.unit}` : ''}</span>
+                    {/if}
+                    {#if ev.quality}<QualityBadge quality={ev.quality} />{/if}
+                  </div>
+                </div>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      </section>
 
-  <!-- 3. O QUE MUDOU -->
-  <section
-    class="sec"
-    id={sectionId('what_changed')}
-    data-testid={TID.diagnosisSection('O_QUE_MUDOU')}
-    aria-labelledby={`${sectionId('what_changed')}-h`}
-  >
-    <header class="sec-head">
-      <span class="sec-n num">3</span>
-      <h3 class="label" id={`${sectionId('what_changed')}-h`}>O que mudou</h3>
-    </header>
-    <WhatChanged items={diagnosis.what_changed} />
-  </section>
+      <!-- 3. O QUE MUDOU -->
+      <section
+        class="sec"
+        id={sectionId('what_changed')}
+        data-testid={TID.diagnosisSection('O_QUE_MUDOU')}
+        aria-labelledby={`${sectionId('what_changed')}-h`}
+      >
+        <header class="sec-head">
+          <span class="sec-n num">3</span>
+          <h3 class="sec-title" id={`${sectionId('what_changed')}-h`}>O que mudou</h3>
+        </header>
+        <WhatChanged items={diagnosis.what_changed} />
+      </section>
+    </div>
 
-  <!-- 4. HIPÓTESES -->
-  <section
-    class="sec"
-    id={sectionId('hypotheses')}
-    data-testid={TID.diagnosisSection('HIPOTESES')}
-    aria-labelledby={`${sectionId('hypotheses')}-h`}
-  >
-    <header class="sec-head">
-      <span class="sec-n num">4</span>
-      <h3 class="label" id={`${sectionId('hypotheses')}-h`}>Hipóteses</h3>
-      <span class="hint">comportamento compatível com, nunca causa confirmada</span>
-    </header>
-    {#if diagnosis.hypotheses.length === 0}
-      <p class="muted">Nenhuma hipótese formulada.</p>
-    {:else}
-      <ol class="list numbered">
-        {#each diagnosis.hypotheses as h, i (h.id)}
-          <li class="item" data-id={h.id}>
-            <span class="item-n num">{i + 1}</span>
-            <div class="item-main">
-              <p class="item-text strong">{h.text_pt}</p>
-              {#if h.rationale_pt}<p class="item-sub">{h.rationale_pt}</p>{/if}
-              <div class="item-meta">
-                <EvidenceBadge level={h.evidence_level} />
-                {#if h.verification_ids.length}
-                  <span class="refs">
-                    Verificar:
-                    {#each h.verification_ids as vid, k (vid)}
-                      <a href={`#check-${vid}`} class="ref">{vid}</a>{k < h.verification_ids.length - 1 ? ', ' : ''}
-                    {/each}
-                  </span>
-                {/if}
-                {#if h.source_ids.length}
-                  <span class="refs">
-                    Fontes:
-                    {#each h.source_ids as sid, k (sid)}
-                      <a href={`#source-${sid}`} class="ref" title={sourceById.get(sid)?.title ?? sid}>{sid}</a>{k < h.source_ids.length - 1 ? ', ' : ''}
-                    {/each}
-                  </span>
-                {/if}
-              </div>
-            </div>
-          </li>
-        {/each}
-      </ol>
-    {/if}
-  </section>
+    <div class="col">
+      <!-- 4. HIPÓTESES -->
+      <section
+        class="sec"
+        id={sectionId('hypotheses')}
+        data-testid={TID.diagnosisSection('HIPOTESES')}
+        aria-labelledby={`${sectionId('hypotheses')}-h`}
+      >
+        <header class="sec-head">
+          <span class="sec-n num">4</span>
+          <h3 class="sec-title" id={`${sectionId('hypotheses')}-h`}>Hipóteses</h3>
+          <span class="hint">comportamento compatível com, nunca causa confirmada</span>
+        </header>
+        {#if diagnosis.hypotheses.length === 0}
+          <p class="muted">Nenhuma hipótese formulada.</p>
+        {:else}
+          <ol class="list numbered">
+            {#each diagnosis.hypotheses as h, i (h.id)}
+              <li class="item" data-id={h.id}>
+                <span class="item-n num">{i + 1}</span>
+                <div class="item-main">
+                  <p class="item-text strong">{h.text_pt}</p>
+                  {#if h.rationale_pt}<p class="item-sub">{h.rationale_pt}</p>{/if}
+                  <div class="item-meta">
+                    <EvidenceBadge level={h.evidence_level} />
+                    {#if h.verification_ids.length}
+                      <span class="refs">
+                        <span class="refs-label">Verificar</span>
+                        {#each h.verification_ids as vid (vid)}
+                          <a href={`#check-${vid}`} class="ref">{vid}</a>
+                        {/each}
+                      </span>
+                    {/if}
+                    {#if h.source_ids.length}
+                      <span class="refs">
+                        <span class="refs-label">Fontes</span>
+                        {#each h.source_ids as sid (sid)}
+                          <a href={`#source-${sid}`} class="ref" title={sourceById.get(sid)?.title ?? sid}>{sid}</a>
+                        {/each}
+                      </span>
+                    {/if}
+                  </div>
+                </div>
+              </li>
+            {/each}
+          </ol>
+        {/if}
+      </section>
 
-  <!-- 5. PRÓXIMAS VERIFICAÇÕES -->
-  <section
-    class="sec"
-    id={sectionId('next_checks')}
-    data-testid={TID.diagnosisSection('PROXIMAS_VERIFICACOES')}
-    aria-labelledby={`${sectionId('next_checks')}-h`}
-  >
-    <header class="sec-head">
-      <span class="sec-n num">5</span>
-      <h3 class="label" id={`${sectionId('next_checks')}-h`}>Próximas verificações</h3>
-      <span class="hint">na ordem sugerida</span>
-    </header>
-    {#if checksOrdered.length === 0}
-      <p class="muted">Nenhuma verificação sugerida.</p>
-    {:else}
-      <ol class="list numbered">
-        {#each checksOrdered as c (c.id)}
-          <li class="item" id={`check-${c.id}`} data-id={c.id}>
-            <span class="item-n num">{c.order}</span>
-            <div class="item-main">
-              <p class="item-text strong">{c.text_pt}</p>
-              {#if c.how_pt}
-                <p class="item-sub"><span class="kv">Como:</span> {c.how_pt}</p>
-              {/if}
-              {#if c.safety_pt}
-                <p class="item-sub"><span class="kv">Segurança:</span> {c.safety_pt}</p>
-              {/if}
-              <div class="item-meta">
-                <EvidenceBadge level={c.evidence_level} />
-                <span class="refs id">{c.id}</span>
-              </div>
-            </div>
-          </li>
-        {/each}
-      </ol>
-    {/if}
-  </section>
+      <!-- 5. PRÓXIMAS VERIFICAÇÕES -->
+      <section
+        class="sec"
+        id={sectionId('next_checks')}
+        data-testid={TID.diagnosisSection('PROXIMAS_VERIFICACOES')}
+        aria-labelledby={`${sectionId('next_checks')}-h`}
+      >
+        <header class="sec-head">
+          <span class="sec-n num">5</span>
+          <h3 class="sec-title" id={`${sectionId('next_checks')}-h`}>Próximas verificações</h3>
+          <span class="hint">na ordem sugerida</span>
+        </header>
+        {#if checksOrdered.length === 0}
+          <p class="muted">Nenhuma verificação sugerida.</p>
+        {:else}
+          <ol class="list numbered">
+            {#each checksOrdered as c (c.id)}
+              <li class="item" id={`check-${c.id}`} data-id={c.id}>
+                <span class="item-n num">{c.order}</span>
+                <div class="item-main">
+                  <p class="item-text strong">{c.text_pt}</p>
+                  {#if c.how_pt}
+                    <p class="item-sub"><span class="kv">Como:</span> {c.how_pt}</p>
+                  {/if}
+                  {#if c.safety_pt}
+                    <p class="item-sub"><span class="kv">Segurança:</span> {c.safety_pt}</p>
+                  {/if}
+                  <div class="item-meta">
+                    <EvidenceBadge level={c.evidence_level} />
+                    <span class="refs id">{c.id}</span>
+                  </div>
+                </div>
+              </li>
+            {/each}
+          </ol>
+        {/if}
+      </section>
+    </div>
+  </div>
 
   <!-- 6. FONTES -->
   <section
@@ -213,7 +221,7 @@
   >
     <header class="sec-head">
       <span class="sec-n num">6</span>
-      <h3 class="label" id={`${sectionId('sources')}-h`}>Fontes</h3>
+      <h3 class="sec-title" id={`${sectionId('sources')}-h`}>Fontes</h3>
       <span class="count num">{diagnosis.sources.length}</span>
     </header>
     {#if diagnosis.sources.length === 0}
@@ -248,7 +256,7 @@
   >
     <header class="sec-head">
       <span class="sec-n num">7</span>
-      <h3 class="label" id={`${sectionId('caveats')}-h`}>Ressalvas</h3>
+      <h3 class="sec-title" id={`${sectionId('caveats')}-h`}>Ressalvas</h3>
     </header>
     <ul class="caveats">
       {#each diagnosis.caveats as c, i (i)}
@@ -276,6 +284,24 @@
     gap: var(--sp-6);
     min-width: 0;
   }
+  /* as duas colunas só existem em desktop largo; abaixo disso somem do layout (display: contents) */
+  .cols,
+  .col { display: contents; }
+  @media (min-width: 1280px) {
+    .cols {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--sp-6) var(--sp-8);
+      align-items: start;
+    }
+    .col {
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-6);
+      min-width: 0;
+    }
+  }
+
   .toc {
     display: flex;
     flex-wrap: wrap;
@@ -301,19 +327,21 @@
       color var(--dur-base) var(--ease-std);
   }
   .toc-link:hover { border-color: var(--border-2); color: var(--text-1); }
+  /* cobre só aqui: o índice é a navegação do painel */
   .toc-n { color: var(--accent-text); font-size: var(--fs-mono-sm); }
-  @media (max-width: 767px) {
-    .toc-link { min-height: var(--touch); }
-  }
 
-  .sec { display: flex; flex-direction: column; gap: var(--sp-3); scroll-margin-top: 96px; }
+  .sec { display: flex; flex-direction: column; gap: var(--sp-3); scroll-margin-top: 96px; min-width: 0; }
   .sec-head {
     display: flex;
     align-items: center;
     gap: var(--sp-3);
     flex-wrap: wrap;
   }
-  .sec-head h3 { margin: 0; }
+  .sec-title {
+    margin: 0;
+    font: 600 var(--fs-h3) / var(--lh-h3) var(--font-ui);
+    color: var(--text-1);
+  }
   .sec-n {
     display: grid;
     place-items: center;
@@ -321,7 +349,7 @@
     height: 24px;
     border-radius: 50%;
     background: var(--surf-2);
-    color: var(--accent-text);
+    color: var(--text-2);
     font-size: var(--fs-mono-sm);
   }
   .count {
@@ -379,12 +407,14 @@
   .item-main { display: flex; flex-direction: column; gap: var(--sp-1); min-width: 0; }
   .item-text {
     margin: 0;
+    max-width: 80ch;
     color: var(--text-1);
     font: var(--fs-body) / var(--lh-body) var(--font-ui);
   }
   .item-text.strong { font-weight: 500; }
   .item-sub {
     margin: 0;
+    max-width: 80ch;
     color: var(--text-2);
     font: var(--fs-caption) / var(--lh-caption) var(--font-ui);
   }
@@ -410,19 +440,37 @@
     margin-top: var(--sp-1);
   }
   .meta-val { color: var(--text-2); font-size: var(--fs-mono-sm); }
+  /* referências V1…V5 / SRC-* como chips: alvo de toque, não texto miúdo */
   .refs {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
     color: var(--text-3);
     font: var(--fs-caption) / var(--lh-caption) var(--font-ui);
   }
   .refs.id { font-family: var(--font-mono); font-size: var(--fs-mono-sm); }
+  .refs-label { margin-right: 2px; }
   .ref {
-    color: var(--accent-text);
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 0 var(--sp-2);
+    border: 1px solid var(--border-1);
+    border-radius: var(--r-pill);
+    color: var(--text-2);
     text-decoration: none;
-    font-family: var(--font-mono);
-    font-size: var(--fs-mono-sm);
-    border-radius: var(--r-1);
+    font: 500 var(--fs-mono-sm) / 1 var(--font-mono);
+    transition:
+      border-color var(--dur-base) var(--ease-std),
+      color var(--dur-base) var(--ease-std);
   }
-  .ref:hover { text-decoration: underline; }
+  .ref:hover { border-color: var(--border-2); color: var(--text-1); }
+  @media (max-width: 767px), (pointer: coarse) {
+    .toc-link,
+    .ref { min-height: var(--touch); }
+    .ref { min-width: var(--touch); justify-content: center; }
+  }
 
   .caveats {
     margin: 0;
@@ -437,6 +485,7 @@
     flex-direction: column;
     gap: var(--sp-1);
   }
+  .caveats li { max-width: 80ch; }
   .caveats li:first-child { color: var(--text-1); font-weight: 500; }
 
   .foot {

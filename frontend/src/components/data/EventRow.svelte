@@ -1,5 +1,6 @@
 <script lang="ts">
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
+  import Stethoscope from '@lucide/svelte/icons/stethoscope'
   import { severityTone, type EventView } from '../../lib/api'
   import { ageSince, fmtDuration, fmtWhen } from '../../lib/format'
   import { app } from '../../lib/state.svelte'
@@ -37,7 +38,7 @@
   <span class="body">
     <span class="title-line">
       <span class="title">{event.title_pt}</span>
-      {#if hasDiagnosis}<Badge tone="accent">Diagnóstico</Badge>{/if}
+      {#if hasDiagnosis}<Badge tone="ghost"><Stethoscope size={12} aria-hidden="true" /> Diagnóstico</Badge>{/if}
       {#if event.quality === 'SIMULATED'}<Badge tone="sim" hatch>Simulado</Badge>{/if}
     </span>
     <span class="summary">{event.summary_pt}</span>
@@ -64,7 +65,7 @@
     border-top: 1px solid var(--border-1);
     background: var(--surf-1);
     transition: background-color var(--dur-base) var(--ease-std);
-    animation: rise var(--dur-screen) var(--ease-out) both;
+    animation: rise var(--dur-screen) var(--ease-out) backwards;
     animation-delay: calc(var(--i, 0) * var(--stagger));
   }
   @keyframes rise {

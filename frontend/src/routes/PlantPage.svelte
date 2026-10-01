@@ -104,9 +104,6 @@
               <span>{c.state_pt}</span>
             </span>
             <span class="pcard-badges">
-              {#if c.is_example}
-                <Badge tone="ghost" title="Perfil de exemplo: existência real não confirmada">exemplo</Badge>
-              {/if}
               {#if c.data_source === 'SIMULATED'}
                 <Badge tone="sim" hatch>Simulado</Badge>
               {/if}
@@ -114,7 +111,9 @@
           </header>
 
           <h2 class="pcard-name">{c.name}</h2>
-          <p class="pcard-app">{applicationText(c)}</p>
+          <p class="pcard-app">
+            {applicationText(c)}{#if c.is_example}<span title="Perfil de exemplo: existência real não confirmada">{' · perfil de exemplo'}</span>{/if}
+          </p>
 
           {#if anomaly}
             <p class="pcard-anomaly" data-tone={tone}>{anomaly}</p>
@@ -140,7 +139,7 @@
               </span>
               {#if mf && (usable || mf.quality === 'STALE')}<span class="unit">{mf.unit}</span>{/if}
             </div>
-            <Sparkline points={live.seriesFor(c.id, 'mass_flow')} faded={!usable} height={28} />
+            <Sparkline points={live.seriesFor(c.id, 'mass_flow')} faded={!usable} height={28} showWindow={false} />
           </div>
 
           <footer class="pcard-foot">
@@ -174,6 +173,9 @@
     font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui);
     color: var(--text-1);
   }
+  @media (min-width: 1024px) {
+    .plant-title { font-size: var(--fs-display); line-height: var(--lh-display); }
+  }
   .plant-summary {
     margin: 0;
     color: var(--text-2);
@@ -184,6 +186,11 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
     gap: var(--sp-5);
+    /* em 1920 os cards não boiam: a grade tem teto e os cards crescem um pouco */
+    max-width: 1280px;
+  }
+  @media (min-width: 1600px) {
+    .grid { --card-min: 400px; }
   }
   @media (max-width: 767px) {
     .grid { grid-template-columns: 1fr; gap: var(--sp-4); }
@@ -200,7 +207,7 @@
     color: inherit;
     text-decoration: none;
     min-width: 0;
-    animation: rise var(--dur-screen) var(--ease-out) both;
+    animation: rise var(--dur-screen) var(--ease-out) backwards;
     animation-delay: calc(var(--i, 0) * var(--stagger));
     transition:
       border-color var(--dur-base) var(--ease-std),

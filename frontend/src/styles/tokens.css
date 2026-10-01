@@ -70,6 +70,7 @@
   --font-mono: "IBM Plex Mono", Consolas, monospace;
   --fs-num-xl: 32px; --lh-num-xl: 36px;   /* valor KPI desktop, mono 500 tnum */
   --fs-num-lg: 24px; --lh-num-lg: 28px;   /* valor KPI compacto/celular */
+  --fs-display: 28px; --lh-display: 32px; /* título de página em ≥ 1024 px, 600 (Shuri, rodada 2) */
   --fs-h1: 22px; --lh-h1: 28px;           /* título de página, 600 */
   --fs-h2: 17px; --lh-h2: 24px;           /* seção, 600 */
   --fs-h3: 14px; --lh-h3: 20px;           /* título de card, 600 */

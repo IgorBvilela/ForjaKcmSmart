@@ -1,5 +1,6 @@
 <script lang="ts">
-  /** Header: alternador da sidebar, marca, seletor de equipamento, ONLINE, selo e relógio. */
+  /** Header: alternador da sidebar, marca, seletor de equipamento, estado do Edge (toque abre a
+   *  explicação), selo Somente leitura e relógio. Alvos de 44 px em toque e abaixo de 1024 px. */
   import Menu from '@lucide/svelte/icons/menu'
   import PanelLeftClose from '@lucide/svelte/icons/panel-left-close'
   import PanelLeftOpen from '@lucide/svelte/icons/panel-left-open'
@@ -9,6 +10,7 @@
   import { app } from '../../lib/state.svelte'
   import { TID } from '../../lib/testids'
   import StatusDot from '../ui/StatusDot.svelte'
+  import Tooltip from '../ui/Tooltip.svelte'
   import EquipmentSelect from './EquipmentSelect.svelte'
   import ReadOnlyBadge from './ReadOnlyBadge.svelte'
 
@@ -24,11 +26,13 @@
           ? 'RECONECTANDO'
           : 'CONECTANDO',
   )
+  /** Celular: texto curto; a cor do ponto diz o resto e o toque abre a explicação. */
+  const edgeShort = $derived(live.edge === 'online' ? 'ON' : live.edge === 'offline' ? 'OFF' : '…')
   const edgeTitle = $derived(
     live.edge === 'online'
       ? 'Edge local respondendo. Tempo real ativo.'
       : live.edge === 'offline'
-        ? 'Sem heartbeat do serviço local há mais de 12 s.'
+        ? 'Sem heartbeat do serviço local há mais de 12 s. Os valores na tela são os últimos recebidos.'
         : 'Aguardando o serviço local.',
   )
   const toggleLabel = $derived(
@@ -77,16 +81,18 @@
   </div>
 
   <div class="hdr-right">
-    <span class="online" data-testid={TID.header.online} data-state={live.edge} title={edgeTitle}>
-      <StatusDot state={edgeTone} pulse={live.edge === 'online'} size={8} label={edgeTitle} />
-      <span class="online-text">{edgeText}</span>
+    <span class="online" data-testid={TID.header.online} data-state={live.edge}>
+      <Tooltip label={`Estado do serviço local: ${edgeText}`} text={edgeTitle} align="end">
+        <StatusDot state={edgeTone} pulse={live.edge === 'online'} size={app.isMobile ? 10 : 8} />
+        <span class="online-text">{app.isMobile ? edgeShort : edgeText}</span>
+      </Tooltip>
     </span>
     {#if !app.isMobile}
       <ReadOnlyBadge />
     {/if}
-    <time class="clock num" data-testid={TID.header.clock} datetime={new Date(app.now).toISOString()}>
+    <time class="clock" data-testid={TID.header.clock} datetime={new Date(app.now).toISOString()}>
       <span class="clock-date">{fmtDate(app.now)}</span>
-      <span class="clock-time">{fmtClock(new Date(app.now), !app.isNarrow)}</span>
+      <span class="clock-time num">{fmtClock(new Date(app.now), !app.isNarrow)}</span>
     </time>
   </div>
 </header>
@@ -107,7 +113,7 @@
   }
   .hdr-left { display: flex; align-items: center; gap: var(--sp-3); min-width: 0; }
   .hdr-center { display: flex; justify-content: center; min-width: 0; }
-  .hdr-right { display: flex; align-items: center; gap: var(--sp-4); justify-content: flex-end; }
+  .hdr-right { display: flex; align-items: center; gap: var(--sp-3); justify-content: flex-end; }
 
   .icon-btn {
     display: grid;
@@ -129,6 +135,7 @@
     display: flex;
     align-items: center;
     gap: var(--sp-3);
+    min-height: var(--touch);
     color: inherit;
     text-decoration: none;
     border-radius: var(--r-2);
@@ -152,44 +159,44 @@
   .online {
     display: inline-flex;
     align-items: center;
-    gap: var(--sp-2);
     color: var(--text-2);
     font: 600 var(--fs-label) / var(--lh-label) var(--font-ui);
     letter-spacing: var(--ls-label);
     white-space: nowrap;
   }
+  .online :global(.tip-btn) { gap: var(--sp-2); }
   .online[data-state='online'] .online-text { color: var(--st-ok); }
   .online[data-state='offline'] .online-text { color: var(--st-crit); }
 
+  /* data em fonte da interface; só a hora é número (mono) */
   .clock {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    font-size: var(--fs-mono-sm);
-    line-height: 14px;
     color: var(--text-2);
     white-space: nowrap;
   }
-  .clock-date { color: var(--text-3); }
-  .clock-time { color: var(--text-1); font-size: var(--fs-mono); }
+  .clock-date { color: var(--text-3); font: var(--fs-caption) / 14px var(--font-ui); }
+  .clock-time { color: var(--text-1); font-size: var(--fs-mono); line-height: 16px; }
 
   @media (max-width: 1279px) {
     .wordmark { display: none; }
     .hdr { gap: var(--sp-3); }
+    .brand { min-width: var(--touch); justify-content: center; padding: 0; }
+  }
+  @media (max-width: 1023px), (pointer: coarse) {
+    .icon-btn { width: var(--touch); height: var(--touch); }
   }
   @media (max-width: 1023px) {
     .clock-date { display: none; }
-    .hdr-right { gap: var(--sp-3); }
+    .hdr-right { gap: var(--sp-2); }
   }
   @media (max-width: 767px) {
     .hdr {
       grid-template-columns: auto minmax(0, 1fr) auto;
-      padding: 0 var(--sp-3) 0 var(--sp-2);
+      padding: 0 var(--sp-2);
       gap: var(--sp-2);
     }
-    .icon-btn { width: var(--touch); height: var(--touch); }
-    .brand { padding-right: 0; }
-    .online-text { display: none; }
     .hdr-center { justify-content: stretch; }
   }
   @media (max-width: 479px) {

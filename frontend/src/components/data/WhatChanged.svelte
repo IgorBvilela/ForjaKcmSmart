@@ -114,12 +114,14 @@
   .delta { color: var(--text-1); }
   .delta[data-dir='flat'] { color: var(--text-3); }
   @media (max-width: 767px) {
+    /* grade 2 + 1: Antes | Agora, e Variação em largura total (não estoura em 320 px) */
     .row {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       row-gap: var(--sp-1);
     }
     .row.head { display: none; }
     .var { grid-column: 1 / -1; }
+    .delta { grid-column: 1 / -1; white-space: normal; }
     .num-col { text-align: left; }
     .num::before {
       display: block;

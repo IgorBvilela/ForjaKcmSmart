@@ -54,7 +54,7 @@
     gap: var(--sp-3);
     align-items: start;
     padding: var(--sp-2) 0;
-    animation: rise var(--dur-screen) var(--ease-out) both;
+    animation: rise var(--dur-screen) var(--ease-out) backwards;
     animation-delay: calc(var(--i, 0) * var(--stagger));
   }
   @keyframes rise {
@@ -107,7 +107,12 @@
   }
   .muted .tl-title { color: var(--text-2); font-weight: 400; }
   @media (max-width: 767px) {
-    .tl-item { grid-template-columns: 52px 16px minmax(0, 1fr); gap: var(--sp-2); }
-    .tl-item::before { left: calc(52px + var(--sp-2) + 7px); }
+    .tl-item { grid-template-columns: 60px 16px minmax(0, 1fr); gap: var(--sp-2); }
+    .tl-item::before { left: calc(60px + var(--sp-2) + 7px); }
+  }
+  /* toque: título-link com 44 px; o padding do item garante que as áreas não se sobreponham */
+  @media (max-width: 767px), (pointer: coarse) {
+    .tl-item { padding: var(--sp-3) 0; }
+    a.tl-title { display: inline-block; padding: 12px 0; margin: -12px 0; }
   }
 </style>

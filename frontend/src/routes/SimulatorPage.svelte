@@ -1,17 +1,20 @@
 <script lang="ts">
   // Página do simulador (bloco D). Só cenário e sliders: nenhum comando chega ao KCM.
-  // Dados ao vivo por polling de 1 Hz em GET /equipments/{id}/live (o cliente SSE compartilhado,
-  // src/lib/live.ts, é do bloco B; quando existir, trocar `poll()` por ele).
+  // Dados ao vivo por polling de 1 Hz em GET /equipments/{id}/live.
+  // Usa o sistema de componentes (KpiTile, QualityBadge via KpiTile, Button, EmptyState): a faixa
+  // DADOS SIMULADOS e o padding da página vêm do shell, não daqui.
   import { onMount } from 'svelte'
   import WbfMachine from '../components/wbf/WbfMachine.svelte'
+  import KpiTile from '../components/data/KpiTile.svelte'
+  import Button from '../components/ui/Button.svelte'
+  import EmptyState from '../components/ui/EmptyState.svelte'
+  import { app } from '../lib/state.svelte'
   import {
     ApiFailure,
     equipmentIdFromUrl,
-    formatAge,
     formatValue,
     simulatorApi,
     tagMap,
-    type LiveTag,
     type LiveView,
     type QualityCode,
     type ReferenceValues,
@@ -100,6 +103,7 @@
   // ---- tiles ao vivo ------------------------------------------------------------------------
   const TILE_TAGS = ['setpoint', 'mass_flow', 'drive_command', 'rpm', 'belt_load', 'net_weight', 'int_channel_pct']
   const STATE_PT: Record<number, string> = { 0: 'Parada', 1: 'Em operação', 2: 'Alarme' }
+  const stateTag = $derived(tags['machine_state'])
 
   // ---- ciclo de vida ------------------------------------------------------------------------
   async function loadStatic() {
@@ -190,18 +194,9 @@
       busy = null
     }
   }
-
-  const qualityClass = (q: QualityCode) => `q-${q.toLowerCase().replace('_', '-')}`
-  const tileValue = (t: LiveTag | undefined) =>
-    !t || !t.is_usable && t.quality === 'COMM_ERROR' ? '—' : formatValue(t?.value ?? null, t?.decimals ?? 1)
 </script>
 
 <section class="page" data-testid="simulator-page" aria-labelledby="sim-title">
-  <div class="banner" data-testid="banner-data-source" data-source="SIMULATED">
-    <span class="banner-tag">Dados simulados</span>
-    <span class="banner-note">{sim?.note_pt ?? 'Controles afetam apenas o simulador. Nenhum comando chega ao KCM.'}</span>
-  </div>
-
   <header class="head">
     <h1 id="sim-title">Simulador</h1>
     {#if live}
@@ -209,24 +204,23 @@
     {:else if id}
       <p class="sub"><span class="num">{id}</span></p>
     {/if}
+    <p class="note">{sim?.note_pt ?? 'Controles afetam apenas o simulador. Nenhum comando chega ao KCM.'}</p>
   </header>
 
   {#if !id}
-    <div class="empty" data-testid="empty-state" role="status">
-      <h2>Nenhum equipamento selecionado</h2>
-      <p>Abra o simulador a partir de um equipamento (menu Ferramentas → Simulador).</p>
-    </div>
+    <EmptyState
+      title="Nenhum equipamento selecionado"
+      text="Abra o simulador a partir de um equipamento (menu Ferramentas → Simulador)."
+    />
   {:else if notSimulator}
-    <div class="empty" data-testid="empty-state" role="status">
-      <h2>Simulador indisponível: este equipamento lê dados reais</h2>
-      <p>Cenários e controles só existem para equipamentos ligados ao driver <span class="num">simulator</span>. Dados do equipamento não podem ser alterados pela Forja.</p>
-    </div>
+    <EmptyState
+      title="Simulador indisponível: este equipamento lê dados reais"
+      text="Cenários e controles só existem para equipamentos ligados ao driver simulator. Dados do equipamento não podem ser alterados pela Forja."
+    />
   {:else if loadError}
-    <div class="empty is-err" data-testid="empty-state" role="alert">
-      <h2>Não foi possível carregar o simulador</h2>
-      <p>{loadError.messagePt} <span class="num">({loadError.code})</span></p>
-      <button class="btn" type="button" onclick={() => void loadStatic().then(poll)}>Tentar de novo</button>
-    </div>
+    <EmptyState title="Não foi possível carregar o simulador" text={`${loadError.messagePt} (${loadError.code})`}>
+      <Button variant="ghost" onclick={() => void loadStatic().then(poll)}>Tentar de novo</Button>
+    </EmptyState>
   {:else}
     <div class="grid">
       <div class="col-machine">
@@ -241,29 +235,43 @@
           rpmRef={refs?.rpm_ref ?? null}
           beltLoadRef={refs?.belt_load_ref ?? null}
           scenario={activeCode}
+          reducedMotion={app.reducedMotion}
         />
 
         <div class="tiles" aria-label="Valores ao vivo">
-          <div class="tile" data-testid="kpi-machine_state-value">
-            <span class="tile-label">Estado da máquina</span>
-            <span class="tile-value text">{machineState == null ? '—' : STATE_PT[machineState]}</span>
-            {#if tags['machine_state']}
-              <span class="q {qualityClass(tags['machine_state'].quality)}" data-testid="kpi-machine_state-quality">
-                {tags['machine_state'].quality_pt}{tags['machine_state'].quality === 'STALE' ? ` · ${formatAge(tags['machine_state'].age_s)}` : ''}
-              </span>
-            {/if}
-          </div>
-          {#each TILE_TAGS as key (key)}
+          <KpiTile
+            tag="machine_state"
+            label={stateTag?.label_pt ?? 'Estado da máquina'}
+            textValue={machineState == null ? '—' : STATE_PT[machineState]}
+            quality={stateTag?.quality ?? 'COMM_ERROR'}
+            qualityPt={stateTag?.quality_pt ?? null}
+            ageS={stateTag?.age_s ?? null}
+            reasonPt={stateTag?.reason_pt ?? null}
+            compact
+            sparkline={false}
+            explainQuality
+            animate={false}
+            index={0}
+          />
+          {#each TILE_TAGS as key, i (key)}
             {@const t = tags[key]}
-            <div class="tile" class:stale={t?.quality === 'STALE'} class:comm={t?.quality === 'COMM_ERROR'}>
-              <span class="tile-label">{t?.label_pt ?? sliderDefs.find((d) => d.key === key)?.label ?? key}</span>
-              <span class="tile-value num" data-testid="kpi-{key}-value">
-                {tileValue(t)}<span class="unit">{t?.unit ?? ''}</span>
-              </span>
-              <span class="q {qualityClass(t?.quality ?? 'COMM_ERROR')}" data-testid="kpi-{key}-quality" data-quality={t?.quality ?? ''}>
-                {t?.quality_pt ?? 'Sem leitura'}{t?.quality === 'STALE' ? ` · ${formatAge(t.age_s)}` : ''}
-              </span>
-            </div>
+            <KpiTile
+              tag={key}
+              label={t?.label_pt ?? sliderDefs.find((d) => d.key === key)?.label ?? key}
+              unit={t?.unit ?? ''}
+              decimals={t?.decimals ?? 1}
+              value={t?.value ?? null}
+              quality={t?.quality ?? 'COMM_ERROR'}
+              qualityPt={t?.quality_pt ?? null}
+              ageS={t?.age_s ?? null}
+              reasonPt={t?.reason_pt ?? null}
+              compact
+              sparkline={false}
+              explainQuality
+              animate={!app.reducedMotion}
+              index={i + 1}
+              popoverAlign={i >= 3 ? 'end' : 'start'}
+            />
           {/each}
         </div>
         {#if pollFailures >= 3}
@@ -346,8 +354,8 @@
             {/each}
           </div>
           <div class="actions">
-            <button class="btn primary" type="button" onclick={() => void applySliders()} disabled={busy != null || !anySliderOn}>Aplicar</button>
-            <button class="btn" type="button" onclick={() => void clearSliders()} disabled={busy != null || !hasOverrides}>Limpar</button>
+            <Button variant="primary" onclick={() => void applySliders()} disabled={busy != null || !anySliderOn}>Aplicar</Button>
+            <Button variant="ghost" onclick={() => void clearSliders()} disabled={busy != null || !hasOverrides}>Limpar</Button>
           </div>
         </details>
       </aside>
@@ -358,39 +366,17 @@
 <style>
   .page {
     display: grid;
-    gap: var(--sp-4);
-    max-width: var(--content-max);
-    padding: var(--sp-4);
+    gap: var(--sp-5);
     color: var(--text-1);
   }
-  @media (min-width: 1024px) {
-    .page { padding: var(--sp-6); }
-  }
-
-  /* ---- faixa DADOS SIMULADOS (lilás, hachura) ---- */
-  .banner {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--sp-2) var(--sp-3);
-    min-height: var(--banner-h);
-    padding: var(--sp-1) var(--sp-3);
-    border: 1px solid var(--q-sim);
-    border-radius: var(--r-2);
-    background: var(--q-sim-hatch), var(--surf-1);
-    color: var(--q-sim);
-  }
-  .banner-tag {
-    font: 500 var(--fs-label) / var(--lh-label) var(--font-ui);
-    letter-spacing: var(--ls-label);
-    text-transform: uppercase;
-  }
-  .banner-note { font: 400 var(--fs-caption) / var(--lh-caption) var(--font-ui); color: var(--text-2); }
 
   .head { display: grid; gap: var(--sp-1); }
   h1 { margin: 0; font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui); }
-  h2 { margin: 0; font: 600 var(--fs-h2) / var(--lh-h2) var(--font-ui); }
+  @media (min-width: 1024px) {
+    h1 { font-size: var(--fs-display); line-height: var(--lh-display); }
+  }
   .sub { margin: 0; color: var(--text-3); font: 400 var(--fs-body) / var(--lh-body) var(--font-ui); }
+  .note { margin: var(--sp-1) 0 0; max-width: 80ch; color: var(--text-2); font: var(--fs-caption) / var(--lh-caption) var(--font-ui); }
   .muted { color: var(--text-3); font: 400 var(--fs-caption) / var(--lh-caption) var(--font-ui); margin: 0; }
 
   /* ---- grid 12 colunas no desktop; 1 coluna no celular ---- */
@@ -403,43 +389,14 @@
     .col-panel { grid-column: span 4; }
   }
 
-  /* ---- tiles ---- */
+  /* ---- tiles (KpiTile compacto, sem mini-tendência) ---- */
   .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); }
-  @media (min-width: 768px) { .tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-  .tile {
-    display: grid;
-    gap: var(--sp-1);
-    padding: var(--sp-3);
-    background: var(--surf-1);
-    border: 1px solid var(--border-1);
-    border-radius: var(--r-3);
-    min-width: 0;
-    transition: opacity var(--dur-base) var(--ease-std);
-  }
-  .tile.stale { opacity: 0.7; border-style: dashed; border-color: var(--q-stale); }
-  .tile.comm { border-color: var(--q-comm); }
-  .tile-label { font: 500 var(--fs-label) / var(--lh-label) var(--font-ui); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--text-3); }
-  .tile-value { font: 500 var(--fs-num-lg) / var(--lh-num-lg) var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-1); overflow-wrap: anywhere; }
-  .tile-value.text { font: 600 var(--fs-h2) / var(--lh-h2) var(--font-ui); }
-  .tile.stale .tile-value { color: var(--text-3); }
-  .unit { margin-left: var(--sp-1); font: 400 var(--fs-caption) / var(--lh-caption) var(--font-ui); color: var(--text-3); }
-
-  .q { display: inline-flex; align-items: center; gap: var(--sp-1); font: 500 var(--fs-caption) / var(--lh-caption) var(--font-ui); color: var(--text-3); }
-  .q::before { content: ''; width: 8px; height: 8px; border-radius: var(--r-pill); background: var(--q-good); flex: none; }
-  .q-simulated { color: var(--q-sim); }
-  .q-simulated::before { background: var(--q-sim); }
-  .q-uncertain { color: var(--q-uncertain); }
-  .q-uncertain::before { background: transparent; border: 1px dashed var(--q-uncertain); }
-  .q-stale { color: var(--q-stale); }
-  .q-stale::before { background: transparent; border: 1px dashed var(--q-stale); }
-  .q-comm-error { color: var(--q-comm); }
-  .q-comm-error::before { background: transparent; border: 2px solid var(--q-comm); }
-  .q-bad { color: var(--q-bad); }
-  .q-bad::before { background: transparent; border: 1px solid var(--q-bad); border-radius: 0; }
+  @media (max-width: 359px) { .tiles { grid-template-columns: minmax(0, 1fr); } }
+  @media (min-width: 768px) { .tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-3); } }
 
   .poll-warn { margin: 0; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-2); background: var(--st-info-bg); color: var(--st-info); font: 400 var(--fs-caption) / var(--lh-caption) var(--font-ui); }
 
-  /* ---- radio-cards dos cenários ---- */
+  /* ---- radio-cards dos cenários: cobre só na borda e na barra (seleção), nunca no fundo ou no texto ---- */
   .scenarios { display: grid; gap: var(--sp-2); margin: 0; padding: 0; border: 0; min-width: 0; }
   .scenarios legend { padding: 0; margin-bottom: var(--sp-1); }
   @media (min-width: 768px) and (max-width: 1023px) { .scenarios { grid-template-columns: repeat(2, minmax(0, 1fr)); } .scenarios legend { grid-column: 1 / -1; } }
@@ -455,14 +412,13 @@
     cursor: pointer;
     transition: border-color var(--dur-base) var(--ease-std), background var(--dur-base) var(--ease-std);
   }
-  .card:hover { border-color: var(--border-2); }
-  .card.active { border-color: var(--accent); background: var(--accent-soft); }
+  .card:hover { border-color: var(--border-2); background: var(--surf-2); }
+  .card.active { border-color: var(--accent); }
   .card.active::before { content: ''; position: absolute; left: 0; top: var(--sp-2); bottom: var(--sp-2); width: 3px; border-radius: var(--r-pill); background: var(--accent); }
   .card:has(input:focus-visible) { box-shadow: var(--focus); }
   .card:has(input:disabled) { cursor: progress; }
   .card input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
   .card-title { font: 500 var(--fs-body) / var(--lh-body) var(--font-ui); color: var(--text-1); }
-  .card.active .card-title { color: var(--accent-text); }
   .card-code { font: 400 var(--fs-mono-sm) / var(--lh-mono-sm) var(--font-mono); color: var(--text-3); }
 
   .explain { display: grid; gap: var(--sp-2); padding: var(--sp-3); border-radius: var(--r-3); border: 1px solid var(--border-1); background: var(--surf-1); }
@@ -493,8 +449,9 @@
     transition: border-color var(--dur-base) var(--ease-std);
   }
   .slider.on { border-color: var(--accent); }
-  .slider-fix { grid-area: fix; display: inline-flex; align-items: center; gap: var(--sp-1); min-height: 28px; font: 500 var(--fs-caption) / var(--lh-caption) var(--font-ui); color: var(--text-2); cursor: pointer; }
-  .slider-fix input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+  /* "Fixar": alvo de 44 px com caixa de 24 px */
+  .slider-fix { grid-area: fix; display: inline-flex; align-items: center; gap: var(--sp-2); min-height: var(--touch); padding-right: var(--sp-1); font: 500 var(--fs-caption) / var(--lh-caption) var(--font-ui); color: var(--text-2); cursor: pointer; }
+  .slider-fix input { width: 24px; height: 24px; accent-color: var(--accent); margin: 0; cursor: pointer; }
   .slider-name { grid-area: name; font: 500 var(--fs-body) / var(--lh-body) var(--font-ui); color: var(--text-1); }
   .slider-val { grid-area: val; font: 500 var(--fs-mono) / var(--lh-mono) var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-1); }
   .slider:not(.on) .slider-val, .slider:not(.on) .slider-name { color: var(--text-3); }
@@ -502,33 +459,10 @@
   .range:disabled { opacity: 0.5; }
   .actions { display: flex; gap: var(--sp-2); padding: 0 var(--sp-3) var(--sp-3); }
 
-  .btn {
-    min-height: var(--touch);
-    padding: 0 var(--sp-4);
-    border-radius: var(--r-2);
-    border: 1px solid var(--border-input);
-    background: var(--surf-2);
-    color: var(--text-1);
-    font: 500 var(--fs-body) / var(--lh-body) var(--font-ui);
-    cursor: pointer;
-    transition: background var(--dur-micro) var(--ease-std), transform var(--dur-micro) var(--ease-out);
-  }
-  .btn:hover:not(:disabled) { background: var(--surf-3); }
-  .btn:active:not(:disabled) { transform: translateY(1px); }
-  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-  .btn.primary:hover:not(:disabled) { background: var(--accent-text); }
-
-  /* ---- estado vazio honesto ---- */
-  .empty { display: grid; gap: var(--sp-2); padding: var(--sp-6); border: 1px dashed var(--border-2); border-radius: var(--r-3); background: var(--surf-1); color: var(--text-2); max-width: 640px; }
-  .empty p { margin: 0; font: 400 var(--fs-body) / var(--lh-body) var(--font-ui); }
-  .empty.is-err { border-color: var(--st-crit); }
-  .empty .btn { justify-self: start; }
-
   .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
   .label { font: 500 var(--fs-label) / var(--lh-label) var(--font-ui); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--text-3); }
 
   @media (prefers-reduced-motion: reduce) {
-    .card, .tile, .slider, .btn { transition: none; }
+    .card, .slider { transition: none; }
   }
 </style>

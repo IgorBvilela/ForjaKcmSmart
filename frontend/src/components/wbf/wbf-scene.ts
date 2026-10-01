@@ -22,10 +22,22 @@ export const BELT = {
   markPeriod: 24,
 } as const
 
-export const BELT_PATH =
-  `M ${BELT.x1} ${BELT.yTop} H ${BELT.x2} ` +
-  `A ${BELT.r} ${BELT.r} 0 0 1 ${BELT.x2} ${BELT.yBottom} H ${BELT.x1} ` +
-  `A ${BELT.r} ${BELT.r} 0 0 1 ${BELT.x1} ${BELT.yTop} Z`
+/** Laço em "estádio" (dois trechos retos + duas meias-voltas) centrado no eixo dos roletes. */
+export function stadiumPath(x1: number, x2: number, cy: number, r: number): string {
+  return (
+    `M ${x1} ${cy - r} H ${x2} A ${r} ${r} 0 0 1 ${x2} ${cy + r} H ${x1} ` +
+    `A ${r} ${r} 0 0 1 ${x1} ${cy - r} Z`
+  )
+}
+
+const BELT_CY = (BELT.yTop + BELT.yBottom) / 2
+/** Linha média da correia: por aqui correm as marcas (stroke largo = espessura da banda). */
+export const BELT_PATH = stadiumPath(BELT.x1, BELT.x2, BELT_CY, BELT.r)
+/** Metade da espessura da banda da correia (unidades do viewBox). */
+export const BELT_HALF = 3
+/** Bordas externa e interna da banda: o que se vê como "correia" no desenho técnico. */
+export const BELT_OUTER_PATH = stadiumPath(BELT.x1, BELT.x2, BELT_CY, BELT.r + BELT_HALF)
+export const BELT_INNER_PATH = stadiumPath(BELT.x1, BELT.x2, BELT_CY, BELT.r - BELT_HALF)
 
 /** Velocidade visual da correia quando rpm == rpmRef (px do viewBox por segundo). Só estética. */
 export const REF_PX_PER_S = 60
@@ -101,11 +113,11 @@ export interface ParticleSpec {
   lane: number
   /** fase inicial 0..1 na linha do tempo (bem distribuída para qualquer prefixo visível). */
   phase: number
-  /** opacidade base 0,5..0,9. */
+  /** opacidade base 0,7..1. */
   opacity: number
   /** deriva horizontal na queda de saída. */
   driftX: number
-  /** raio 1..1,5 (2 a 3 px no viewBox). */
+  /** raio 1,6..2,4 no viewBox (Shuri: 1..1,5 sumia em 470 px de largura). */
   r: number
 }
 
@@ -133,9 +145,9 @@ export function buildParticles(n: number = PARTICLE_MAX, seed = 7): ParticleSpec
       // Sequência áurea: os primeiros K índices ficam espalhados pela correia inteira,
       // então "esconder os últimos" não abre buraco num trecho só.
       phase: ((i + 1) * GOLDEN) % 1,
-      opacity: 0.5 + rnd() * 0.4,
+      opacity: 0.7 + rnd() * 0.3,
       driftX: rnd() * 14,
-      r: 1 + rnd() * 0.5,
+      r: 1.6 + rnd() * 0.8,
     })
   }
   return out
@@ -157,7 +169,8 @@ export interface ParticleTimeline {
  */
 export function particleTimeline(p: ParticleSpec): ParticleTimeline {
   const yEmit = CHUTE.bottom + 2
-  const yBelt = BELT.yTop - 1 - p.lane
+  // pousa sobre a borda externa da banda (yTop - BELT_HALF), com camadas acima
+  const yBelt = BELT.yTop - BELT_HALF - 1 - p.lane
   const xRideEnd = BELT.x2 + 8
   const xDrop = OUTLET.xBottomLeft + 2 + p.driftX
   const yDrop = OUTLET.yBottom - 2
