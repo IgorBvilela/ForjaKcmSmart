@@ -1,0 +1,43 @@
+/** Ids de teste (contrato B): `area-elemento[-detalhe]`. O Playwright (bloco E2E) só toca nestes. */
+export const TID = {
+  skipLink: 'shell-skip-link',
+  page: 'page',
+  header: {
+    root: 'header',
+    menuToggle: 'header-menu-toggle',
+    equipmentSelect: 'header-equipment-select',
+    online: 'header-online',
+    readOnlyBadge: 'header-readonly-badge',
+    clock: 'header-clock',
+  },
+  banner: { dataSource: 'banner-data-source', edgeOffline: 'banner-edge-offline' },
+  sidebar: {
+    root: 'sidebar',
+    toggle: 'sidebar-toggle',
+    link: (route: string) => `sidebar-link-${route}`,
+    scrim: 'drawer-scrim',
+  },
+  plant: {
+    title: 'plant-title',
+    summary: 'plant-summary',
+    grid: 'plant-grid',
+    card: (id: string) => `plant-card-${id}`,
+  },
+  kpi: {
+    grid: 'kpi-grid',
+    tile: (tag: string) => `kpi-${tag}`,
+    value: (tag: string) => `kpi-${tag}-value`,
+    quality: (tag: string) => `kpi-${tag}-quality`,
+    explain: (tag: string) => `kpi-${tag}-explain`,
+  },
+  systemView: { root: 'system-view', chip: 'system-view-chip', text: 'system-view-text' },
+  timeline: 'timeline',
+  diagnosisPanel: 'diagnosis-panel',
+  diagnosisSection: (code: string) => `diagnosis-section-${code}`,
+  diagnosisSummary: 'dashboard-diagnosis-summary',
+  wbfRoot: 'wbf-root',
+  sim: { scenario: (code: string) => `sim-scenario-${code}` },
+  emptyState: 'empty-state',
+  events: { list: 'events-list', row: (id: string) => `event-row-${id}`, detail: 'event-detail' },
+  about: 'about',
+} as const

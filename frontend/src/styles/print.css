@@ -1,0 +1,30 @@
+/* Impressão: só o conteúdo. Tema claro e movimento zero já vêm de tokens.css (@media print). */
+@media print {
+  .skip,
+  .rail,
+  .hdr,
+  .banner,
+  .offline,
+  .drawer-root,
+  .dash-actions,
+  .events-filters,
+  .toc,
+  .back {
+    display: none !important;
+  }
+  .shell {
+    display: block !important;
+  }
+  .content {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  .card,
+  .tile,
+  .pcard {
+    break-inside: avoid;
+  }
+  a[href]::after {
+    content: '';
+  }
+}
