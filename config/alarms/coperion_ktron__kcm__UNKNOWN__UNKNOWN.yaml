@@ -1,0 +1,99 @@
+# Catalogo de alarmes do KCM. Chave composta: (manufacturer, controller, application, software_version, code).
+# Esta chave: Coperion K-Tron / KCM / aplicacao UNKNOWN / versao UNKNOWN.
+# Os codigos abaixo foram vistos em referencia tecnica SEM documento identificado (Documento Mestre §9).
+# Por isso sao HYPOTHESIS: o titulo em portugues e traducao do texto do alarme, nao significado confirmado.
+# Com aplicacao UNKNOWN na chave, estas entradas NUNCA casam exatamente com um perfil real: aparecem so
+# como "candidatos" na busca, e a UI mostra "Nao catalogado" para o alarme.
+schema_version: 1
+alarms:
+  - key: { manufacturer: "Coperion K-Tron", controller: KCM, application: UNKNOWN, software_version: UNKNOWN, code: "06" }
+    text: "WT PROC FAILURE"
+    title_pt: "Falha no processamento de peso"
+    meaning_pt: "Tradução do texto do alarme. Comportamento real depende da aplicação e da versão."
+    evidence: HYPOTHESIS
+    source: "referência técnica sem documento identificado"
+    note_pt: "Candidato. Confirmar no manual da versão instalada antes de usar em diagnóstico."
+  - key: { manufacturer: "Coperion K-Tron", controller: KCM, application: UNKNOWN, software_version: UNKNOWN, code: "07" }
+    text: "INCORRECT NUM SFT"
+    title_pt: "Número de células SFT diferente do esperado"
+    meaning_pt: "Tradução do texto do alarme. Comportamento real depende da aplicação e da versão."
+    evidence: HYPOTHESIS
+    source: "referência técnica sem documento identificado"
+    note_pt: "Candidato. Confirmar no manual da versão instalada antes de usar em diagnóstico."
+  - key: { manufacturer: "Coperion K-Tron", controller: KCM, application: UNKNOWN, software_version: UNKNOWN, code: "08" }
+    text: "BAD SFT STATUS"
+    title_pt: "Status inválido da célula de pesagem SFT"
+    meaning_pt: "Tradução do texto do alarme. Comportamento real depende da aplicação e da versão."
+    evidence: HYPOTHESIS
+    source: "referência técnica sem documento identificado"
+    note_pt: "Candidato. O simulador usa este código no cenário SFT_FAILURE como valor SIMULADO."
+  - key: { manufacturer: "Coperion K-Tron", controller: KCM, application: UNKNOWN, software_version: UNKNOWN, code: "09" }
+    text: "NO MDU FOUND"
+    title_pt: "Módulo de acionamento MDU não encontrado"
+    meaning_pt: "Tradução do texto do alarme. Comportamento real depende da aplicação e da versão."
+    evidence: HYPOTHESIS
+    source: "referência técnica sem documento identificado"
+    note_pt: "Candidato. Confirmar no manual da versão instalada antes de usar em diagnóstico."
+  - key: { manufacturer: "Coperion K-Tron", controller: KCM, application: UNKNOWN, software_version: UNKNOWN, code: "13" }
+    text: "MDU SPEED DEV"
+    title_pt: "Desvio de velocidade no MDU"
+    meaning_pt: "Tradução do texto do alarme. Comportamento real depende da aplicação e da versão."
+    evidence: HYPOTHESIS
+    source: "referência técnica sem documento identificado"
+    note_pt: "Candidato. Confirmar no manual da versão instalada antes de usar em diagnóstico."
+  - key: { manufacturer: "Coperion K-Tron", controller: KCM, application: UNKNOWN, software_version: UNKNOWN, code: "16" }
+    text: "MDU NO ENCODER"
+    title_pt: "MDU sem sinal de encoder"
+    meaning_pt: "Tradução do texto do alarme. Comportamento real depende da aplicação e da versão."
+    evidence: HYPOTHESIS
+    source: "referência técnica sem documento identificado"
+    note_pt: "Candidato. Confirmar no manual da versão instalada antes de usar em diagnóstico."
+  - key: { manufacturer: "Coperion K-Tron", controller: KCM, application: UNKNOWN, software_version: UNKNOWN, code: "17" }
+    text: "MDU I/O FAULT"
+    title_pt: "Falha de entrada/saída do MDU"
+    meaning_pt: "Tradução do texto do alarme. Comportamento real depende da aplicação e da versão."
+    evidence: HYPOTHESIS
+    source: "referência técnica sem documento identificado"
+    note_pt: "Candidato. Confirmar no manual da versão instalada antes de usar em diagnóstico."
+  - key: { manufacturer: "Coperion K-Tron", controller: KCM, application: UNKNOWN, software_version: UNKNOWN, code: "39" }
+    text: "EXT_IO_FAIL"
+    title_pt: "Falha de entrada/saída externa"
+    meaning_pt: "Tradução do texto do alarme. Comportamento real depende da aplicação e da versão."
+    evidence: HYPOTHESIS
+    source: "referência técnica sem documento identificado"
+    note_pt: "Candidato. Confirmar no manual da versão instalada antes de usar em diagnóstico."
+  - key: { manufacturer: "Coperion K-Tron", controller: KCM, application: UNKNOWN, software_version: UNKNOWN, code: "43" }
+    text: "MassFlow High"
+    title_pt: "Vazão alta"
+    meaning_pt: "Tradução do texto do alarme. Comportamento real depende da aplicação e da versão."
+    evidence: HYPOTHESIS
+    source: "referência técnica sem documento identificado"
+    note_pt: "Candidato. Confirmar no manual da versão instalada antes de usar em diagnóstico."
+  - key: { manufacturer: "Coperion K-Tron", controller: KCM, application: UNKNOWN, software_version: UNKNOWN, code: "44" }
+    text: "MassFlow Low"
+    title_pt: "Vazão baixa"
+    meaning_pt: "Tradução do texto do alarme. Comportamento real depende da aplicação e da versão."
+    evidence: HYPOTHESIS
+    source: "referência técnica sem documento identificado"
+    note_pt: "Candidato. Confirmar no manual da versão instalada antes de usar em diagnóstico."
+  - key: { manufacturer: "Coperion K-Tron", controller: KCM, application: UNKNOWN, software_version: UNKNOWN, code: "45" }
+    text: "Drive Command Ceiling"
+    title_pt: "Comando do acionamento no teto"
+    meaning_pt: "Tradução do texto do alarme. Comportamento real depende da aplicação e da versão."
+    evidence: HYPOTHESIS
+    source: "referência técnica sem documento identificado"
+    note_pt: "Candidato. Confirmar no manual da versão instalada antes de usar em diagnóstico."
+  - key: { manufacturer: "Coperion K-Tron", controller: KCM, application: UNKNOWN, software_version: UNKNOWN, code: "46" }
+    text: "Drive Command High"
+    title_pt: "Comando do acionamento alto"
+    meaning_pt: "Tradução do texto do alarme. Comportamento real depende da aplicação e da versão."
+    evidence: HYPOTHESIS
+    source: "referência técnica sem documento identificado"
+    note_pt: "Candidato. Confirmar no manual da versão instalada antes de usar em diagnóstico."
+  - key: { manufacturer: "Coperion K-Tron", controller: KCM, application: UNKNOWN, software_version: UNKNOWN, code: "47" }
+    text: "Drive Command Low"
+    title_pt: "Comando do acionamento baixo"
+    meaning_pt: "Tradução do texto do alarme. Comportamento real depende da aplicação e da versão."
+    evidence: HYPOTHESIS
+    source: "referência técnica sem documento identificado"
+    note_pt: "Candidato. Confirmar no manual da versão instalada antes de usar em diagnóstico."

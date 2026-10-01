@@ -1,0 +1,66 @@
+# Caso de campo estruturado. Fonte: Documento Mestre §7 (derivado em docs/derived/...). Tudo aqui e
+# FIELD_OBSERVED: ocorrencia real, sem causa confirmada. Medicoes sao observacao do atendimento,
+# NUNCA threshold nem valor universal. confirmed_cause permanece UNKNOWN ate evidencia que feche a cadeia.
+schema_version: 1
+id: CASE-2026-09-GTEX-PHA-PO-BASE-VELOCIDADE
+title_pt: "GTEX / PHA / Dosador Pó Base: leitura de velocidade zero com conjunto em movimento (09/2026)"
+plant: GTEX
+area: PHA
+equipment: "Dosador Pó Base"
+application: WBF
+period_pt: "aproximadamente 11 a 13/09/2026"
+evidence: FIELD_OBSERVED
+confirmed_cause: UNKNOWN
+observed_facts_pt:
+  - "Linha parada por período relevante."
+  - "Relato de falha de encoder."
+  - "Alarme 56 'BELTLOAD LOW' observado na tela do KCM (aplicação WBF)."
+  - "Conjunto/esteira chegou a girar fisicamente com RPM indicada em 0."
+  - "Operação local pelo KCM chegou a funcionar em contexto em que o automático/supervisório parava."
+  - "Cadeia elétrica/mecânica exigiu investigação."
+interventions_pt:
+  - "Conector/cabo da célula de carga reparado."
+  - "Encoder substituído."
+  - "Intervenções em cabos e conectores."
+  - "Emenda direta associada à rota MDU/Scale em contexto de campo."
+  - "Continuidade elétrica verificada em trechos."
+  - "Calibração/validação realizada posteriormente."
+measurements:
+  - what_pt: "Alimentação do encoder"
+    value: "aproximadamente 4,9 V"
+    nature_pt: "Observação do atendimento. Não é threshold nem valor nominal confirmado para esta instalação."
+    evidence: FIELD_OBSERVED
+  - what_pt: "MDU STATUS (bruto)"
+    value: "0046, 2006 e 2046 em momentos distintos"
+    nature_pt: "Valor bruto como veio. Sem decodificação de bits sem fonte adequada."
+    evidence: FIELD_OBSERVED
+  - what_pt: "Gap do sensor de velocidade"
+    value: "da ordem de 0,125 mm"
+    nature_pt: "Referência que apareceu no contexto estudado. Não é valor universal para qualquer sensor ou montagem."
+    evidence: FIELD_OBSERVED
+  - what_pt: "PICK UP TEETH"
+    value: UNKNOWN
+    nature_pt: "Deve refletir dentes/PPR reais da instalação. Referências históricas como 120/400 não se aplicam genericamente."
+    evidence: UNKNOWN
+calibration_reported_pt:
+  - "Tara/zero estático aproximado: 0,7447 kg / 0,0001 kg."
+  - "Correlação de calibração aproximada: 98,9% a 99,4%."
+  - "Validações comparando indicação do KCM com referência externa, dentro da tolerância de processo informada no atendimento."
+  - "Tratar como validação de processo/serviço de campo, não como certificação metrológica."
+learned_rule_pt: >-
+  Conjunto com movimento físico + Drive Command presente + RPM indicada = 0 é comportamento compatível com
+  problema na cadeia de feedback de velocidade, mas não confirma automaticamente encoder queimado.
+  Sequência de verificação: movimento físico? → alimentação do sensor → sinal/frequência na origem →
+  cabo/conector → gap/alinhamento → interface/SIB se aplicável → entrada do KCM → configuração/PICK UP TEETH.
+related_rules: [R-SPEED-001, R-BELTLOAD-001]
+related_diagnostics: [speed_feedback, belt_load_low]
+sources:
+  - id: SRC-CASE-GTEX-2026-09
+    kind: field_observation
+    title: "Caso de campo GTEX/PHA Pó Base, 09/2026 (Documento Mestre §7)"
+    reference: "docs/derived/Documento_Mestre_DERIVADO_do_DOCX_2026-09-30.md §7.1 a §7.5"
+    evidence_level: FIELD_OBSERVED
+notes_pt: >-
+  O encoder foi substituído e o sistema voltou a operar, mas a cadeia causal não foi fechada com evidência:
+  outras intervenções (cabos, conectores, emenda) ocorreram no mesmo atendimento. Por isso a causa
+  confirmada é UNKNOWN. A regra R-SPEED-001 nasceu deste caso.

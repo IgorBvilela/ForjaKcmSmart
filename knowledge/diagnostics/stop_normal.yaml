@@ -1,0 +1,66 @@
+# Biblioteca de diagnostico: equipamento parado (Documento Mestre §9.1; spec §36).
+# Parada NAO e falha. O motivo (STOP BY) so e classificado com fonte; o default e UNKNOWN.
+schema_version: 1
+ref: stop_normal
+internal_code: MACHINE_STOPPED
+title_pt: "Equipamento parado"
+text_pt: >-
+  O equipamento passou para parado. Parada não significa falha: pode ser parada normal, solicitada,
+  intertravamento, proteção ou procedimento. O motivo informado pelo KCM (STOP BY) só é classificado
+  quando há fonte; sem fonte, fica como 'Motivo desconhecido'.
+sources:
+  - id: SRC-RULE-R-STOP-001
+    kind: rule
+    title: "Regra Forja R-STOP-001: Equipamento parado"
+    reference: "config/rules/R-STOP-001.yaml"
+    evidence_level: FORJA_RULE
+  - id: SRC-OPINION-STOP
+    kind: opinion
+    title: "Opinião técnica Forja sobre parada e STOP BY"
+    reference: "Documento Mestre §9.1"
+    evidence_level: TECHNICAL_OPINION
+hypotheses:
+  - id: H1
+    text_pt: "Comportamento compatível com parada solicitada pela operação ou pelo sistema de controle."
+    evidence_level: HYPOTHESIS
+    rationale_pt: "A maior parte das paradas é intencional; confirmar com a operação antes de qualquer outra verificação."
+    verification_ids: [V1]
+    source_ids: [SRC-OPINION-STOP, SRC-RULE-R-STOP-001]
+  - id: H2
+    text_pt: "Comportamento compatível com parada por intertravamento ou proteção informada pelo KCM."
+    evidence_level: HYPOTHESIS
+    rationale_pt: "O texto do STOP BY na tela do KCM é a referência; a Forja não o classifica sem fonte."
+    verification_ids: [V2]
+    source_ids: [SRC-OPINION-STOP]
+  - id: H3
+    text_pt: "Comportamento compatível com procedimento em andamento (calibração ou tara), se o STOP BY indicar Calib ou Tare."
+    evidence_level: HYPOTHESIS
+    rationale_pt: "Calib e Tare são candidatos a classe de procedimento; a decisão ainda está pendente."
+    verification_ids: [V2]
+    source_ids: [SRC-OPINION-STOP]
+next_checks:
+  - id: V1
+    order: 1
+    text_pt: "Confirmar com a operação se a parada foi intencional."
+    how_pt: "Perguntar; registrar a resposta no reconhecimento do evento."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-STOP]
+  - id: V2
+    order: 2
+    text_pt: "Ler na tela do KCM o motivo da parada (STOP BY) e anotar o texto exato."
+    how_pt: "Somente leitura. O texto bruto é o que a Forja guarda."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-STOP]
+  - id: V3
+    order: 3
+    text_pt: "Se houver alarme ativo, anotar o código e o texto."
+    how_pt: "A Forja só cataloga alarmes com chave composta (aplicação e versão)."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-STOP]
+caveats:
+  - "A classificação de STOP BY é UNKNOWN para todos os rótulos até haver fonte; Calib e Tare são candidatos a procedimento (decisão pendente)."
+related_rules: [R-STOP-001]
+related_cases: []

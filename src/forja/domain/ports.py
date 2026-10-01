@@ -10,7 +10,7 @@ import re
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator, Sequence
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -25,10 +25,12 @@ FORBIDDEN_DRIVER_METHOD = re.compile(
     r"|create|delete|run|enable|disable|output|produce|send_command)",
     re.IGNORECASE,
 )
-ALLOWED_DRIVER_PUBLIC = frozenset({"name", "connect", "disconnect", "read", "health", "capabilities"})
+ALLOWED_DRIVER_PUBLIC = frozenset(
+    {"name", "connect", "disconnect", "read", "health", "capabilities"}
+)
 
 
-class DriverSupportState(str, Enum):
+class DriverSupportState(StrEnum):
     AVAILABLE = "AVAILABLE"
     EXPERIMENTAL = "EXPERIMENTAL"
     NEEDS_CONFIGURATION = "NEEDS_CONFIGURATION"
@@ -158,7 +160,9 @@ class CommLogEntry(BaseModel):
 class HistorianRepository(Protocol):
     async def write(self, samples: Sequence[Sample]) -> None: ...
 
-    async def latest(self, equipment_id: str, tags: Sequence[str] | None = None) -> dict[str, Sample]: ...
+    async def latest(
+        self, equipment_id: str, tags: Sequence[str] | None = None
+    ) -> dict[str, Sample]: ...
 
     async def range(
         self,

@@ -63,7 +63,9 @@ def find_repo_root(start: Path | None = None) -> Path:
     return Path.cwd()
 
 
-def resolve_paths(home: str | os.PathLike[str] | None = None, data_dir: str | None = None) -> ForjaPaths:
+def resolve_paths(
+    home: str | os.PathLike[str] | None = None, data_dir: str | None = None
+) -> ForjaPaths:
     """FORJA_HOME (env) > argumento > raiz do repositorio."""
     env_home = os.environ.get("FORJA_HOME")
     root = Path(home) if home else (Path(env_home) if env_home else find_repo_root())

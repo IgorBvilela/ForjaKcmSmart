@@ -19,7 +19,9 @@ def utcnow() -> datetime:
 
 
 class Sample(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = ConfigDict(
+        frozen=True, extra="forbid", ser_json_bytes="base64", val_json_bytes="base64"
+    )
 
     ts_utc: datetime
     equipment_id: str

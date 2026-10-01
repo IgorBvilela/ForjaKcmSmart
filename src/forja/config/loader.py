@@ -118,7 +118,8 @@ class ConfigStore:
         for prof in self.profiles.values():
             if prof.mapping_profile not in self.mappings:
                 raise ConfigError(
-                    f"{prof.id}: mapping_profile {prof.mapping_profile!r} não encontrado em config/mappings"
+                    f"{prof.id}: mapping_profile {prof.mapping_profile!r} "
+                    "não encontrado em config/mappings"
                 )
         self.alarms = load_alarm_catalog(self.paths.alarms_dir)
         self.stop_by = load_stop_by_catalog(self.paths.stop_by_dir)

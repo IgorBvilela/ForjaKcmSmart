@@ -1,0 +1,23 @@
+# Catalogo de alarmes do KCM. Chave composta: (manufacturer, controller, application, software_version, code).
+# Esta chave: Coperion K-Tron / KCM / aplicacao WBF / versao de software UNKNOWN.
+# So casa com perfis cuja aplicacao e WBF. Em outra aplicacao ou versao o mesmo numero pode significar
+# outra coisa (Documento Mestre §6.2 e §9): nunca tratar "56 = BELTLOAD LOW" como verdade universal.
+# Nivel de evidencia: FIELD_OBSERVED. Foto de tela nao vira documento de fabricante (DM §3.3).
+schema_version: 1
+alarms:
+  - key:
+      manufacturer: "Coperion K-Tron"
+      controller: KCM
+      application: WBF
+      software_version: UNKNOWN
+      code: "56"
+    text: "BELTLOAD LOW"
+    title_pt: "Pouco material sobre a correia (alarme do KCM)"
+    meaning_pt: >-
+      O KCM sinalizou carga baixa sobre a correia. O limite que dispara este alarme é interno ao KCM
+      e não é conhecido pela Forja; a Forja só registra que o KCM o informou.
+    evidence: FIELD_OBSERVED
+    source: "foto da tela do KCM, GTEX, 09/2026"
+    note_pt: >-
+      Observado na aplicação WBF do Dosador Pó Base (GTEX/PHA). Não aplicar a outras aplicações ou
+      versões sem evidência própria.

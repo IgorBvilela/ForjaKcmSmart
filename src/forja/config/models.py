@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -54,7 +54,7 @@ class LoggingConfig(BaseModel):
     keep: int = 10
 
 
-class RagProvider(str, Enum):
+class RagProvider(StrEnum):
     NONE = "NONE"
     LOCAL = "LOCAL"
     CLOUD = "CLOUD"

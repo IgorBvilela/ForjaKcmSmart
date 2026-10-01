@@ -6,10 +6,10 @@ STALE: o ultimo valor armazenado ficou velho. Nunca confundir os dois.
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 
-class Quality(str, Enum):
+class Quality(StrEnum):
     GOOD = "GOOD"
     SIMULATED = "SIMULATED"
     UNCERTAIN = "UNCERTAIN"

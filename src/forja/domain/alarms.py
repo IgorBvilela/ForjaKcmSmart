@@ -7,9 +7,9 @@ Sem correspondencia exata -> 'nao catalogado' (candidatos sao so sugestao).
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from forja.domain.evidence import UNKNOWN, EvidenceLevel, KnowledgeState
 
@@ -22,6 +22,15 @@ class AlarmKey(BaseModel):
     application: str = UNKNOWN
     software_version: str = UNKNOWN
     code: str
+
+    @field_validator("code")
+    @classmethod
+    def _normalize_code(cls, v: str) -> str:
+        """'06' e '6' sao o mesmo codigo. Codigos nao numericos ficam como vieram."""
+        v = v.strip()
+        if v.isdigit():
+            return str(int(v))
+        return v
 
     def matches_exact(self, other: AlarmKey) -> bool:
         return self == other
@@ -87,7 +96,7 @@ class AlarmCatalog(BaseModel):
         return AlarmLookup(code=key.code, definition=None, candidates=candidates)
 
 
-class StopByClass(str, Enum):
+class StopByClass(StrEnum):
     NORMAL = "NORMAL"
     REQUESTED = "REQUESTED"
     PROTECTION = "PROTECTION"

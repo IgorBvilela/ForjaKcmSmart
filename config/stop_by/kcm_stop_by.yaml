@@ -1,0 +1,23 @@
+# Classificacao de STOP BY (motivo da parada informado pelo KCM). Documento Mestre §9.1; spec §36.
+# STOP nao significa falha. Os termos abaixo foram vistos em referencia estudada, sem fonte adequada para
+# dizer o que cada um significa nesta aplicacao/versao. Por isso TODOS ficam classification UNKNOWN e
+# evidence UNKNOWN: a UI mostra "Motivo desconhecido" e o texto bruto do KCM. Promover so com fonte.
+# Calib e Tare sao candidatos a uma classe PROCEDURE (procedimento), que ainda nao existe no dominio:
+# decisao do chefe.
+schema_version: 1
+entries:
+  - { raw_label: "Board Reset",  classification: UNKNOWN, evidence: UNKNOWN, source: UNKNOWN, note_pt: "Termo visto em referência estudada; significado nesta aplicação sem fonte." }
+  - { raw_label: "Loc Display",  classification: UNKNOWN, evidence: UNKNOWN, source: UNKNOWN, note_pt: "Termo visto em referência estudada; significado nesta aplicação sem fonte." }
+  - { raw_label: "Ext Display",  classification: UNKNOWN, evidence: UNKNOWN, source: UNKNOWN, note_pt: "Termo visto em referência estudada; significado nesta aplicação sem fonte." }
+  - { raw_label: "ALS Input",    classification: UNKNOWN, evidence: UNKNOWN, source: UNKNOWN, note_pt: "Termo visto em referência estudada; significado nesta aplicação sem fonte." }
+  - { raw_label: "DginRunEna",   classification: UNKNOWN, evidence: UNKNOWN, source: UNKNOWN, note_pt: "Termo visto em referência estudada; significado nesta aplicação sem fonte." }
+  - { raw_label: "Stop Input",   classification: UNKNOWN, evidence: UNKNOWN, source: UNKNOWN, note_pt: "Termo visto em referência estudada; significado nesta aplicação sem fonte. O simulador usa este rótulo no cenário STOP_NORMAL como valor SIMULADO." }
+  - { raw_label: "MDU DrvEna",   classification: UNKNOWN, evidence: UNKNOWN, source: UNKNOWN, note_pt: "Termo visto em referência estudada; significado nesta aplicação sem fonte." }
+  - { raw_label: "Zero SP",      classification: UNKNOWN, evidence: UNKNOWN, source: UNKNOWN, note_pt: "Termo visto em referência estudada; significado nesta aplicação sem fonte." }
+  - { raw_label: "Emptying",     classification: UNKNOWN, evidence: UNKNOWN, source: UNKNOWN, note_pt: "Termo visto em referência estudada; significado nesta aplicação sem fonte." }
+  - { raw_label: "Interlock",    classification: UNKNOWN, evidence: UNKNOWN, source: UNKNOWN, note_pt: "Termo visto em referência estudada; o nome sugere intertravamento, mas sem fonte permanece UNKNOWN." }
+  - { raw_label: "Calib",        classification: UNKNOWN, evidence: UNKNOWN, source: UNKNOWN, note_pt: "candidato a PROCEDURE, decisão do chefe" }
+  - { raw_label: "Tare",         classification: UNKNOWN, evidence: UNKNOWN, source: UNKNOWN, note_pt: "candidato a PROCEDURE, decisão do chefe" }
+  - { raw_label: "FeedFactBad",  classification: UNKNOWN, evidence: UNKNOWN, source: UNKNOWN, note_pt: "Termo visto em referência estudada; significado nesta aplicação sem fonte." }
+  - { raw_label: "MDUInterlock", classification: UNKNOWN, evidence: UNKNOWN, source: UNKNOWN, note_pt: "Termo visto em referência estudada; significado nesta aplicação sem fonte." }
+  - { raw_label: "MDU Alarm",    classification: UNKNOWN, evidence: UNKNOWN, source: UNKNOWN, note_pt: "Termo visto em referência estudada; significado nesta aplicação sem fonte." }

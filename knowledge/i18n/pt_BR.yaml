@@ -1,0 +1,45 @@
+# Rotulos em portugues do Brasil. O backend entrega tudo pronto no JSON; a UI nao traduz.
+# Codigo interno (BELT_LOAD_LOW) nunca aparece como titulo: so em "Detalhes tecnicos".
+schema_version: 1
+locale: pt_BR
+internal_codes:
+  BELT_LOAD_LOW: "Pouco material sobre a correia"
+  SPEED_FEEDBACK_ANOMALY: "Leitura de velocidade inconsistente"
+  RATE_DEVIATION: "Vazão abaixo do esperado"
+  DRIVE_COMMAND_HIGH: "Esforço do acionamento alto"
+  COMM_DEGRADED: "Comunicação degradada"
+  MACHINE_STOPPED: "Equipamento parado"
+  SFT_STATUS_CHANGED: "Status da célula de pesagem mudou"
+sections:
+  summary: "RESUMO"
+  evidence: "EVIDÊNCIAS"
+  what_changed: "O QUE MUDOU"
+  hypotheses: "HIPÓTESES"
+  next_checks: "PRÓXIMAS VERIFICAÇÕES"
+  sources: "FONTES"
+  caveats: "RESSALVAS"
+transitions:
+  OPEN: "Aberto"
+  UPDATE: "Atualizado"
+  CLOSE: "Encerrado"
+ops:
+  gt: "maior que"
+  lt: "menor que"
+  between: "entre"
+  drop_pct_over_window: "queda na janela"
+  rise_pct_over_window: "subida na janela"
+  rate_of_change: "taxa de variação"
+  equals: "igual a"
+  changed: "mudou"
+  quality_is: "qualidade é"
+  persists_for: "congelado por"
+misc:
+  changed_first: "Primeiro a mudar"
+  before: "Antes"
+  now: "Agora"
+  variation: "Variação"
+  not_catalogued: "Não catalogado"
+  unknown: "Desconhecido"
+  simulated_data: "DADOS SIMULADOS"
+  equipment_data: "DADOS DO EQUIPAMENTO"
+  stop_is_not_fault: "Parada não significa falha."

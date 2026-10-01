@@ -6,12 +6,12 @@ Textos em portugues sao os que a UI mostra; o codigo tecnico fica em 'Detalhes t
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict
 
 
-class TagKind(str, Enum):
+class TagKind(StrEnum):
     CONTINUOUS = "CONTINUOUS"
     DISCRETE = "DISCRETE"
     STATUS_RAW = "STATUS_RAW"
@@ -106,7 +106,10 @@ _TAGS: tuple[SemanticTag, ...] = (
         label_pt="Código de alarme",
         unit="",
         kind=TagKind.DISCRETE,
-        explanation_pt="Código numérico do alarme ativo no KCM. O significado depende da aplicação e da versão.",
+        explanation_pt=(
+            "Código numérico do alarme ativo no KCM. "
+            "O significado depende da aplicação e da versão."
+        ),
         decimals=0,
     ),
     SemanticTag(
@@ -130,7 +133,10 @@ _TAGS: tuple[SemanticTag, ...] = (
         label_pt="Status SFT",
         unit="",
         kind=TagKind.STATUS_RAW,
-        explanation_pt="Status bruto da célula de pesagem SFT. Guardado como veio; sem decodificação sem fonte.",
+        explanation_pt=(
+            "Status bruto da célula de pesagem SFT. "
+            "Guardado como veio; sem decodificação sem fonte."
+        ),
         decimals=0,
     ),
     SemanticTag(
@@ -146,7 +152,10 @@ _TAGS: tuple[SemanticTag, ...] = (
         label_pt="Status MDU",
         unit="",
         kind=TagKind.STATUS_RAW,
-        explanation_pt="Status bruto do módulo de acionamento MDU. Guardado como veio; sem decodificação sem fonte.",
+        explanation_pt=(
+            "Status bruto do módulo de acionamento MDU. "
+            "Guardado como veio; sem decodificação sem fonte."
+        ),
         decimals=0,
     ),
     SemanticTag(

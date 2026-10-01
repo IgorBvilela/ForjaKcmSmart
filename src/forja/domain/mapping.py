@@ -8,7 +8,7 @@ Assembly 100/150, register 40001 ou qualquer endereco so existem como CONTEUDO d
 from __future__ import annotations
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -18,7 +18,7 @@ from forja.domain.quality import Quality
 from forja.domain.tags import is_known_tag
 
 
-class DataType(str, Enum):
+class DataType(StrEnum):
     INT16 = "int16"
     UINT16 = "uint16"
     INT32 = "int32"
@@ -46,7 +46,7 @@ class DataType(str, Enum):
         }[self]
 
 
-class Endianness(str, Enum):
+class Endianness(StrEnum):
     """Ordem de bytes/palavras. Nomes classicos entre parenteses na documentacao."""
 
     BIG = "big"  # ABCD
@@ -84,7 +84,8 @@ class MappingEntry(BaseModel):
     semantic_tag: str
     protocol_address: str | dict[str, Any] = UNKNOWN
     """Modbus: {area: holding|input|coil|discrete, address: int, count: int}
-    EtherNet/IP: {kind: assembly|attribute, class: int, instance: int, attribute: int, offset: int, length: int}
+    EtherNet/IP: {kind: assembly|attribute, class: int, instance: int, attribute: int,
+                  offset: int, length: int}
     Simulador: "sim:<tag>". UNKNOWN enquanto nao houver fonte."""
     datatype: DataType | str = UNKNOWN
     endianness: Endianness | str = UNKNOWN
@@ -120,9 +121,14 @@ class MappingEntry(BaseModel):
                 )
             if self.validation is None or not self.validation.matched:
                 raise ValueError(
-                    f"{self.semantic_tag}: confirmed=true exige validação registrada com matched=true"
+                    f"{self.semantic_tag}: confirmed=true exige validação registrada "
+                    "com matched=true"
                 )
-        if self.valid_min is not None and self.valid_max is not None and self.valid_min > self.valid_max:
+        if (
+            self.valid_min is not None
+            and self.valid_max is not None
+            and self.valid_min > self.valid_max
+        ):
             raise ValueError(f"{self.semantic_tag}: valid_min > valid_max")
         return self
 

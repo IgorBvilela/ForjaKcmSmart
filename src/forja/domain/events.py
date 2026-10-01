@@ -7,7 +7,7 @@ Titulo em portugues para a UI; codigo interno so em 'Detalhes tecnicos'.
 from __future__ import annotations
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Literal
 from uuid import uuid4
 
@@ -18,7 +18,7 @@ from forja.domain.quality import Quality
 from forja.domain.samples import Sample
 
 
-class Severity(str, Enum):
+class Severity(StrEnum):
     INFO = "INFO"
     ATTENTION = "ATTENTION"
     CRITICAL = "CRITICAL"
@@ -32,7 +32,7 @@ class Severity(str, Enum):
         }[self]
 
 
-class EventStatus(str, Enum):
+class EventStatus(StrEnum):
     OPEN = "OPEN"
     ACKNOWLEDGED = "ACKNOWLEDGED"
     RESOLVED = "RESOLVED"
@@ -45,7 +45,15 @@ class SourceRef(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     id: str
-    kind: Literal["rule", "case", "document", "field_observation", "manufacturer_doc", "machine_doc", "opinion"]
+    kind: Literal[
+        "rule",
+        "case",
+        "document",
+        "field_observation",
+        "manufacturer_doc",
+        "machine_doc",
+        "opinion",
+    ]
     title: str
     reference: str = ""
     """Documento/revisao/secao/pagina, ou id do caso, ou id da regra."""

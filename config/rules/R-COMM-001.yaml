@@ -1,0 +1,31 @@
+# REGRA FORJA (FORJA_RULE). Observa a QUALIDADE do lote, nao valores. COMM_ERROR = a tentativa de
+# leitura falhou. Nao confundir com STALE (valor antigo), que nunca abre este evento.
+schema_version: 1
+id: R-COMM-001
+version: 1
+internal_code: COMM_DEGRADED
+title_pt: "Comunicação degradada"
+description_pt: >
+  As tentativas de leitura do equipamento estão falhando há pelo menos 15 s. A Forja não está
+  medindo o KCM: está medindo o caminho de comunicação até ele.
+severity: ATTENTION
+conditions:
+  # '*' = pior qualidade do lote inteiro; persiste 15 s
+  - { tag: "*", op: quality_is, value: COMM_ERROR, persist_s: 15 }
+allowed_qualities: [GOOD, SIMULATED, UNCERTAIN]
+cooldown_s: 60
+close_when_clear_for_s: 10
+diagnosis_ref: comm_degraded
+context_tags: [mass_flow, machine_state]
+sources:
+  - id: SRC-RULE-R-COMM-001
+    kind: rule
+    title: "Regra Forja R-COMM-001 — Comunicação degradada"
+    reference: "config/rules/R-COMM-001.yaml"
+    evidence_level: FORJA_RULE
+summary_template_pt: >-
+  Sem comunicação com o equipamento há pelo menos 15 s: as tentativas de leitura falharam
+  (COMM_ERROR). Última vazão conhecida antes da falha: {mass_flow_before} kg/h.
+threshold_basis: FORJA_RULE
+threshold_note_pt: >-
+  Janela de 15 s definida pela Forja. Não é parâmetro do KCM.

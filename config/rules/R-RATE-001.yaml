@@ -1,0 +1,32 @@
+# REGRA FORJA (FORJA_RULE). O limiar e relativo ao setpoint lido no proprio equipamento
+# (90% do setpoint), nunca um numero fixo e nunca limite do KCM.
+schema_version: 1
+id: R-RATE-001
+version: 1
+internal_code: RATE_DEVIATION
+title_pt: "Vazão abaixo do esperado"
+description_pt: >
+  A vazão ficou abaixo de 90% do setpoint por pelo menos 30 s com a máquina em operação.
+  Não é alarme do KCM: é a Forja observando que o processo não entrega o que foi pedido.
+severity: ATTENTION
+conditions:
+  # mass_flow < 0,9 x setpoint (ref_tag) por 30 s
+  - { tag: mass_flow, op: lt, value: 0.9, ref_tag: setpoint, persist_s: 30 }
+  - { tag: machine_state, op: equals, value: 1 }
+allowed_qualities: [GOOD, SIMULATED, UNCERTAIN]
+cooldown_s: 120
+close_when_clear_for_s: 30
+diagnosis_ref: rate_low
+context_tags: [drive_command, belt_load]
+sources:
+  - id: SRC-RULE-R-RATE-001
+    kind: rule
+    title: "Regra Forja R-RATE-001 — Vazão abaixo do esperado"
+    reference: "config/rules/R-RATE-001.yaml"
+    evidence_level: FORJA_RULE
+summary_template_pt: >-
+  Vazão em {mass_flow_now} kg/h (antes: {mass_flow_before} kg/h; {mass_flow_delta_pt}) com setpoint
+  de {setpoint_now} kg/h; esforço do acionamento em {drive_command_now}%.
+threshold_basis: FORJA_RULE
+threshold_note_pt: >-
+  Limiar relativo ao setpoint lido no equipamento (90%). Regra Forja, não limite do KCM.

@@ -9,13 +9,13 @@ Nunca promover HYPOTHESIS -> FACT nem UNKNOWN -> FACT sem evidencia.
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 UNKNOWN = "UNKNOWN"
 """Valor literal usado em todo campo cujo conteudo ainda nao e conhecido."""
 
 
-class KnowledgeState(str, Enum):
+class KnowledgeState(StrEnum):
     FACT = "FACT"
     OFFICIAL_DOC = "OFFICIAL_DOC"
     MACHINE_DOC = "MACHINE_DOC"
@@ -27,7 +27,7 @@ class KnowledgeState(str, Enum):
     UNKNOWN = "UNKNOWN"
 
 
-class EvidenceLevel(str, Enum):
+class EvidenceLevel(StrEnum):
     """Do mais forte para o mais fraco."""
 
     MANUFACTURER_DOC = "MANUFACTURER_DOC"

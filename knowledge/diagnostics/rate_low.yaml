@@ -1,0 +1,72 @@
+# Biblioteca de diagnostico: vazao abaixo do esperado (Documento Mestre §17.1, §18.3).
+# A regra compara a vazao com 90% do setpoint lido no proprio equipamento. Nao e alarme do KCM.
+schema_version: 1
+ref: rate_low
+internal_code: RATE_DEVIATION
+title_pt: "Vazão abaixo do esperado"
+text_pt: >-
+  A vazão medida ficou abaixo do setpoint por tempo sustentado com a máquina em operação.
+  O processo não está entregando o que foi pedido; a Forja observa a diferença, não decide o motivo.
+sources:
+  - id: SRC-RULE-R-RATE-001
+    kind: rule
+    title: "Regra Forja R-RATE-001: Vazão abaixo do esperado"
+    reference: "config/rules/R-RATE-001.yaml"
+    evidence_level: FORJA_RULE
+  - id: SRC-OPINION-RATE
+    kind: opinion
+    title: "Opinião técnica Forja sobre vazão abaixo do setpoint"
+    reference: "Documento Mestre §18.3"
+    evidence_level: TECHNICAL_OPINION
+hypotheses:
+  - id: H1
+    text_pt: "Comportamento compatível com limite de entrega do conjunto (acionamento no teto ou perto dele) para o material e o setpoint atuais."
+    evidence_level: HYPOTHESIS
+    rationale_pt: "Quando o acionamento não tem mais margem, a vazão para de acompanhar o setpoint."
+    verification_ids: [V1, V2]
+    source_ids: [SRC-OPINION-RATE, SRC-RULE-R-RATE-001]
+  - id: H2
+    text_pt: "Comportamento compatível com falta de material a montante ou pouco material sobre a correia."
+    evidence_level: HYPOTHESIS
+    rationale_pt: "Sem material suficiente, a correia pode girar mais rápido e ainda assim entregar menos."
+    verification_ids: [V3]
+    source_ids: [SRC-OPINION-RATE]
+  - id: H3
+    text_pt: "Comportamento compatível com setpoint acima da capacidade prática para o produto atual."
+    evidence_level: HYPOTHESIS
+    rationale_pt: "Mudança de produto ou de receita muda a densidade e o escoamento; o mesmo setpoint pode ficar fora do alcance."
+    verification_ids: [V2]
+    source_ids: [SRC-OPINION-RATE]
+next_checks:
+  - id: V1
+    order: 1
+    text_pt: "Conferir na tela do KCM o esforço do acionamento junto com a vazão e o setpoint."
+    how_pt: "Anotar os três valores e o horário."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-RATE]
+  - id: V2
+    order: 2
+    text_pt: "Confirmar com a operação o setpoint atual e se houve mudança de produto ou receita."
+    how_pt: "Perguntar; não alterar setpoint a partir deste diagnóstico."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-RATE]
+  - id: V3
+    order: 3
+    text_pt: "Olhar a máquina: há material chegando e distribuído sobre a correia?"
+    how_pt: "Inspeção visual com a máquina em operação."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-RATE]
+  - id: V4
+    order: 4
+    text_pt: "Verificar se há alarme ativo no KCM e anotar o código e o texto."
+    how_pt: "A Forja só cataloga alarmes com chave composta (aplicação e versão); o texto da tela é a referência."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-RATE]
+caveats:
+  - "Vazão abaixo de 90% do setpoint por 30 s é regra Forja; não é alarme do KCM nem limite do equipamento."
+related_rules: [R-RATE-001]
+related_cases: []

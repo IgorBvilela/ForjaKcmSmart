@@ -1,0 +1,39 @@
+# REGRA FORJA (FORJA_RULE). Os limiares abaixo sao relativos ao comportamento recente do proprio
+# equipamento (queda percentual e subida em pontos dentro da janela) ou ao cenario simulado.
+# NENHUM numero aqui e limite do KCM nem veio do KCM da GTEX. Padrao descrito no Documento Mestre §18.1.
+schema_version: 1
+id: R-BELTLOAD-001
+version: 1
+internal_code: BELT_LOAD_LOW
+title_pt: "Pouco material sobre a correia"
+description_pt: >
+  O material sobre a correia caiu de forma sustentada enquanto o esforço do acionamento subiu,
+  com a máquina em operação. Leitura do padrão: o controlador pede mais comando para compensar
+  menos carga na correia; a vazão costuma ser preservada no início.
+severity: ATTENTION
+conditions:
+  # queda >= 35% do material na correia em relacao ao inicio da janela de 60 s (percentual porque a tag e kg/m)
+  - { tag: belt_load, op: drop_pct_over_window, value: 35, window_s: 60, persist_s: 10 }
+  # subida >= 15 pontos do esforço do acionamento na mesma janela (pontos porque a tag e %)
+  - { tag: drive_command, op: rise_pct_over_window, value: 15, window_s: 60, persist_s: 10 }
+  # convencao da tag semantica machine_state: 0 parado, 1 em operacao, 2 alarme. O mapping real normaliza para isto.
+  - { tag: machine_state, op: equals, value: 1 }
+allowed_qualities: [GOOD, SIMULATED, UNCERTAIN]
+cooldown_s: 120
+close_when_clear_for_s: 30
+diagnosis_ref: belt_load_low
+context_tags: [mass_flow, rpm, alarm_code]
+sources:
+  - id: SRC-RULE-R-BELTLOAD-001
+    kind: rule
+    title: "Regra Forja R-BELTLOAD-001 — Pouco material sobre a correia"
+    reference: "config/rules/R-BELTLOAD-001.yaml"
+    evidence_level: FORJA_RULE
+summary_template_pt: >-
+  Material na correia caiu de {belt_load_before} para {belt_load_now} kg/m ({belt_load_delta_pt})
+  e o esforço do acionamento subiu de {drive_command_before}% para {drive_command_now}%
+  ({drive_command_delta_pt}). Primeiro a mudar: {changed_first_pt}.
+threshold_basis: FORJA_RULE
+threshold_note_pt: >-
+  Limiares definidos pela Forja em relação ao comportamento recente do equipamento ou ao cenário
+  simulado. Não são limites do KCM e não dependem de nenhum valor da GTEX.

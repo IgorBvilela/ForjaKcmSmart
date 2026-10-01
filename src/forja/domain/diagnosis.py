@@ -1,10 +1,13 @@
-"""Contrato oficial do diagnostico: JSON v1.0 (spec §25, §28, §29, §81; Documento Mestre §5.2, §17.1).
+"""Contrato oficial do diagnostico: JSON v1.0.
+
+Referencias: spec §25, §28, §29, §81; Documento Mestre §5.2, §17.1.
 
 Secoes oficiais, nesta ordem: RESUMO, EVIDENCIAS, O QUE MUDOU, HIPOTESES, PROXIMAS VERIFICACOES,
 FONTES, RESSALVAS. A UI consome este JSON. Nunca reparsear texto da CLI.
 
 Lei de Hyrum: cada chave e compromisso. Mudanca so aditiva; quebra = nova versao com adaptador.
-Regra estrutural: um item nunca recebe nivel de evidencia mais forte do que a fonte mais forte que o sustenta.
+Regra estrutural: um item nunca recebe nivel de evidencia mais forte do que a fonte mais forte
+que o sustenta.
 Hipotese nao e causa. Nao existe campo 'causa'.
 """
 
@@ -83,7 +86,8 @@ class EvidenceSummary(BaseModel):
     strongest_level: EvidenceLevel | None
     counts: dict[str, int]
     note_pt: str = (
-        "Resumo do conjunto. Não substitui a leitura item a item: cada hipótese, verificação e fonte "
+        "Resumo do conjunto. Não substitui a leitura item a item: "
+        "cada hipótese, verificação e fonte "
         "tem o próprio nível."
     )
 
@@ -114,7 +118,9 @@ class Diagnosis(BaseModel):
         for h in self.hypotheses:
             _check_no_promotion("hipótese", h.id, h.evidence_level, h.source_ids, by_id)
             if "causa:" in h.text_pt.lower() or "causa confirmada" in h.text_pt.lower():
-                raise ValueError(f"hipótese {h.id} afirma causa; use 'comportamento compatível com'")
+                raise ValueError(
+                    f"hipótese {h.id} afirma causa; use 'comportamento compatível com'"
+                )
         for c in self.next_checks:
             _check_no_promotion("verificação", c.id, c.evidence_level, c.source_ids, by_id)
         return self
@@ -147,7 +153,10 @@ def _check_no_promotion(
     source_ids: tuple[str, ...],
     by_id: dict[str, SourceRef],
 ) -> None:
-    """Item sem fonte: no maximo TECHNICAL_OPINION. Item com fontes: no maximo a fonte mais forte."""
+    """Item sem fonte: no maximo TECHNICAL_OPINION.
+
+    Item com fontes: no maximo a fonte mais forte.
+    """
     if not source_ids:
         if level.is_stronger_than(EvidenceLevel.TECHNICAL_OPINION):
             raise EvidencePromotionError(

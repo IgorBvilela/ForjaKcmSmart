@@ -1,0 +1,31 @@
+# REGRA FORJA (FORJA_RULE). 85% e um limiar de atencao da Forja sobre a tag drive_command (%),
+# escolhido para o cenario simulado. Nao e limite do KCM nem configuracao da GTEX.
+schema_version: 1
+id: R-DRIVE-001
+version: 1
+internal_code: DRIVE_COMMAND_HIGH
+title_pt: "Esforço do acionamento alto"
+description_pt: >
+  O controlador está pedindo mais de 85% ao acionamento por pelo menos 30 s. Pode ser normal para
+  o produto e o setpoint atuais; vira atenção quando vem junto de vazão baixa ou pouco material
+  na correia (Documento Mestre §18.3).
+severity: ATTENTION
+conditions:
+  - { tag: drive_command, op: gt, value: 85, persist_s: 30 }
+allowed_qualities: [GOOD, SIMULATED, UNCERTAIN]
+cooldown_s: 120
+close_when_clear_for_s: 30
+diagnosis_ref: drive_command_high
+context_tags: [mass_flow, setpoint, belt_load]
+sources:
+  - id: SRC-RULE-R-DRIVE-001
+    kind: rule
+    title: "Regra Forja R-DRIVE-001 — Esforço do acionamento alto"
+    reference: "config/rules/R-DRIVE-001.yaml"
+    evidence_level: FORJA_RULE
+summary_template_pt: >-
+  Esforço do acionamento em {drive_command_now}% (antes: {drive_command_before}%;
+  {drive_command_delta_pt}) com vazão de {mass_flow_now} kg/h para setpoint de {setpoint_now} kg/h.
+threshold_basis: FORJA_RULE
+threshold_note_pt: >-
+  Limiar de atenção da Forja (85%). Não é limite do KCM.

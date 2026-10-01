@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Forja KCM Intelligence: observador somente leitura de controladores Coperion K-Tron KCM.">
+  <title>Forja KCM Intelligence</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <a class="skip" href="#conteudo">Ir para o conteúdo</a>
+
+  <header class="topo">
+    <div class="marca">
+      <span class="marca__logo" aria-hidden="true"></span>
+      <div>
+        <h1 class="marca__nome">Forja KCM Intelligence</h1>
+        <p class="marca__frase">O KCM controla a dosagem. A Forja observa o KCM, entende o comportamento e ajuda a manutenção a diagnosticar.</p>
+      </div>
+    </div>
+    <div class="selos" aria-label="Modo de operação">
+      <span class="selo selo--leitura" title="Nenhuma rota, comando ou botão altera o KCM.">Somente leitura</span>
+      <span class="selo" id="selo-origem" data-origem="">Carregando…</span>
+    </div>
+  </header>
+
+  <main id="conteudo" class="conteudo">
+    <noscript>
+      <p class="aviso">Esta página precisa de JavaScript local para consultar a API em <code>/api/v1</code>. Nenhum script externo é carregado.</p>
+    </noscript>
+
+    <section class="bloco" aria-labelledby="t-edge">
+      <div class="bloco__cabecalho">
+        <h2 id="t-edge">Estado do Edge</h2>
+        <span class="atualizado" id="atualizado" aria-live="polite"></span>
+      </div>
+      <p class="aviso aviso--erro" id="erro-edge" hidden></p>
+      <dl class="fatos" id="fatos-edge">
+        <div><dt>Nome</dt><dd id="f-nome">—</dd></div>
+        <div><dt>Versão</dt><dd id="f-versao">—</dd></div>
+        <div><dt>Em execução há</dt><dd id="f-uptime">—</dd></div>
+        <div><dt>Equipamentos</dt><dd id="f-equip">—</dd></div>
+        <div><dt>Python</dt><dd id="f-python">—</dd></div>
+        <div><dt>SQLite</dt><dd id="f-sqlite">—</dd></div>
+        <div><dt>Contrato de diagnóstico</dt><dd id="f-schema">—</dd></div>
+        <div><dt>Fuso horário</dt><dd id="f-tz">—</dd></div>
+      </dl>
+    </section>
+
+    <section class="bloco" aria-labelledby="t-equip">
+      <div class="bloco__cabecalho">
+        <h2 id="t-equip">Equipamentos</h2>
+        <span class="atualizado" id="origem-planta"></span>
+      </div>
+      <p class="aviso aviso--erro" id="erro-planta" hidden></p>
+      <ul class="cards" id="cards" aria-live="polite"></ul>
+    </section>
+
+    <section class="bloco" aria-labelledby="t-api">
+      <h2 id="t-api">API</h2>
+      <p>Base: <code>/api/v1</code>. Tempo real por <code>GET /api/v1/stream</code> (Server-Sent Events).</p>
+      <p id="docs-linha">Documentação interativa: <span id="docs-estado">verificando…</span></p>
+      <p class="nota">A interface completa (planta, dosador, tendências, diagnóstico) chega na fase B. Esta página mostra só o que já existe e funciona.</p>
+    </section>
+  </main>
+
+  <footer class="rodape">
+    <p>Forja Lógica · Edge local em <code id="f-host">127.0.0.1</code> · Sem CDN, sem fonte remota, sem telemetria.</p>
+  </footer>
+
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

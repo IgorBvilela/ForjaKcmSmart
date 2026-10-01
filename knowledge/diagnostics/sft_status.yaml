@@ -1,0 +1,75 @@
+# Biblioteca de diagnostico: status bruto da celula de pesagem SFT mudou (Documento Mestre §7.3, §9).
+# Ainda nao existe regra para este codigo (cenario SFT_FAILURE do simulador). O status e guardado bruto;
+# nenhum bit e decodificado sem fonte adequada.
+schema_version: 1
+ref: sft_status
+internal_code: SFT_STATUS_CHANGED
+title_pt: "Status da célula de pesagem mudou"
+text_pt: >-
+  O status bruto da célula de pesagem SFT mudou. A Forja guarda o valor exatamente como veio e não
+  decodifica bits sem fonte adequada; a mudança em si é o dado.
+sources:
+  - id: SRC-OPINION-SFT
+    kind: opinion
+    title: "Opinião técnica Forja sobre mudança de status SFT"
+    reference: "Documento Mestre §7.3 e §9"
+    evidence_level: TECHNICAL_OPINION
+  - id: SRC-CASE-GTEX-2026-09
+    kind: field_observation
+    title: "Caso de campo GTEX/PHA Pó Base, 09/2026 (statuses observados em bruto; causa confirmada UNKNOWN)"
+    reference: "knowledge/cases/2026-09_gtex_pha_po_base_velocidade.yaml"
+    evidence_level: FIELD_OBSERVED
+hypotheses:
+  - id: H1
+    text_pt: "Comportamento compatível com alteração de estado na célula de pesagem ou na sua comunicação com o KCM."
+    evidence_level: HYPOTHESIS
+    rationale_pt: "O status é a forma de a célula informar o KCM; uma mudança sustentada merece registro e comparação com o peso."
+    verification_ids: [V1, V2]
+    source_ids: [SRC-OPINION-SFT]
+  - id: H2
+    text_pt: "Comportamento compatível com problema em cabo ou conector da célula de pesagem."
+    evidence_level: HYPOTHESIS
+    rationale_pt: "No caso GTEX houve reparo de conector e cabo da célula de carga e emenda na rota MDU/Scale."
+    verification_ids: [V3, V4]
+    source_ids: [SRC-OPINION-SFT, SRC-CASE-GTEX-2026-09]
+next_checks:
+  - id: V1
+    order: 1
+    text_pt: "Conferir na tela do KCM o status da célula de pesagem e os alarmes ativos; anotar código e texto."
+    how_pt: "Somente leitura."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-SFT]
+  - id: V2
+    order: 2
+    text_pt: "Observar o peso líquido na tela: oscilação ou travamento junto com a mudança de status."
+    how_pt: "Comparar com a tendência registrada pela Forja."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-SFT]
+  - id: V3
+    order: 3
+    text_pt: "Verificar o cabo da célula de pesagem até o KCM."
+    how_pt: "Dano, esmagamento, emenda. No caso GTEX houve emenda na rota MDU/Scale."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-SFT, SRC-CASE-GTEX-2026-09]
+  - id: V4
+    order: 4
+    text_pt: "Verificar o conector da célula de pesagem."
+    how_pt: "Folga, oxidação, pino recuado. Reparado no caso GTEX."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-SFT, SRC-CASE-GTEX-2026-09]
+  - id: V5
+    order: 5
+    text_pt: "Registrar o valor bruto do status e o horário para comparação com documentação futura."
+    how_pt: "Sem documento da versão instalada, não interpretar bits."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-SFT]
+caveats:
+  - "Os bits do status SFT não são decodificados: sem documento da versão instalada, qualquer leitura de bit seria invenção."
+  - "O código de alarme 8 (BAD SFT STATUS) é HYPOTHESIS no catálogo; o simulador o usa como valor SIMULADO."
+related_rules: []
+related_cases: [CASE-2026-09-GTEX-PHA-PO-BASE-VELOCIDADE]

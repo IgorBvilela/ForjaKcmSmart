@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict
 
 from forja.domain.ports import DriverSupportState
 
 
-class ConnectionState(str, Enum):
+class ConnectionState(StrEnum):
     DISCONNECTED = "DISCONNECTED"
     CONNECTING = "CONNECTING"
     HANDSHAKE = "HANDSHAKE"
@@ -32,7 +32,7 @@ class ConnectionState(str, Enum):
         }[self]
 
 
-class ReadTestStage(str, Enum):
+class ReadTestStage(StrEnum):
     """Estados do botao TESTAR SOMENTE LEITURA (spec §16, passo 4)."""
 
     CONNECTING = "CONNECTING"

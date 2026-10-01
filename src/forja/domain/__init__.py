@@ -78,7 +78,15 @@ from forja.domain.ports import (
     SeriesPoint,
 )
 from forja.domain.quality import Quality, worst
-from forja.domain.samples import RawBlock, RawFrame, ReadBlock, ReadPlan, Sample, SampleBatch, utcnow
+from forja.domain.samples import (
+    RawBlock,
+    RawFrame,
+    ReadBlock,
+    ReadPlan,
+    Sample,
+    SampleBatch,
+    utcnow,
+)
 from forja.domain.tags import TAG_CODES, TAGS, SemanticTag, TagKind, get_tag, is_known_tag
 
 __all__ = [

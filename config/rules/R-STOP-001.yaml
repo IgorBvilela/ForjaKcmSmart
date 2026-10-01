@@ -1,0 +1,31 @@
+# REGRA FORJA (FORJA_RULE). Parada NAO e falha. O evento e informativo e marca a transicao para
+# parado; o motivo (STOP BY) e classificado pelo catalogo config/stop_by, cujo default e UNKNOWN.
+schema_version: 1
+id: R-STOP-001
+version: 1
+internal_code: MACHINE_STOPPED
+title_pt: "Equipamento parado"
+description_pt: >
+  O estado da máquina mudou para parado. A Forja registra o instante e o motivo informado pelo KCM
+  (STOP BY) sem inventar significado: sem fonte, a classificação é 'Motivo desconhecido'.
+severity: INFO
+conditions:
+  # convencao da tag semantica machine_state: 0 parado. 'changed' para 0 = transicao observada.
+  - { tag: machine_state, op: changed, value: 0 }
+allowed_qualities: [GOOD, SIMULATED, UNCERTAIN]
+cooldown_s: 0
+close_when_clear_for_s: 0
+diagnosis_ref: stop_normal
+context_tags: [mass_flow, drive_command, rpm, stop_by]
+sources:
+  - id: SRC-RULE-R-STOP-001
+    kind: rule
+    title: "Regra Forja R-STOP-001 — Equipamento parado"
+    reference: "config/rules/R-STOP-001.yaml"
+    evidence_level: FORJA_RULE
+summary_template_pt: >-
+  O equipamento passou para parado. Motivo informado pelo KCM (STOP BY): {stop_by_raw} —
+  classificação: {stop_by_pt}. Vazão antes da parada: {mass_flow_before} kg/h.
+threshold_basis: FORJA_RULE
+threshold_note_pt: >-
+  Transição de estado observada; não há limiar numérico. Regra Forja.

@@ -1,0 +1,109 @@
+# Biblioteca de diagnostico: leitura de velocidade inconsistente (Documento Mestre §7.5, §17.2, §18.2).
+# Padrao aprendido no caso GTEX 09/2026: RUN + Drive Command > 0 + RPM = 0. A regra nao decide se o
+# conjunto gira; a primeira verificacao e olhar a maquina. Nenhuma hipotese afirma causa.
+schema_version: 1
+ref: speed_feedback
+internal_code: SPEED_FEEDBACK_ANOMALY
+title_pt: "Leitura de velocidade inconsistente"
+text_pt: >-
+  A máquina apresenta comando de acionamento, mas o sistema deixou de receber feedback de velocidade.
+  A pergunta principal é se o conjunto está fisicamente girando: se gira, o foco é a cadeia de feedback;
+  se não gira, o foco passa a ser acionamento, habilitação ou mecânica.
+sources:
+  - id: SRC-RULE-R-SPEED-001
+    kind: rule
+    title: "Regra Forja R-SPEED-001: Leitura de velocidade inconsistente"
+    reference: "config/rules/R-SPEED-001.yaml"
+    evidence_level: FORJA_RULE
+  - id: SRC-CASE-GTEX-2026-09
+    kind: field_observation
+    title: "Caso de campo GTEX/PHA Pó Base, 09/2026 (conjunto girando com RPM 0; causa confirmada UNKNOWN)"
+    reference: "knowledge/cases/2026-09_gtex_pha_po_base_velocidade.yaml"
+    evidence_level: FIELD_OBSERVED
+  - id: SRC-OPINION-SPEED-FEEDBACK
+    kind: opinion
+    title: "Opinião técnica Forja sobre o padrão RUN + Drive Command > 0 + RPM = 0"
+    reference: "Documento Mestre §17.2 e §18.2"
+    evidence_level: TECHNICAL_OPINION
+hypotheses:
+  - id: H1
+    text_pt: "Comportamento compatível com possível problema na cadeia de feedback de velocidade (sensor, alimentação, cabo, conector, gap, interface, entrada do KCM, configuração)."
+    evidence_level: HYPOTHESIS
+    rationale_pt: "No caso GTEX de 09/2026 o conjunto girou com RPM indicada em 0. O encoder foi substituído, mas houve outras intervenções no mesmo atendimento e nenhuma evidência fechou a explicação."
+    verification_ids: [V1, V2, V3, V4, V5, V6, V7, V8, V9]
+    source_ids: [SRC-OPINION-SPEED-FEEDBACK, SRC-CASE-GTEX-2026-09, SRC-RULE-R-SPEED-001]
+  - id: H2
+    text_pt: "Comportamento compatível com conjunto que não está girando apesar do comando (acionamento, habilitação ou mecânica)."
+    evidence_level: HYPOTHESIS
+    rationale_pt: "Se não há movimento físico, a leitura zero é coerente e o problema está antes do sensor de velocidade."
+    verification_ids: [V1]
+    source_ids: [SRC-OPINION-SPEED-FEEDBACK]
+next_checks:
+  - id: V1
+    order: 1
+    text_pt: "O conjunto está fisicamente girando? Observar a correia e o eixo com a máquina em operação."
+    how_pt: "Inspeção visual, sem tocar em nada. A resposta decide o caminho das próximas verificações."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-SPEED-FEEDBACK, SRC-CASE-GTEX-2026-09]
+  - id: V2
+    order: 2
+    text_pt: "Verificar a alimentação do sensor de velocidade (encoder ou pick-up)."
+    how_pt: "Medir a tensão de alimentação no sensor e comparar com o nominal do componente instalado. No caso GTEX mediu-se cerca de 4,9 V; isso é observação daquele atendimento, não referência."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-SPEED-FEEDBACK, SRC-CASE-GTEX-2026-09]
+  - id: V3
+    order: 3
+    text_pt: "Verificar o sinal e a frequência na origem (saída do sensor) com o eixo girando."
+    how_pt: "Sem pulsos na origem, o problema está no sensor, na alimentação ou no acoplamento mecânico; com pulsos, o problema está adiante."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-SPEED-FEEDBACK, SRC-CASE-GTEX-2026-09]
+  - id: V4
+    order: 4
+    text_pt: "Verificar o cabo do sensor até o MDU/KCM: dano, esmagamento, emenda, continuidade."
+    how_pt: "No caso GTEX houve emenda direta associada à rota MDU/Scale e continuidade verificada em trechos."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-SPEED-FEEDBACK, SRC-CASE-GTEX-2026-09]
+  - id: V5
+    order: 5
+    text_pt: "Verificar o conector do sensor e as conexões intermediárias: folga, oxidação, pino recuado."
+    how_pt: "Reparo de conector foi uma das intervenções no caso GTEX."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-SPEED-FEEDBACK, SRC-CASE-GTEX-2026-09]
+  - id: V6
+    order: 6
+    text_pt: "Verificar o gap e o alinhamento do sensor em relação à roda dentada ou ao alvo."
+    how_pt: "Usar a referência do fabricante do sensor instalado. O valor de 0,125 mm visto no caso GTEX não é universal."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-SPEED-FEEDBACK, SRC-CASE-GTEX-2026-09]
+  - id: V7
+    order: 7
+    text_pt: "Verificar a interface/SIB, se aplicável nesta instalação."
+    how_pt: "A presença de SIB nesta instalação é UNKNOWN; confirmar antes de procurar."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-SPEED-FEEDBACK]
+  - id: V8
+    order: 8
+    text_pt: "Verificar a entrada de velocidade no KCM/MDU: o sinal está chegando ao controlador?"
+    how_pt: "Comparar o que sai do sensor com o que chega à entrada. Sem documento da versão instalada, não interpretar bits de status."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-SPEED-FEEDBACK]
+  - id: V9
+    order: 9
+    text_pt: "Conferir a configuração PICK UP TEETH (dentes/PPR) contra a instalação real."
+    how_pt: "Somente leitura no menu do KCM. Referências históricas como 120/400 não se aplicam genericamente."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-SPEED-FEEDBACK, SRC-CASE-GTEX-2026-09]
+caveats:
+  - "A substituição do encoder no caso GTEX não prova que o encoder era o problema: houve outras intervenções no mesmo atendimento."
+  - "Os limiares da regra (comando acima de 5%, velocidade abaixo de 1 rpm por 5 s) são convenções da Forja, não limites do KCM."
+related_rules: [R-SPEED-001]
+related_cases: [CASE-2026-09-GTEX-PHA-PO-BASE-VELOCIDADE]

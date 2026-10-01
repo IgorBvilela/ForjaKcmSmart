@@ -18,3 +18,4 @@ frontend/dist/
 !.env.example
 *.pem
 *.key
+src/forja_kcm.egg-info/

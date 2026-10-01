@@ -1,0 +1,72 @@
+# Biblioteca de diagnostico: esforco do acionamento alto (Documento Mestre §18.3).
+# 85% e limiar de atencao da Forja sobre a tag drive_command. Nao e limite do KCM nem do acionamento.
+schema_version: 1
+ref: drive_command_high
+internal_code: DRIVE_COMMAND_HIGH
+title_pt: "Esforço do acionamento alto"
+text_pt: >-
+  O controlador está pedindo muito ao acionamento por tempo sustentado. Pode ser normal para o produto
+  e o setpoint atuais; vira atenção quando vem junto de vazão baixa ou pouco material sobre a correia.
+sources:
+  - id: SRC-RULE-R-DRIVE-001
+    kind: rule
+    title: "Regra Forja R-DRIVE-001: Esforço do acionamento alto"
+    reference: "config/rules/R-DRIVE-001.yaml"
+    evidence_level: FORJA_RULE
+  - id: SRC-OPINION-DRIVE
+    kind: opinion
+    title: "Opinião técnica Forja sobre Drive Command alto"
+    reference: "Documento Mestre §18.3"
+    evidence_level: TECHNICAL_OPINION
+hypotheses:
+  - id: H1
+    text_pt: "Comportamento compatível com operação próxima do limite de entrega do conjunto para o setpoint atual."
+    evidence_level: HYPOTHESIS
+    rationale_pt: "Com vazão perto do setpoint e comando alto, o conjunto trabalha sem margem; qualquer perda a mais aparece na vazão."
+    verification_ids: [V1, V2]
+    source_ids: [SRC-OPINION-DRIVE, SRC-RULE-R-DRIVE-001]
+  - id: H2
+    text_pt: "Comportamento compatível com pouco material sobre a correia sendo compensado por mais velocidade."
+    evidence_level: HYPOTHESIS
+    rationale_pt: "Menos carga por metro exige mais velocidade para a mesma vazão; ver também o diagnóstico de pouco material sobre a correia."
+    verification_ids: [V3]
+    source_ids: [SRC-OPINION-DRIVE]
+  - id: H3
+    text_pt: "Comportamento compatível com maior resistência mecânica no conjunto (correia, mancais, material acumulado)."
+    evidence_level: HYPOTHESIS
+    rationale_pt: "O comando sobe para vencer resistência extra sem que a vazão ou a carga mudem."
+    verification_ids: [V4]
+    source_ids: [SRC-OPINION-DRIVE]
+next_checks:
+  - id: V1
+    order: 1
+    text_pt: "Conferir na tela do KCM vazão, setpoint e esforço do acionamento juntos."
+    how_pt: "Anotar os três valores e o horário."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-DRIVE]
+  - id: V2
+    order: 2
+    text_pt: "Confirmar com a operação se o setpoint ou o produto mudaram recentemente."
+    how_pt: "Perguntar; não alterar setpoint a partir deste diagnóstico."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-DRIVE]
+  - id: V3
+    order: 3
+    text_pt: "Olhar a correia: quantidade e distribuição do material."
+    how_pt: "Inspeção visual com a máquina em operação."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-DRIVE]
+  - id: V4
+    order: 4
+    text_pt: "Verificar mecanicamente o conjunto: correia, mancais, acúmulo de material."
+    how_pt: "Somente com a máquina parada."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-DRIVE]
+caveats:
+  - "85% é limiar de atenção da Forja sobre a tag drive_command; não é limite do KCM nem do acionamento."
+related_rules: [R-DRIVE-001]
+related_cases: []

@@ -1,0 +1,534 @@
+{
+  "$defs": {
+    "Caveat": {
+      "additionalProperties": false,
+      "properties": {
+        "text_pt": {
+          "title": "Text Pt",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text_pt"
+      ],
+      "title": "Caveat",
+      "type": "object"
+    },
+    "DiagnosisSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "internal_code": {
+          "title": "Internal Code",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        },
+        "text_pt": {
+          "title": "Text Pt",
+          "type": "string"
+        },
+        "title_pt": {
+          "title": "Title Pt",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title_pt",
+        "text_pt",
+        "internal_code",
+        "severity"
+      ],
+      "title": "DiagnosisSummary",
+      "type": "object"
+    },
+    "EvidenceItem": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_level": {
+          "$ref": "#/$defs/EvidenceLevel"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "quality": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Quality"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "tag": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tag"
+        },
+        "text_pt": {
+          "title": "Text Pt",
+          "type": "string"
+        },
+        "ts_utc": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ts Utc"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "id",
+        "text_pt",
+        "evidence_level"
+      ],
+      "title": "EvidenceItem",
+      "type": "object"
+    },
+    "EvidenceLevel": {
+      "description": "Do mais forte para o mais fraco.",
+      "enum": [
+        "MANUFACTURER_DOC",
+        "MACHINE_DOC",
+        "FIELD_CONFIRMED",
+        "FIELD_OBSERVED",
+        "FORJA_RULE",
+        "TECHNICAL_OPINION",
+        "HYPOTHESIS"
+      ],
+      "title": "EvidenceLevel",
+      "type": "string"
+    },
+    "EvidenceSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Counts",
+          "type": "object"
+        },
+        "note_pt": {
+          "default": "Resumo do conjunto. Não substitui a leitura item a item: cada hipótese, verificação e fonte tem o próprio nível.",
+          "title": "Note Pt",
+          "type": "string"
+        },
+        "strongest_level": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EvidenceLevel"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "weakest_level": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EvidenceLevel"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "weakest_level",
+        "strongest_level",
+        "counts"
+      ],
+      "title": "EvidenceSummary",
+      "type": "object"
+    },
+    "Hypothesis": {
+      "additionalProperties": false,
+      "description": "Comportamento compativel com..., nunca 'causa:'.",
+      "properties": {
+        "evidence_level": {
+          "$ref": "#/$defs/EvidenceLevel"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "rationale_pt": {
+          "title": "Rationale Pt",
+          "type": "string"
+        },
+        "source_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        },
+        "text_pt": {
+          "title": "Text Pt",
+          "type": "string"
+        },
+        "verification_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Verification Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "text_pt",
+        "evidence_level",
+        "rationale_pt"
+      ],
+      "title": "Hypothesis",
+      "type": "object"
+    },
+    "NextCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_level": {
+          "$ref": "#/$defs/EvidenceLevel"
+        },
+        "how_pt": {
+          "default": "",
+          "title": "How Pt",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "order": {
+          "title": "Order",
+          "type": "integer"
+        },
+        "safety_pt": {
+          "default": "Conforme procedimento da planta.",
+          "title": "Safety Pt",
+          "type": "string"
+        },
+        "source_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        },
+        "text_pt": {
+          "title": "Text Pt",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "order",
+        "text_pt",
+        "evidence_level"
+      ],
+      "title": "NextCheck",
+      "type": "object"
+    },
+    "Quality": {
+      "enum": [
+        "GOOD",
+        "SIMULATED",
+        "UNCERTAIN",
+        "STALE",
+        "COMM_ERROR",
+        "BAD"
+      ],
+      "title": "Quality",
+      "type": "string"
+    },
+    "Severity": {
+      "enum": [
+        "INFO",
+        "ATTENTION",
+        "CRITICAL"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "SourceRef": {
+      "additionalProperties": false,
+      "description": "Referencia rastreavel (fonte) usada por eventos e diagnosticos.",
+      "properties": {
+        "evidence_level": {
+          "$ref": "#/$defs/EvidenceLevel"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "rule",
+            "case",
+            "document",
+            "field_observation",
+            "manufacturer_doc",
+            "machine_doc",
+            "opinion"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "reference": {
+          "default": "",
+          "title": "Reference",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "title",
+        "evidence_level"
+      ],
+      "title": "SourceRef",
+      "type": "object"
+    },
+    "WhatChangedItem": {
+      "additionalProperties": false,
+      "description": "ANTES / AGORA / VARIACAO de uma variavel (spec §27).",
+      "properties": {
+        "before": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Before"
+        },
+        "changed_first": {
+          "default": false,
+          "title": "Changed First",
+          "type": "boolean"
+        },
+        "delta": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Delta"
+        },
+        "delta_kind": {
+          "enum": [
+            "pct",
+            "points",
+            "abs",
+            "none"
+          ],
+          "title": "Delta Kind",
+          "type": "string"
+        },
+        "label_pt": {
+          "title": "Label Pt",
+          "type": "string"
+        },
+        "now": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Now"
+        },
+        "tag": {
+          "title": "Tag",
+          "type": "string"
+        },
+        "text_pt": {
+          "default": "",
+          "title": "Text Pt",
+          "type": "string"
+        },
+        "ts_start_utc": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ts Start Utc"
+        },
+        "unit": {
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tag",
+        "label_pt",
+        "unit",
+        "before",
+        "now",
+        "delta",
+        "delta_kind"
+      ],
+      "title": "WhatChangedItem",
+      "type": "object"
+    }
+  },
+  "$id": "forja://contracts/diagnosis-v1.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Contrato oficial do diagnóstico determinístico. Sete seções, na ordem: RESUMO, EVIDÊNCIAS, O QUE MUDOU, HIPÓTESES, PRÓXIMAS VERIFICAÇÕES, FONTES, RESSALVAS. Hipótese nunca é causa. Cada item carrega o próprio nível de evidência.",
+  "properties": {
+    "caveats": {
+      "items": {
+        "$ref": "#/$defs/Caveat"
+      },
+      "title": "Caveats",
+      "type": "array"
+    },
+    "diagnosis_id": {
+      "title": "Diagnosis Id",
+      "type": "string"
+    },
+    "diagnosis_schema_version": {
+      "default": "1.0",
+      "title": "Diagnosis Schema Version",
+      "type": "string"
+    },
+    "engine_version": {
+      "default": "forja-0.1.0",
+      "title": "Engine Version",
+      "type": "string"
+    },
+    "equipment_id": {
+      "title": "Equipment Id",
+      "type": "string"
+    },
+    "event_id": {
+      "title": "Event Id",
+      "type": "string"
+    },
+    "evidence": {
+      "items": {
+        "$ref": "#/$defs/EvidenceItem"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "evidence_summary": {
+      "$ref": "#/$defs/EvidenceSummary"
+    },
+    "generated_at_utc": {
+      "format": "date-time",
+      "title": "Generated At Utc",
+      "type": "string"
+    },
+    "hypotheses": {
+      "items": {
+        "$ref": "#/$defs/Hypothesis"
+      },
+      "title": "Hypotheses",
+      "type": "array"
+    },
+    "next_checks": {
+      "items": {
+        "$ref": "#/$defs/NextCheck"
+      },
+      "title": "Next Checks",
+      "type": "array"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/SourceRef"
+      },
+      "title": "Sources",
+      "type": "array"
+    },
+    "summary": {
+      "$ref": "#/$defs/DiagnosisSummary"
+    },
+    "what_changed": {
+      "items": {
+        "$ref": "#/$defs/WhatChangedItem"
+      },
+      "title": "What Changed",
+      "type": "array"
+    }
+  },
+  "required": [
+    "event_id",
+    "equipment_id",
+    "generated_at_utc",
+    "summary",
+    "evidence",
+    "what_changed",
+    "hypotheses",
+    "next_checks",
+    "sources",
+    "caveats",
+    "evidence_summary"
+  ],
+  "title": "Forja KCM Intelligence — Diagnosis",
+  "type": "object",
+  "x-forja-schema-version": "1.0"
+}

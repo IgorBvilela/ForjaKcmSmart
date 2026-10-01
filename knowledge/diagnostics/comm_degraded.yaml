@@ -1,0 +1,80 @@
+# Biblioteca de diagnostico: comunicacao degradada (Documento Mestre §10, §11, §15.3).
+# COMM_ERROR = a tentativa de leitura falhou. STALE = valor antigo. Sao coisas diferentes.
+schema_version: 1
+ref: comm_degraded
+internal_code: COMM_DEGRADED
+title_pt: "Comunicação degradada"
+text_pt: >-
+  As tentativas de leitura do equipamento estão falhando. A Forja não está medindo o KCM: está medindo
+  o caminho de comunicação até ele. O KCM pode estar operando normalmente; a dosagem não depende da Forja.
+sources:
+  - id: SRC-RULE-R-COMM-001
+    kind: rule
+    title: "Regra Forja R-COMM-001: Comunicação degradada"
+    reference: "config/rules/R-COMM-001.yaml"
+    evidence_level: FORJA_RULE
+  - id: SRC-OPINION-COMM
+    kind: opinion
+    title: "Opinião técnica Forja sobre falha de comunicação com a interface Host/Anybus"
+    reference: "Documento Mestre §10 e §11"
+    evidence_level: TECHNICAL_OPINION
+hypotheses:
+  - id: H1
+    text_pt: "Comportamento compatível com interrupção no caminho de rede entre a Forja e a interface Host/Anybus do KCM (cabo, switch, porta, endereço)."
+    evidence_level: HYPOTHESIS
+    rationale_pt: "Falha total e repetida de leitura costuma vir do caminho físico ou do endereçamento, não do KCM em si."
+    verification_ids: [V1, V2, V3]
+    source_ids: [SRC-OPINION-COMM, SRC-RULE-R-COMM-001]
+  - id: H2
+    text_pt: "Comportamento compatível com interface Host/Anybus do KCM indisponível ou reiniciando."
+    evidence_level: HYPOTHESIS
+    rationale_pt: "A interface Host é um módulo separado; pode parar de responder enquanto o KCM continua dosando."
+    verification_ids: [V4]
+    source_ids: [SRC-OPINION-COMM]
+  - id: H3
+    text_pt: "Comportamento compatível com configuração de comunicação da Forja incompatível com o equipamento (protocolo, IP, unidade, porta)."
+    evidence_level: HYPOTHESIS
+    rationale_pt: "Protocolo, IP e porta da GTEX ainda são UNKNOWN; uma configuração errada falha do mesmo jeito que um cabo solto."
+    verification_ids: [V5]
+    source_ids: [SRC-OPINION-COMM]
+next_checks:
+  - id: V1
+    order: 1
+    text_pt: "Confirmar na tela do KCM se o equipamento está operando normalmente."
+    how_pt: "A dosagem não depende da Forja. Se o KCM opera, o problema é só de observação."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-COMM]
+  - id: V2
+    order: 2
+    text_pt: "Verificar o cabo de rede e o LED da porta na interface Host/Anybus e no switch."
+    how_pt: "Inspeção visual. Não desconectar cabos em operação sem autorização."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-COMM]
+  - id: V3
+    order: 3
+    text_pt: "Verificar se o endereço configurado na Forja responde na rede."
+    how_pt: "Somente teste de alcance e leitura; nenhuma escrita."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-COMM]
+  - id: V4
+    order: 4
+    text_pt: "Verificar na interface Host/Anybus se há indicação de falha ou de reinício."
+    how_pt: "LEDs de status do módulo; anotar o padrão observado sem interpretar além do que o manual do módulo diz."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-COMM]
+  - id: V5
+    order: 5
+    text_pt: "Conferir a configuração de comunicação do equipamento na Forja: protocolo, IP, porta, unidade."
+    how_pt: "Campos UNKNOWN exigem configuração de campo antes de qualquer leitura real."
+    safety_pt: "Conforme procedimento da planta."
+    evidence_level: TECHNICAL_OPINION
+    source_ids: [SRC-OPINION-COMM]
+caveats:
+  - "COMM_ERROR significa que a tentativa de leitura falhou; não é valor antigo (STALE). Nenhum valor foi interpolado durante a falha."
+  - "Protocolo, IP e porta da GTEX são UNKNOWN até a validação de campo."
+related_rules: [R-COMM-001]
+related_cases: []

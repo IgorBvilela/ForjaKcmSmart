@@ -7,7 +7,7 @@ Nada especifico da GTEX vive em codigo: tudo vem de config/equipment/*.yaml.
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -17,7 +17,7 @@ from forja.domain.evidence import UNKNOWN, KnowledgeState
 DriverName = Literal["simulator", "modbus_tcp", "ethernet_ip"]
 
 
-class ComponentType(str, Enum):
+class ComponentType(StrEnum):
     KCM = "KCM"
     MDU = "MDU"
     SCALE = "Scale"

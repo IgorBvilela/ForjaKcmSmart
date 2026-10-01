@@ -1,0 +1,36 @@
+# REGRA FORJA (FORJA_RULE). Limiares sao convencoes da Forja sobre as tags semanticas
+# (comando presente, velocidade indicada praticamente zero). Nao sao limites do KCM.
+# Padrao aprendido no caso GTEX 09/2026 (Documento Mestre §7.5 e §18.2): RUN + Drive Command > 0 + RPM = 0.
+schema_version: 1
+id: R-SPEED-001
+version: 1
+internal_code: SPEED_FEEDBACK_ANOMALY
+title_pt: "Leitura de velocidade inconsistente"
+description_pt: >
+  A máquina está em operação e o controlador comanda o acionamento, mas a velocidade indicada
+  permanece em zero. O conjunto pode estar girando sem que a leitura de velocidade chegue ao KCM,
+  ou pode não estar girando. A regra não decide isso; a primeira verificação é olhar a máquina.
+severity: ATTENTION
+conditions:
+  - { tag: machine_state, op: equals, value: 1 }
+  # comando presente: acima de 5% (convencao Forja para ignorar ruido de zero)
+  - { tag: drive_command, op: gt, value: 5 }
+  # velocidade indicada praticamente zero por 5 s
+  - { tag: rpm, op: lt, value: 1, persist_s: 5 }
+allowed_qualities: [GOOD, SIMULATED, UNCERTAIN]
+cooldown_s: 60
+close_when_clear_for_s: 15
+diagnosis_ref: speed_feedback
+context_tags: [mass_flow, belt_load]
+sources:
+  - id: SRC-RULE-R-SPEED-001
+    kind: rule
+    title: "Regra Forja R-SPEED-001 — Leitura de velocidade inconsistente"
+    reference: "config/rules/R-SPEED-001.yaml"
+    evidence_level: FORJA_RULE
+summary_template_pt: >-
+  Máquina em operação com esforço do acionamento em {drive_command_now}% e velocidade indicada em
+  {rpm_now} rpm (antes: {rpm_before} rpm). Primeiro a mudar: {changed_first_pt}.
+threshold_basis: FORJA_RULE
+threshold_note_pt: >-
+  Limiares definidos pela Forja sobre as tags semânticas; não são limites do KCM.
