@@ -12,7 +12,7 @@ alarms:
       software_version: UNKNOWN
       code: "56"
     text: "BELTLOAD LOW"
-    title_pt: "Pouco material sobre a correia (alarme do KCM)"
+    title_pt: "Pouco material sobre a correia"
     meaning_pt: >-
       O KCM sinalizou carga baixa sobre a correia. O limite que dispara este alarme é interno ao KCM
       e não é conhecido pela Forja; a Forja só registra que o KCM o informou.

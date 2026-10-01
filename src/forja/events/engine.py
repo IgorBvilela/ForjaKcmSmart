@@ -422,7 +422,7 @@ class RuleEngine:
                         ts_utc=alarm_ts,
                         text_pt=(
                             f"KCM informou alarme {lookup.code}: {lookup.title_pt} "
-                            f"({lookup.qualifier_pt})"
+                            f"· alarme do KCM · {lookup.qualifier_pt.lower()}"
                         ),
                         kind="kcm",
                         tag=ALARM_CODE_TAG,

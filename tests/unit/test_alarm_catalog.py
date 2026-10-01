@@ -36,7 +36,7 @@ def test_56_matches_only_wbf_key_as_field_observed() -> None:
     assert hit.definition.evidence == EvidenceLevel.FIELD_OBSERVED
     assert hit.definition.source == "foto da tela do KCM, GTEX, 09/2026"
     assert hit.definition.observed_only is True
-    assert hit.title_pt == "Pouco material sobre a correia (alarme do KCM)"
+    assert hit.title_pt == "Pouco material sobre a correia"
     assert hit.qualifier_pt == "Observado nesta aplicação"
 
 

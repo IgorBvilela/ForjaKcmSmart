@@ -93,8 +93,8 @@ async def test_beltload_low_context_pre_window_and_timeline(clock: FakeClock) ->
     kcm = [p for p in ctx.timeline if p.kind == "kcm"]
     assert len(kcm) == 1
     assert "56" in kcm[0].text_pt
-    assert "Observado nesta aplicação" in kcm[0].text_pt
-    assert "Pouco material sobre a correia (alarme do KCM)" in kcm[0].text_pt
+    assert "observado nesta aplicação" in kcm[0].text_pt
+    assert "Pouco material sobre a correia · alarme do KCM · observado nesta aplicação" in kcm[0].text_pt
 
 
 async def test_open_happens_only_after_persistence(clock: FakeClock) -> None:

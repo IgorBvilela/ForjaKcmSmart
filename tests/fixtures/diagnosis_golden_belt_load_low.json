@@ -84,7 +84,7 @@
     },
     {
       "id": "EV-KCM-1",
-      "text_pt": "KCM informou alarme 56: Pouco material sobre a correia (alarme do KCM) (Observado nesta aplicação)",
+      "text_pt": "KCM informou alarme 56: Pouco material sobre a correia · alarme do KCM · observado nesta aplicação",
       "tag": "alarm_code",
       "value": null,
       "unit": null,
