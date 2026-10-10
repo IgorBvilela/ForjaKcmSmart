@@ -14,6 +14,22 @@
 
   const cards = $derived(live.plant)
 
+  /** Cards agrupados por área e linha (o que o perfil informa; desconhecido vai para um grupo). */
+  const groups = $derived.by(() => {
+    const known = (v: string | undefined) => (v && v !== 'UNKNOWN' ? v : null)
+    const map = new Map<string, { key: string; title: string; cards: PlantCard[] }>()
+    for (const c of cards) {
+      const area = known(c.area)
+      const line = known(c.line)
+      const key = `${area ?? '~'}|${line ?? ''}`
+      const title = area ? (line ? `${area} · ${line}` : area) : 'Área não informada'
+      if (!map.has(key)) map.set(key, { key, title, cards: [] })
+      map.get(key)?.cards.push(c)
+    }
+    return [...map.values()].sort((a, b) => a.key.localeCompare(b.key, 'pt-BR'))
+  })
+  const grouped = $derived(groups.length > 1)
+
   const title = $derived.by(() => {
     const prefixes = new Set<string>()
     for (const c of cards) {
@@ -82,8 +98,14 @@
       />
     {/if}
   {:else}
-    <div class="grid" data-testid={TID.plant.grid}>
-      {#each cards as c, i (c.id)}
+    <div class="groups" data-testid={TID.plant.grid}>
+      {#each groups as g (g.key)}
+      <section class="area" aria-label={g.title}>
+      {#if grouped}
+        <h2 class="area-title">{g.title}<span class="area-count">{plural(g.cards.length, 'equipamento', 'equipamentos')}</span></h2>
+      {/if}
+      <div class="grid">
+      {#each g.cards as c, i (c.id)}
         {@const tone = stateTone(c.state_pt)}
         {@const mf = c.mass_flow}
         {@const usable = mf ? isUsable(mf.quality) : false}
@@ -154,6 +176,9 @@
           </footer>
         </a>
       {/each}
+      </div>
+      </section>
+      {/each}
     </div>
   {/if}
 </section>
@@ -182,6 +207,18 @@
     font: var(--fs-body) / var(--lh-body) var(--font-ui);
   }
 
+  .groups { display: flex; flex-direction: column; gap: var(--sp-6); }
+  .area { display: flex; flex-direction: column; gap: var(--sp-3); }
+  .area-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--sp-3);
+    margin: 0;
+    color: var(--text-1);
+    font: 600 var(--fs-h2) / var(--lh-h2) var(--font-ui);
+  }
+  .area-count { color: var(--text-2); font: var(--fs-caption) / var(--lh-caption) var(--font-ui); }
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));

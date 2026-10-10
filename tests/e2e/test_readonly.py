@@ -23,8 +23,7 @@ pytestmark = pytest.mark.e2e
 # "Em desenvolvimento · próxima etapa: <nome>". A letra da fase continua em `data-phase`.
 # Espelha PHASE_NAMES em frontend/src/lib/nav.ts.
 PHASE_NAMES = {
-    "H": "Cadastro e ficha dos equipamentos",
-    "M": "Relatórios, backup e usuários",
+    "P": "Biblioteca de documentos e manuais",
 }
 
 

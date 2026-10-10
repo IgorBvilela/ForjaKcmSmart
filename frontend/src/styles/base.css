@@ -31,6 +31,14 @@ body { background: var(--bg-0); color: var(--text-1); font-family: var(--font-ui
     border: 0;
     text-align: right;
   }
+  /* Célula com texto longo ou vários blocos: ocupa a linha inteira e empilha o conteúdo. */
+  table.resp td.wide {
+    grid-column: 1 / -1;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    text-align: left;
+  }
   table.resp td::before {
     content: attr(data-label);
     color: var(--text-3);

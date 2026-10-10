@@ -348,6 +348,23 @@ class EquipmentManager:
             await self.start(equipment_id)
             raise
 
+    async def add(self, profile: EquipmentProfile, mapping: Mapping) -> None:
+        """Equipamento novo ou restaurado entra na configuração em memória e sobe.
+
+        A porteira da coleta vale como em qualquer partida.
+        """
+        if profile.id in self._store.profiles:
+            raise ConfigError(f"equipamento já carregado: {profile.id}")
+        self._apply_config(profile, mapping)
+        await self.start(profile.id)
+
+    async def remove(self, equipment_id: str) -> None:
+        """Arquivamento: para a coleta e tira o equipamento da memória. O banco fica intacto."""
+        await self.stop(equipment_id)
+        self._store.profiles.pop(equipment_id, None)
+        self._states.pop(equipment_id, None)
+        self._lives.pop(equipment_id, None)
+
     def _apply_config(self, profile: EquipmentProfile, mapping: Mapping | None) -> None:
         self._store.profiles[profile.id] = profile
         if mapping is not None:

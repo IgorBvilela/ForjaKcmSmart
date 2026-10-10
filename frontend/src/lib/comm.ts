@@ -97,7 +97,8 @@ export interface CommView {
   fingerprint: string
   drivers: Record<string, DriverInfo>
   state: CommState
-  collection: { enabled: boolean; label_pt: string }
+  /** blocked: ligada no arquivo, mas sem teste somente leitura desta configuração. */
+  collection: { enabled: boolean; blocked: boolean; label_pt: string }
   runtime: {
     connection: string
     connection_pt: string

@@ -41,7 +41,9 @@ def test_alertas_separam_kcm_eventos_e_avisos_e_reconhecem(desktop_1366: Page) -
     item.get_by_test_id("ack-user").fill("Técnico de turno")
     item.get_by_test_id("ack-note").fill("visto no painel")
     item.get_by_test_id("ack-confirm").click()
-    expect(forja.get_by_test_id("ack-done").first).to_contain_text("Reconhecido por Técnico de turno")
+    expect(forja.get_by_test_id("ack-done").first).to_contain_text(
+        "Reconhecido por Técnico de turno"
+    )
 
     offenders = [t for t in control_texts(page) if is_command_control(t)]
     assert not offenders, offenders

@@ -29,15 +29,16 @@ from forja.domain import (
     EquipmentProfile,
     HostInterface,
     Mapping,
-    MappingEntry,
     NotConfigured,
     UnsupportedDriver,
 )
 from forja.service.commcenter import (
+    COLLECTION_BLOCKED_PREFIX_PT,
     comm_state,
     has_successful_test,
     read_test_view,
     reading_fingerprint,
+    template_mapping,
     validate_candidate,
 )
 
@@ -193,25 +194,6 @@ def _mapping_shared(container: Any, mapping: Mapping) -> bool:
     return mapping.equipment_id == "*" or mapping.driver == "simulator" or len(users) > 1
 
 
-TEMPLATE_TAGS: tuple[str, ...] = (
-    "machine_state",
-    "setpoint",
-    "mass_flow",
-    "drive_command",
-    "rpm",
-    "belt_load",
-    "net_weight",
-    "alarm_code",
-    "alarm_active",
-    "stop_by",
-)
-"""Variáveis do modelo de mapping novo. Todas nascem UNKNOWN: só o documento da máquina preenche."""
-
-TEMPLATE_NOTE_PT = (
-    "Modelo criado pela tela de Comunicação: preencher a partir do documento da máquina."
-)
-
-
 def editable_mapping(container: Any, profile: EquipmentProfile) -> tuple[Mapping, bool]:
     """Mapping que a tela pode editar para este equipamento e se ele já existe no disco.
 
@@ -224,15 +206,7 @@ def editable_mapping(container: Any, profile: EquipmentProfile) -> tuple[Mapping
     for candidate in container.store.mappings.values():
         if candidate.equipment_id == profile.id and not _mapping_shared(container, candidate):
             return candidate, True
-    template = Mapping(
-        mapping_id=profile.id.lower()[:64],
-        equipment_id=profile.id,
-        driver=UNKNOWN,
-        source=UNKNOWN,
-        entries=[MappingEntry(semantic_tag=tag) for tag in TEMPLATE_TAGS],
-        notes_pt=TEMPLATE_NOTE_PT,
-    )
-    return template, False
+    return template_mapping(profile.id), False
 
 
 async def build_comm_view(container: Any, profile: EquipmentProfile) -> dict[str, Any]:
@@ -258,14 +232,7 @@ async def build_comm_view(container: Any, profile: EquipmentProfile) -> dict[str
         "fingerprint": fingerprint,
         "drivers": support,
         "state": state,
-        "collection": {
-            "enabled": profile.communication.collection_enabled,
-            "label_pt": (
-                "Coleta ativa (somente leitura)"
-                if profile.communication.collection_enabled
-                else "Coleta pausada"
-            ),
-        },
+        "collection": _collection_view(profile, status),
         "runtime": status_view(status),
         "last_test": jsonable(last_test),
         "last_test_matches": bool(last_test and last_test.get("fingerprint") == fingerprint),
@@ -281,6 +248,24 @@ async def _apply(container: Any, profile: EquipmentProfile, mapping: Mapping) ->
         await container.manager.reload(profile.id, profile=profile, mapping=mapping)
     except Exception:
         logger.exception("comunicação %s: recarga após gravar falhou", profile.id)
+
+
+def _blocked_reason(profile: EquipmentProfile, status: Any) -> str | None:
+    """Coleta ligada no arquivo, mas a porteira não deixou começar (falta teste desta config)."""
+    detail = str(getattr(status, "detail_pt", "") or "")
+    if profile.communication.collection_enabled and detail.startswith(COLLECTION_BLOCKED_PREFIX_PT):
+        return detail
+    return None
+
+
+def _collection_view(profile: EquipmentProfile, status: Any) -> dict[str, Any]:
+    enabled = profile.communication.collection_enabled
+    blocked = _blocked_reason(profile, status)
+    return {
+        "enabled": enabled,
+        "blocked": blocked is not None,
+        "label_pt": blocked or ("Coleta ativa (somente leitura)" if enabled else "Coleta pausada"),
+    }
 
 
 def _check_mapping_compiles(profile: EquipmentProfile, mapping: Mapping) -> None:
@@ -604,6 +589,21 @@ async def set_collection(
     if body.active and comm.driver == UNKNOWN:
         raise ApiError(409, "NEEDS_CONFIGURATION", "Protocolo ainda não identificado.")
     if comm.collection_enabled == body.active:
+        blocked = _blocked_reason(profile, container.manager.status(profile.id))
+        if body.active and blocked is not None:
+            # A configuração já pede coleta, mas a porteira bloqueou na partida: com o teste
+            # conferido acima, a recarga reavalia e a coleta começa.
+            await _audit(
+                container,
+                user=body.user,
+                action="COLLECTION_ON",
+                entity_type="equipment",
+                entity_id=profile.id,
+                before={"collection_enabled": True, "blocked": True},
+                after={"collection_enabled": True, "blocked": False},
+                reason_pt=body.reason_pt,
+            )
+            await _apply(container, profile, mapping)
         return await build_comm_view(container, profile)
     updated = profile.model_copy(
         update={"communication": comm.model_copy(update={"collection_enabled": body.active})}

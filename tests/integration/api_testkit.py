@@ -164,6 +164,17 @@ class FakeManager:
         self.test_read_result: FakeReadTestResult | None = None
         self.test_read_error: Exception | None = None
         self.reloads: list[str] = []
+        self.added: list[str] = []
+        self.removed: list[str] = []
+
+    async def add(self, profile: EquipmentProfile, mapping: Mapping) -> None:
+        self._store.profiles[profile.id] = profile
+        self._store.mappings[mapping.mapping_id] = mapping
+        self.added.append(profile.id)
+
+    async def remove(self, equipment_id: str) -> None:
+        self._store.profiles.pop(equipment_id, None)
+        self.removed.append(equipment_id)
 
     def set_status(self, equipment_id: str, **changes: Any) -> None:
         self._status.setdefault(equipment_id, {}).update(changes)

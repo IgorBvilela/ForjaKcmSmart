@@ -46,7 +46,7 @@
               <tr>
                 <th data-label="O quê">{m.what_pt}</th>
                 <td data-label="Valor" class="mono">{m.value}</td>
-                <td data-label="Natureza">{m.nature_pt}</td>
+                <td data-label="Natureza" class="wide">{m.nature_pt}</td>
                 <td data-label="Evidência">{m.evidence_pt}</td>
               </tr>
             {/each}

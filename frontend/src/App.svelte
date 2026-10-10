@@ -9,19 +9,27 @@
   import { app } from './lib/state.svelte'
   import { TID } from './lib/testids'
   import AboutPage from './routes/AboutPage.svelte'
+  import AlarmCatalogPage from './routes/AlarmCatalogPage.svelte'
   import AlertsPage from './routes/AlertsPage.svelte'
+  import BackupPage from './routes/BackupPage.svelte'
   import CasesPage from './routes/CasesPage.svelte'
   import CommissioningPage from './routes/CommissioningPage.svelte'
   import CommunicationPage from './routes/CommunicationPage.svelte'
+  import ComponentsPage from './routes/ComponentsPage.svelte'
   import ComingSoonPage from './routes/ComingSoonPage.svelte'
   import DashboardPage from './routes/DashboardPage.svelte'
+  import DatasheetPage from './routes/DatasheetPage.svelte'
   import DiagnosisPage from './routes/DiagnosisPage.svelte'
   import EarlyWarningPage from './routes/EarlyWarningPage.svelte'
+  import EquipmentsPage from './routes/EquipmentsPage.svelte'
+  import ExportsPage from './routes/ExportsPage.svelte'
   import EventsPage from './routes/EventsPage.svelte'
   import HistoryPage from './routes/HistoryPage.svelte'
   import KnowledgeCasesPage from './routes/KnowledgeCasesPage.svelte'
   import PlantPage from './routes/PlantPage.svelte'
   import RealtimePage from './routes/RealtimePage.svelte'
+  import ReportsPage from './routes/ReportsPage.svelte'
+  import SettingsPage from './routes/SettingsPage.svelte'
   import SimulatorPage from './routes/SimulatorPage.svelte'
   import SystemLogsPage from './routes/SystemLogsPage.svelte'
   import TrendsPage from './routes/TrendsPage.svelte'
@@ -94,6 +102,12 @@
           <CommunicationPage equipmentId={route.id} />
         {:else if route.screen === 'kcm/commissioning'}
           <CommissioningPage equipmentId={route.id} />
+        {:else if route.screen === 'kcm/datasheet'}
+          <DatasheetPage equipmentId={route.id} />
+        {:else if route.screen === 'kcm/components'}
+          <ComponentsPage equipmentId={route.id} />
+        {:else if route.screen === 'kcm/alarms'}
+          <AlarmCatalogPage equipmentId={route.id} />
         {:else if route.screen === 'alerts'}
           <AlertsPage equipmentId={route.id} />
         {:else if route.screen === 'early-warning'}
@@ -110,12 +124,24 @@
           <ComingSoonPage item={knowledgeItem(route.sub)} />
         {/if}
       {:else if route.name === 'tools'}
-        <ComingSoonPage item={toolsItem(route.sub)} />
+        {#if route.sub === 'reports'}
+          <ReportsPage />
+        {:else if route.sub === 'exports'}
+          <ExportsPage />
+        {:else}
+          <ComingSoonPage item={toolsItem(route.sub)} />
+        {/if}
       {:else if route.name === 'system'}
         {#if route.sub === 'about'}
           <AboutPage />
         {:else if route.sub === 'logs'}
           <SystemLogsPage />
+        {:else if route.sub === 'equipments'}
+          <EquipmentsPage />
+        {:else if route.sub === 'backup'}
+          <BackupPage />
+        {:else if route.sub === 'settings'}
+          <SettingsPage />
         {:else}
           <ComingSoonPage item={systemItem(route.sub)} />
         {/if}

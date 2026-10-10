@@ -79,7 +79,7 @@
   )
   const userOk = $derived(/^[\w .@-]{1,64}$/.test(user.trim()))
   const canActivate = $derived(
-    !!view && !view.collection.enabled && !dirtyComm && !dirtyMapping &&
+    !!view && (!view.collection.enabled || view.collection.blocked) && !dirtyComm && !dirtyMapping &&
       (driver === 'simulator' || (view.last_test_matches && view.last_test?.success === true)),
   )
 
@@ -488,7 +488,7 @@
         </Card>
 
         <Card title="6 · Coleta" testid="comm-step-collection">
-          <p class="collection" data-on={view.collection.enabled} data-testid="comm-collection">
+          <p class="collection" data-on={view.collection.enabled && !view.collection.blocked} data-blocked={view.collection.blocked} data-testid="comm-collection">
             <Radio size={18} aria-hidden="true" /> {view.collection.label_pt}
           </p>
           <p class="hint">
@@ -498,7 +498,7 @@
             Ativar a coleta liga a LEITURA periódica da Forja. Não envia nenhum comando ao KCM.
             {#if real}Para driver real, exige teste de leitura bem-sucedido da configuração salva.{/if}
           </p>
-          {#if view.collection.enabled}
+          {#if view.collection.enabled && !view.collection.blocked}
             <button type="button" class="btn ghost" disabled={busy !== '' || !userOk} onclick={() => setCollection(false)} data-testid="comm-collection-off">
               Pausar coleta
             </button>
@@ -612,6 +612,7 @@
   .okline { background: var(--st-ok-bg); color: var(--st-ok); }
   .collection { display: flex; align-items: center; gap: var(--sp-2); margin: 0; color: var(--text-2); font: 600 var(--fs-body) / var(--lh-body) var(--font-ui); }
   .collection[data-on='true'] { color: var(--st-ok); }
+  .collection[data-blocked='true'] { color: var(--st-warn); }
   .runtime, .tech { display: grid; gap: 4px; margin: 0; }
   .runtime div, .tech div { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: var(--sp-2); }
   dt { color: var(--text-3); font: 500 var(--fs-caption) / var(--lh-caption) var(--font-ui); }

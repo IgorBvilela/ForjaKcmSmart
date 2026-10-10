@@ -23,6 +23,7 @@ from forja.domain import (
 from forja.infra import AsyncBus
 
 if TYPE_CHECKING:
+    from forja.service.backups import BackupJob
     from forja.service.runner import EarlyWarningJob, EngineBridge, PeriodicJobs
 
 
@@ -45,6 +46,7 @@ class ServiceRuntime:
     bridge: EngineBridge | None = None
     jobs: PeriodicJobs | None = None
     early_warning_job: EarlyWarningJob | None = None
+    backup_job: BackupJob | None = None
     tasks: list[asyncio.Task[None]] = field(default_factory=list)
     closeables: list[Any] = field(default_factory=list)
     started: bool = False

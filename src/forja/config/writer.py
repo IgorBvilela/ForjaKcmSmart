@@ -34,6 +34,12 @@ HISTORY_DIR_NAME: Final[str] = "_history"
 _SAFE_STEM = re.compile(r"^[a-z0-9][a-z0-9_\-]{1,63}$")
 
 
+ARCHIVE_DIR_NAME: Final = "_archive"
+"""Perfis arquivados (fora da configuração ativa). O ConfigStore e a semente não os carregam."""
+ORIGIN_COMMUNICATION_PT: Final = "tela Comunicação KCM"
+ORIGIN_EQUIPMENT_PT: Final = "tela Equipamentos"
+
+
 class ConfigConflict(ConfigError):
     """A configuração mudou desde que foi lida. Recarregue antes de salvar."""
 
@@ -101,7 +107,12 @@ class ConfigWriter:
     # ------------------------------------------------------------------ perfil
 
     def save_profile(
-        self, profile: EquipmentProfile, *, expected_hash: str | None, now: datetime
+        self,
+        profile: EquipmentProfile,
+        *,
+        expected_hash: str | None,
+        now: datetime,
+        origin_pt: str = ORIGIN_COMMUNICATION_PT,
     ) -> SavedProfile:
         try:
             checked = EquipmentProfile.model_validate(profile.model_dump(mode="json"))
@@ -120,7 +131,9 @@ class ConfigWriter:
                     f"perfil {checked.id} mudou desde a leitura; recarregue a tela antes de salvar"
                 )
             previous = self._archive(path, "equipment", now)
-        self._atomic_dump(path, checked.model_dump(mode="json"), "perfil de equipamento", now)
+        self._atomic_dump(
+            path, checked.model_dump(mode="json"), "perfil de equipamento", now, origin_pt
+        )
         return SavedProfile(
             profile=checked, path=path, config_hash=config_hash(checked), previous_path=previous
         )
@@ -128,7 +141,12 @@ class ConfigWriter:
     # ------------------------------------------------------------------ mapping
 
     def save_mapping(
-        self, mapping: Mapping, *, expected_version: int | None, now: datetime
+        self,
+        mapping: Mapping,
+        *,
+        expected_version: int | None,
+        now: datetime,
+        origin_pt: str = ORIGIN_COMMUNICATION_PT,
     ) -> SavedMapping:
         try:
             checked = Mapping.model_validate(mapping.model_dump(mode="json"))
@@ -151,8 +169,64 @@ class ConfigWriter:
             version = current.version + 1
             previous = self._archive(path, "mappings", now)
         saved = checked.model_copy(update={"version": version})
-        self._atomic_dump(path, saved.model_dump(mode="json"), "mapping", now)
+        self._atomic_dump(path, saved.model_dump(mode="json"), "mapping", now, origin_pt)
         return SavedMapping(mapping=saved, path=path, previous_path=previous)
+
+    # ------------------------------------------------------------------ arquivo
+
+    @property
+    def archive_dir(self) -> Path:
+        return self._paths.config_dir / ARCHIVE_DIR_NAME / "equipment"
+
+    def archive_profile(self, equipment_id: str, now: datetime) -> Path:
+        """Tira o perfil da configuração ativa sem apagar: o arquivo vai para config/_archive.
+
+        O histórico de leituras e eventos continua no banco; restaurar devolve o arquivo.
+        """
+        path = self.find_profile_file(equipment_id)
+        if path is None:
+            raise ConfigError(f"perfil {equipment_id} não encontrado em config/equipment")
+        self.archive_dir.mkdir(parents=True, exist_ok=True)
+        target = self.archive_dir / f"{path.stem}__{_stamp(now)}.yaml"
+        n = 1
+        while target.exists():
+            n += 1
+            target = self.archive_dir / f"{path.stem}__{_stamp(now)}_{n}.yaml"
+        os.replace(path, target)
+        return target
+
+    def archived_profiles(self) -> list[tuple[Path, EquipmentProfile]]:
+        """Perfis arquivados, o mais recente de cada id primeiro na lista."""
+        if not self.archive_dir.is_dir():
+            return []
+        out: list[tuple[Path, EquipmentProfile]] = []
+        seen: set[str] = set()
+        for path in sorted(self.archive_dir.glob("*.yaml"), reverse=True):
+            with contextlib.suppress(ConfigError):
+                profile = load_profile(path)
+                if profile.id not in seen:
+                    seen.add(profile.id)
+                    out.append((path, profile))
+        return out
+
+    def restore_profile(self, equipment_id: str) -> SavedProfile:
+        """Devolve o arquivamento mais recente do id para config/equipment (sem sobrescrever)."""
+        if self.find_profile_file(equipment_id) is not None:
+            raise ConfigConflict(f"já existe um perfil ativo com o id {equipment_id}")
+        for path, profile in self.archived_profiles():
+            if profile.id != equipment_id:
+                continue
+            target = self._target(self._paths.equipment_dir, path.stem.split("__")[0])
+            if target.exists():
+                target = self._target(self._paths.equipment_dir, equipment_id.lower())
+            if target.exists():
+                raise ConfigConflict(f"já existe o arquivo {target.name} em config/equipment")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(path, target)
+            return SavedProfile(
+                profile=profile, path=target, config_hash=config_hash(profile), previous_path=None
+            )
+        raise ConfigError(f"nenhum perfil arquivado com o id {equipment_id}")
 
     # ------------------------------------------------------------------ disco
 
@@ -175,9 +249,16 @@ class ConfigWriter:
         target.write_bytes(path.read_bytes())
         return target
 
-    def _atomic_dump(self, path: Path, data: dict[str, Any], what: str, now: datetime) -> None:
+    def _atomic_dump(
+        self,
+        path: Path,
+        data: dict[str, Any],
+        what: str,
+        now: datetime,
+        origin_pt: str = ORIGIN_COMMUNICATION_PT,
+    ) -> None:
         header = (
-            f"# {what.capitalize()} gravado pela tela Comunicação KCM da Forja "
+            f"# {what.capitalize()} gravado pela {origin_pt} da Forja "
             f"({now.astimezone(UTC).isoformat()}).\n"
             f"# A versão anterior, com os comentários originais, fica em "
             f"config/{HISTORY_DIR_NAME}/.\n"
@@ -199,7 +280,10 @@ class ConfigWriter:
 
 
 __all__ = [
+    "ARCHIVE_DIR_NAME",
     "HISTORY_DIR_NAME",
+    "ORIGIN_COMMUNICATION_PT",
+    "ORIGIN_EQUIPMENT_PT",
     "ConfigConflict",
     "ConfigWriter",
     "SavedMapping",

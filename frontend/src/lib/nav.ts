@@ -25,15 +25,15 @@ import Settings from '@lucide/svelte/icons/settings'
 import DatabaseBackup from '@lucide/svelte/icons/database-backup'
 import ScrollText from '@lucide/svelte/icons/scroll-text'
 import Info from '@lucide/svelte/icons/info'
+import Boxes from '@lucide/svelte/icons/boxes'
 import { href, type EqScreen, type KnowledgeSub, type SystemSub, type ToolsSub } from './router'
 
 /** Fases do plano que ainda não têm tela. Para o usuário, cada uma vira o nome da etapa. */
-export type FuturePhase = 'H' | 'M'
+export type FuturePhase = 'P'
 
-/** Nome legível da etapa (o que o usuário lê no lugar de "fase H"). */
+/** Nome legível da etapa (o que o usuário lê no lugar de "fase P"). */
 export const PHASE_NAMES: Record<FuturePhase, string> = {
-  H: 'Cadastro e ficha dos equipamentos',
-  M: 'Relatórios, backup e usuários',
+  P: 'Biblioteca de documentos e manuais',
 }
 
 export function phaseName(phase: FuturePhase | string | undefined | null): string | null {
@@ -106,20 +106,11 @@ export const NAV_GROUPS: NavGroup[] = [
     id: 'kcm',
     label: 'KCM',
     items: [
-      eq('kcm/alarms', 'kcm-alarms', 'Alarmes', Siren, {
-        phase: 'H',
-        reason: 'Catálogo de alarmes por chave composta (fabricante, controlador, aplicação, versão).',
-      }),
+      eq('kcm/alarms', 'kcm-alarms', 'Alarmes', Siren),
       eq('kcm/communication', 'kcm-communication', 'Comunicação', Cable),
       eq('kcm/commissioning', 'kcm-commissioning', 'Comissionamento', ClipboardCheck),
-      eq('kcm/datasheet', 'kcm-datasheet', 'Ficha Técnica', FileText, {
-        phase: 'H',
-        reason: 'Perfil do equipamento com classificação de cada informação (FACT, FIELD_OBSERVED, UNKNOWN).',
-      }),
-      eq('kcm/components', 'kcm-components', 'Componentes', ComponentIcon, {
-        phase: 'H',
-        reason: 'KCM, MDU, SFT, SIB, encoder, motor e Anybus com a evidência de cada um.',
-      }),
+      eq('kcm/datasheet', 'kcm-datasheet', 'Ficha Técnica', FileText),
+      eq('kcm/components', 'kcm-components', 'Componentes', ComponentIcon),
     ],
   },
   {
@@ -132,7 +123,7 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: BookOpen,
         kind: 'knowledge',
         to: () => href.knowledge('documents'),
-        phase: 'M',
+        phase: 'P',
         reason: 'Biblioteca de documentos locais com classificação da fonte.',
       },
       {
@@ -141,7 +132,7 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: BookText,
         kind: 'knowledge',
         to: () => href.knowledge('manuals'),
-        phase: 'M',
+        phase: 'P',
         reason: 'Manuais do fabricante e da máquina, indexados por seção.',
       },
       {
@@ -164,8 +155,6 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: FileChartColumn,
         kind: 'tools',
         to: () => href.tools('reports'),
-        phase: 'M',
-        reason: 'Relatório por período com eventos, diagnósticos e qualidade dos dados.',
       },
       {
         slug: 'tools-exports',
@@ -173,8 +162,6 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Download,
         kind: 'tools',
         to: () => href.tools('exports'),
-        phase: 'M',
-        reason: 'Exportação de séries e eventos em CSV, sempre com a qualidade ao lado do valor.',
       },
     ],
   },
@@ -183,13 +170,18 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Sistema',
     items: [
       {
+        slug: 'system-equipments',
+        label: 'Equipamentos',
+        icon: Boxes,
+        kind: 'system',
+        to: () => href.system('equipments'),
+      },
+      {
         slug: 'system-settings',
         label: 'Configuração',
         icon: Settings,
         kind: 'system',
         to: () => href.system('settings'),
-        phase: 'M',
-        reason: 'Preferências do Edge, usuários e permissões.',
       },
       {
         slug: 'system-backup',
@@ -197,8 +189,6 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: DatabaseBackup,
         kind: 'system',
         to: () => href.system('backup'),
-        phase: 'M',
-        reason: 'Cópia e restauração dos bancos locais.',
       },
       {
         slug: 'system-logs',

@@ -44,6 +44,9 @@ export interface EquipmentSummary {
   id: string
   name: string
   display_path: string
+  plant: string
+  area: string
+  line: string
   application: string
   application_evidence: string
   is_example: boolean

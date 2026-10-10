@@ -341,8 +341,38 @@ def read_test_view(
     return {"tags": rows, "blocks": plan_blocks}
 
 
+TEMPLATE_TAGS: Final[tuple[str, ...]] = (
+    "machine_state",
+    "setpoint",
+    "mass_flow",
+    "drive_command",
+    "rpm",
+    "belt_load",
+    "net_weight",
+    "alarm_code",
+    "alarm_active",
+    "stop_by",
+)
+"""Variáveis do modelo de mapping novo. Todas nascem UNKNOWN: só o documento da máquina preenche."""
+TEMPLATE_NOTE_PT: Final = "Modelo criado pela Forja: preencher a partir do documento da máquina."
+
+
+def template_mapping(equipment_id: str) -> Mapping:
+    """Mapping próprio e novo de um equipamento: driver e endereços UNKNOWN."""
+    return Mapping(
+        mapping_id=equipment_id.lower()[:64],
+        equipment_id=equipment_id,
+        driver=UNKNOWN,
+        source=UNKNOWN,
+        entries=[MappingEntry(semantic_tag=tag) for tag in TEMPLATE_TAGS],
+        notes_pt=TEMPLATE_NOTE_PT,
+    )
+
+
 READ_TEST_HISTORY: Final = 20
 """Testes mais recentes consultados para liberar a coleta de um driver real."""
+COLLECTION_BLOCKED_PREFIX_PT: Final = "Coleta não iniciada"
+"""Início de todo motivo de bloqueio da porteira (ver forja.acquisition.manager)."""
 READ_TEST_PENDING_PT: Final = (
     "Coleta não iniciada: falta um teste somente leitura bem-sucedido desta configuração "
     "(KCM › Comunicação)"
@@ -376,6 +406,7 @@ def collection_gate_for(core: Any) -> Callable[[EquipmentProfile, Mapping], Awai
 
 
 __all__ = [
+    "COLLECTION_BLOCKED_PREFIX_PT",
     "ENDIANNESS_PT",
     "MODBUS_AREA_PT",
     "READ_TEST_HISTORY",
@@ -388,5 +419,6 @@ __all__ = [
     "has_successful_test",
     "read_test_view",
     "reading_fingerprint",
+    "template_mapping",
     "validate_candidate",
 ]

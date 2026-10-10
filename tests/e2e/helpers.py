@@ -93,6 +93,14 @@ READY_BY_SLUG: dict[str, str] = {
     "early-warning": "[data-testid='ew-disclaimer']",
     "cases": "[data-testid='cases-recurrence']",
     "knowledge-cases": "[data-testid='knowledge-cases']",
+    "system-equipments": "[data-testid='eq-active']",
+    "kcm-datasheet": "[data-testid='datasheet-identity']",
+    "kcm-components": "[data-testid='components-list'], [data-testid='empty-state']",
+    "kcm-alarms": "[data-testid='alarm-key']",
+    "tools-reports": "[data-testid='reports-form']",
+    "tools-exports": "[data-testid='exports-form']",
+    "system-backup": "[data-testid='backup-schedule']",
+    "system-settings": "[data-testid='settings-edge']",
 }
 
 

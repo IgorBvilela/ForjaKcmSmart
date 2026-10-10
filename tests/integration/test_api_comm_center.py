@@ -341,3 +341,44 @@ async def test_sem_mapping_proprio_a_tela_recebe_modelo_todo_unknown(
     )
     assert resp.status_code == 200, resp.text
     assert cfg_world.store.mappings[eq.lower()].version == 1
+
+
+async def test_coleta_bloqueada_na_partida_aparece_e_reativa_depois_do_teste(
+    cfg_client: httpx.AsyncClient, cfg_world: ApiWorld
+) -> None:
+    from forja.service.commcenter import READ_TEST_PENDING_PT
+
+    await _switch_to_modbus(cfg_client, cfg_world)
+    # arquivo pede coleta (editado à mão), mas a porteira bloqueou na partida
+    profile = cfg_world.store.profiles[EQ]
+    cfg_world.store.profiles[EQ] = profile.model_copy(
+        update={
+            "communication": profile.communication.model_copy(update={"collection_enabled": True})
+        }
+    )
+    cfg_world.manager.set_status(EQ, detail_pt=READ_TEST_PENDING_PT)
+    view = await _view(cfg_client)
+    assert view["collection"]["blocked"] is True
+    assert view["collection"]["label_pt"] == READ_TEST_PENDING_PT
+
+    # sem teste, reativar continua recusado
+    resp = await cfg_client.post(
+        f"/api/v1/communication/{EQ}/collection", json={"active": True, "user": USER}
+    )
+    assert resp.status_code == 409
+    assert resp.json()["error"]["code"] == "READ_TEST_REQUIRED"
+
+    resp = await cfg_client.post(
+        "/api/v1/communication/test-read",
+        json={"profile": view["profile"], "mapping": view["mapping"], "user": USER},
+    )
+    assert resp.json()["success"] is True
+    reloads = len(cfg_world.manager.reloads)
+    resp = await cfg_client.post(
+        f"/api/v1/communication/{EQ}/collection",
+        json={"active": True, "user": USER, "reason_pt": "teste feito"},
+    )
+    assert resp.status_code == 200, resp.text
+    assert len(cfg_world.manager.reloads) == reloads + 1
+    assert cfg_world.core.audits[-1]["action"] == "COLLECTION_ON"
+    assert cfg_world.core.audits[-1]["before"] == {"collection_enabled": True, "blocked": True}

@@ -324,6 +324,21 @@ async def start(container: Container) -> None:
         rt.tasks.append(
             asyncio.create_task(rt.early_warning_job.run_forever(), name="forja-early-warning")
         )
+    backup_cfg = container.store.config.backup
+    if backup_cfg.auto and callable(getattr(container.historian, "backup", None)):
+        from forja.events.plant_time import resolve_zone
+        from forja.service.backups import BackupJob
+
+        rt.backup_job = BackupJob(
+            container.historian,
+            container.core,
+            container.paths,
+            backup_cfg,
+            container.clock,
+            resolve_zone(container.store.config.edge.timezone),
+            audit=getattr(container.core, "audit", None),
+        )
+        rt.tasks.append(asyncio.create_task(rt.backup_job.run_forever(), name="forja-backup"))
     await container.manager.start_all()
     rt.started = True
     await _expire_stale_open_events(container)

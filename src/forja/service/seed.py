@@ -32,11 +32,11 @@ def seed_home(home: Path, source: Path | None = None) -> list[str]:
     created: list[str] = []
     for folder in SEED_FOLDERS:
         for item in sorted((src / folder).rglob("*")):
-            if not item.is_file() or "_history" in item.parts:
+            if not item.is_file() or {"_history", "_archive"} & set(item.parts):
                 continue
             rel = item.relative_to(src)
             target = home / rel
-            if target.exists():
+            if target.exists() or _archived(home, rel):
                 continue
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(item, target)
@@ -44,6 +44,14 @@ def seed_home(home: Path, source: Path | None = None) -> list[str]:
     for folder in ("var", "var/logs", "var/backups"):
         (home / folder).mkdir(parents=True, exist_ok=True)
     return created
+
+
+def _archived(home: Path, rel: Path) -> bool:
+    """Perfil da semente que o usuário arquivou não volta numa atualização."""
+    if rel.parts[:2] != ("config", "equipment"):
+        return False
+    archive = home / "config" / "_archive" / "equipment"
+    return archive.is_dir() and any(archive.glob(f"{rel.stem}__*.yaml"))
 
 
 __all__ = ["SEED_FOLDERS", "seed_home", "seed_source"]

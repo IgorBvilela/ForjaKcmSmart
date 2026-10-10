@@ -175,7 +175,7 @@ def aggregated_csv(
 
 def export_filename(equipment_id: str, start: datetime, end: datetime, kind: str) -> str:
     """forja_<eq>_<inicio>_<fim>_<bruto|resumido>.csv (so caracteres seguros)."""
-    label = "bruto" if kind == "raw" else "resumido"
+    label = {"raw": "bruto", "auto": "resumido"}.get(kind, kind)
     fmt = "%Y%m%dT%H%M%SZ"
     safe_eq = "".join(c for c in equipment_id if c.isalnum() or c == "_")[:64]
     return (

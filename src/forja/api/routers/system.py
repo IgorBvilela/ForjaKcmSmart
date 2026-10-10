@@ -146,6 +146,9 @@ AUDIT_ACTION_PT: dict[str, str] = {
     "COMMISSIONING_CLOSE": "Sessão de comissionamento encerrada",
     "BACKUP_CREATE": "Backup criado",
     "EQUIPMENT_CREATE": "Equipamento cadastrado",
+    "EQUIPMENT_DATASHEET_SAVE": "Ficha técnica salva",
+    "EQUIPMENT_ARCHIVE": "Equipamento arquivado",
+    "EQUIPMENT_RESTORE": "Equipamento restaurado",
 }
 
 
@@ -198,3 +201,39 @@ async def logs_csv(
 
 
 __all__ = ["router"]
+
+
+SETTINGS_NOTE_PT = (
+    "Para mudar, edite config/forja.yaml na pasta de dados e reinicie o serviço. "
+    "Esta tela só mostra."
+)
+USERS_NOTE_PT = (
+    "Não há login nesta versão: a interface só aceita conexões desta máquina (127.0.0.1) e cada "
+    "alteração pede o nome do responsável, que fica na trilha de auditoria."
+)
+
+
+@router.get("/settings")
+async def settings(container: ContainerDep) -> dict[str, Any]:
+    """Configuração em uso (forja.yaml) e pastas do Edge. Só leitura."""
+    cfg = container.store.config
+    paths = container.paths
+    return {
+        "edge": jsonable(cfg.edge),
+        "historian": jsonable(cfg.historian),
+        "events": jsonable(cfg.events),
+        "backup": jsonable(cfg.backup),
+        "logging": jsonable(cfg.logging),
+        "paths": {
+            "home": str(paths.home),
+            "config": str(paths.config_dir),
+            "knowledge": str(paths.knowledge_dir),
+            "data": str(paths.data_dir),
+            "logs": str(paths.logs_dir),
+            "backups": str(paths.backups_dir),
+        },
+        "equipments": len(container.store.profiles),
+        "version": __version__,
+        "note_pt": SETTINGS_NOTE_PT,
+        "users_note_pt": USERS_NOTE_PT,
+    }

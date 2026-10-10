@@ -39,6 +39,11 @@ def add_admin_commands(
     restore.add_argument(
         "--sim", action="store_true", help="Confirma a substituição dos bancos atuais."
     )
+    restore.add_argument(
+        "--configuracao",
+        action="store_true",
+        help="Também restaura config/ e knowledge/ (a atual fica guardada antes).",
+    )
     service = sub.add_parser("service", help="Serviço Windows (usado pelo instalador).")
     ssub = service.add_subparsers(dest="service_command", required=True, metavar="ação")
     ssub.add_parser("run", help="Ponto de entrada chamado pelo gerenciador de serviços.")
@@ -86,7 +91,7 @@ async def _backup_create(home: str | None, dest: str | None) -> Path:
 
 
 def cmd_backup(args: argparse.Namespace) -> int:
-    from forja.historian.backup import restore_all, verify_backup
+    from forja.historian.backup import restore_all, restore_config, verify_backup
 
     if args.backup_command == "create":
         folder = asyncio.run(_backup_create(getattr(args, "home", None), args.dest))
@@ -111,7 +116,13 @@ def cmd_backup(args: argparse.Namespace) -> int:
             )
         paths = resolve_paths(getattr(args, "home", None))
         asyncio.run(restore_all(Path(args.folder), paths))
-        print(f"Backup restaurado em {paths.data_dir}. Inicie o serviço de novo.")
+        print(f"Bancos restaurados em {paths.data_dir}.")
+        if args.configuracao:
+            from forja.infra import SystemClock
+
+            safety = asyncio.run(restore_config(Path(args.folder), paths, SystemClock().now_utc()))
+            print(f"Configuração restaurada. A anterior ficou em {safety}.")
+        print("Inicie o serviço de novo.")
         return 0
     raise AdminError(f"ação desconhecida: {args.backup_command!r}")
 

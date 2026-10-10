@@ -3,15 +3,18 @@
 from fastapi import APIRouter
 
 from forja.api.routers import (
+    backups,
     commissioning,
     communication,
     diagnostics,
+    equipment_admin,
     equipments,
     events,
     health,
     history,
     intelligence,
     plant,
+    reports,
     simulator,
     stream,
     system,
@@ -22,10 +25,13 @@ from forja.api.routers import (
 ALL_ROUTERS: tuple[APIRouter, ...] = (
     health.router,
     system.router,
+    backups.router,
     tags.router,
     plant.router,
     equipments.router,
+    equipment_admin.router,
     history.router,
+    reports.router,
     events.router,
     diagnostics.router,
     intelligence.router,
