@@ -364,7 +364,7 @@ def test_unknown_scale_keeps_raw_number_and_explains(clock) -> None:
     by_tag = _by_tag(Normalizer().normalize(frame, profile, mapping, clock, plan=plan))
     assert by_tag["rpm"].value == 425.0
     assert by_tag["rpm"].quality is Quality.UNCERTAIN
-    assert "escala UNKNOWN" in (by_tag["rpm"].reason_pt or "")
+    assert "escala não informada" in (by_tag["rpm"].reason_pt or "")
 
 
 def test_string_datatype_is_bad_with_raw_preserved(clock) -> None:

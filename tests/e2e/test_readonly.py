@@ -64,8 +64,8 @@ def test_future_phase_routes_show_honest_empty_state(
     desktop_1366: Page, nav_routes: list[NavRoute]
 ) -> None:
     page = desktop_1366
+    # Toda tela ainda não construída precisa ser honesta. O número cai a cada fase entregue.
     future = [r for r in nav_routes if r.phase]
-    assert len(future) >= 15, [r.slug for r in future]
     assert {r.phase for r in future} <= {"E", "F", "G", "L", "M"}
     for route in future:
         open_route(page, route.href, route.slug)

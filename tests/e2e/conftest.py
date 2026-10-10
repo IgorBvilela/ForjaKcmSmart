@@ -1,7 +1,8 @@
 """Fixtures do bloco E2E (contrato B, seção final): Playwright em Python contra o Edge real.
 
-- `edge`: sobe `forja run --port <livre>` com FORJA_DATA_DIR em pasta temporária e FORJA_HOME na
-  raiz do repositório, espera `/health` e derruba no fim (terminate + wait; kill se preciso).
+- `edge`: sobe `forja run --port <livre>` com FORJA_DATA_DIR em pasta temporária e FORJA_HOME numa
+  CÓPIA de config/ e knowledge/ (teste que grava configuração nunca toca o repositório), espera
+  `/health` e derruba no fim (terminate + wait; kill se preciso).
 - `browser`: Edge local (`channel="msedge"`, sem download) headless; se não houver, o Chromium do
   Playwright já instalado. Sem navegador nenhum, os testes são pulados com motivo.
 - Páginas por viewport: `desktop_1920`, `desktop_1366`, `tablet_768`, `mobile_375`.
@@ -17,11 +18,13 @@ from __future__ import annotations
 
 import http.client
 import os
+import shutil
 import socket
 import subprocess
 import sys
 import time
 from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -143,6 +146,7 @@ class Edge:
     port: int
     data_dir: Path
     log_path: Path
+    home: Path = REPO_ROOT
 
     @property
     def base_url(self) -> str:
@@ -156,17 +160,25 @@ class Edge:
         return "\n".join(text.splitlines()[-lines:])
 
 
-@pytest.fixture(scope="package")
-def edge(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Edge]:
-    """`forja run` numa porta livre, dados em pasta temporária, derrubado no fim da sessão."""
-    data_dir = tmp_path_factory.mktemp("forja_e2e_data")
+def seed_home(dest: Path) -> Path:
+    """Cópia de config/ e knowledge/ da semente: o Edge de teste pode gravar configuração sem
+    tocar no repositório."""
+    for name in ("config", "knowledge"):
+        shutil.copytree(REPO_ROOT / name, dest / name, ignore=shutil.ignore_patterns("_history"))
+    (dest / "pyproject.toml").write_text("", encoding="utf-8")
+    return dest
+
+
+@contextmanager
+def running_edge(home: Path, data_dir: Path) -> Iterator[Edge]:
+    """`forja run --home <home>` numa porta livre, dados em `data_dir`; derrubado ao sair."""
     log_path = data_dir / "edge.log"
     port = _free_port()
     env = dict(os.environ)
     env.update(
         {
             "FORJA_DATA_DIR": str(data_dir),
-            "FORJA_HOME": str(REPO_ROOT),
+            "FORJA_HOME": str(home),
             "PYTHONUTF8": "1",
             "PYTHONPATH": str(REPO_ROOT / "src")
             + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else ""),
@@ -180,13 +192,13 @@ def edge(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Edge]:
         "--port",
         str(port),
         "--home",
-        str(REPO_ROOT),
+        str(home),
     ]
     with log_path.open("wb") as log:
         proc = subprocess.Popen(  # noqa: S603  # comando fixo, sem shell, só 127.0.0.1
             cmd, cwd=str(REPO_ROOT), env=env, stdout=log, stderr=subprocess.STDOUT
         )
-    edge = Edge(port=port, data_dir=data_dir, log_path=log_path)
+    edge = Edge(port=port, data_dir=data_dir, log_path=log_path, home=home)
     deadline = time.monotonic() + HEALTH_TIMEOUT_S
     try:
         while True:
@@ -210,6 +222,15 @@ def edge(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Edge]:
             except subprocess.TimeoutExpired:
                 proc.kill()
                 proc.wait(timeout=STOP_TIMEOUT_S)
+
+
+@pytest.fixture(scope="package")
+def edge(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Edge]:
+    """Edge de teste com configuração copiada para pasta temporária e dados temporários."""
+    home = seed_home(tmp_path_factory.mktemp("forja_e2e_home"))
+    data_dir = tmp_path_factory.mktemp("forja_e2e_data")
+    with running_edge(home, data_dir) as e:
+        yield e
 
 
 # ----------------------------------------------------------------------------------------------

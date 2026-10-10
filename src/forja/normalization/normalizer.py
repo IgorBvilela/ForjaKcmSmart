@@ -26,7 +26,7 @@ from forja.normalization.quality_policy import QualityPolicy, Verdict
 
 _PlanKey = tuple[str, str, str, int]
 REASON_STRING_PT = "tipo string não representável como número; bruto preservado"
-REASON_SCALE_UNKNOWN_PT = "escala UNKNOWN: valor sem conversão de engenharia"
+REASON_SCALE_UNKNOWN_PT = "escala não informada: valor sem conversão de engenharia"
 
 
 @dataclass(frozen=True)

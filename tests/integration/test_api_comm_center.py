@@ -311,3 +311,33 @@ async def test_historico_de_testes_e_log_tecnico(
     resp = await cfg_client.get(f"/api/v1/communication/{EQ}/log")
     assert resp.status_code == 200
     assert "entries" in resp.json()
+
+
+async def test_mapping_editavel_e_o_proprio_do_equipamento(
+    cfg_client: httpx.AsyncClient, cfg_world: ApiWorld
+) -> None:
+    view = await _view(cfg_client)
+    assert view["mapping_shared"] is True
+    assert view["editable_mapping"]["mapping_id"] == OWN_MAPPING
+    assert view["editable_mapping_exists"] is True
+
+
+async def test_sem_mapping_proprio_a_tela_recebe_modelo_todo_unknown(
+    cfg_client: httpx.AsyncClient, cfg_world: ApiWorld
+) -> None:
+    eq = "EXEMPLO_BARRILHA"
+    view = await _view(cfg_client, eq)
+    editable = view["editable_mapping"]
+    assert view["editable_mapping_exists"] is False
+    assert editable["mapping_id"] == eq.lower()
+    assert editable["equipment_id"] == eq
+    assert editable["driver"] == "UNKNOWN"
+    assert all(e["protocol_address"] == "UNKNOWN" for e in editable["entries"])
+    # o modelo pode ser gravado como mapping novo (base_version nulo)
+    editable["driver"] = "modbus_tcp"
+    resp = await cfg_client.post(
+        f"/api/v1/communication/{eq}/mapping",
+        json={"mapping": editable, "base_version": None, "user": USER},
+    )
+    assert resp.status_code == 200, resp.text
+    assert cfg_world.store.mappings[eq.lower()].version == 1

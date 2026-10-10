@@ -165,6 +165,7 @@ export interface EquipmentProfile {
     stale_after_s: number
     max_block_size: number | string
     options: Record<string, unknown>
+    collection_enabled: boolean
   }
   mapping_profile: string
   components: ComponentInfo[]
@@ -709,6 +710,7 @@ export function stateTone(statePt: string | null | undefined): StateTone {
     case 'Sem comunicação':
       return 'info'
     case 'Parado':
+    case 'Coleta pausada':
       return 'neutral'
     default:
       return 'unknown'

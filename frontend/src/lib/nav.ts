@@ -121,10 +121,7 @@ export const NAV_GROUPS: NavGroup[] = [
         phase: 'G',
         reason: 'Catálogo de alarmes por chave composta (fabricante, controlador, aplicação, versão).',
       }),
-      eq('kcm/communication', 'kcm-communication', 'Comunicação', Cable, {
-        phase: 'G',
-        reason: 'Assistente de comunicação e teste somente leitura. Leitura direta do KCM via Host/Anybus.',
-      }),
+      eq('kcm/communication', 'kcm-communication', 'Comunicação', Cable),
       eq('kcm/datasheet', 'kcm-datasheet', 'Ficha Técnica', FileText, {
         phase: 'G',
         reason: 'Perfil do equipamento com classificação de cada informação (FACT, FIELD_OBSERVED, UNKNOWN).',

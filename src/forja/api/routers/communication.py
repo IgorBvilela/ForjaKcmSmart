@@ -29,6 +29,7 @@ from forja.domain import (
     EquipmentProfile,
     HostInterface,
     Mapping,
+    MappingEntry,
     NotConfigured,
     UnsupportedDriver,
 )
@@ -196,6 +197,48 @@ def _mapping_shared(container: Any, mapping: Mapping) -> bool:
     return mapping.equipment_id == "*" or mapping.driver == "simulator" or len(users) > 1
 
 
+TEMPLATE_TAGS: tuple[str, ...] = (
+    "machine_state",
+    "setpoint",
+    "mass_flow",
+    "drive_command",
+    "rpm",
+    "belt_load",
+    "net_weight",
+    "alarm_code",
+    "alarm_active",
+    "stop_by",
+)
+"""Variáveis do modelo de mapping novo. Todas nascem UNKNOWN: só o documento da máquina preenche."""
+
+TEMPLATE_NOTE_PT = (
+    "Modelo criado pela tela de Comunicação: preencher a partir do documento da máquina."
+)
+
+
+def editable_mapping(container: Any, profile: EquipmentProfile) -> tuple[Mapping, bool]:
+    """Mapping que a tela pode editar para este equipamento e se ele já existe no disco.
+
+    Mapping em uso e próprio: ele mesmo. Compartilhado (simulador): o mapping próprio do
+    equipamento, se existir; senão um modelo novo com as variáveis principais em UNKNOWN.
+    """
+    current = _mapping_of(container, profile)
+    if not _mapping_shared(container, current):
+        return current, True
+    for candidate in container.store.mappings.values():
+        if candidate.equipment_id == profile.id and not _mapping_shared(container, candidate):
+            return candidate, True
+    template = Mapping(
+        mapping_id=profile.id.lower()[:64],
+        equipment_id=profile.id,
+        driver=UNKNOWN,
+        source=UNKNOWN,
+        entries=[MappingEntry(semantic_tag=tag) for tag in TEMPLATE_TAGS],
+        notes_pt=TEMPLATE_NOTE_PT,
+    )
+    return template, False
+
+
 async def build_comm_view(container: Any, profile: EquipmentProfile) -> dict[str, Any]:
     """Tudo que a tela de Comunicação precisa de um equipamento."""
     support = driver_support(container)
@@ -205,6 +248,7 @@ async def build_comm_view(container: Any, profile: EquipmentProfile) -> dict[str
     last_test = await _latest_test(container, profile.id)
     info = support.get(profile.communication.driver)
     state = comm_state(profile, info["state"] if info else None, status, last_test, fingerprint)
+    editable, editable_exists = editable_mapping(container, profile)
     return {
         "equipment_id": profile.id,
         "name": profile.name,
@@ -213,6 +257,8 @@ async def build_comm_view(container: Any, profile: EquipmentProfile) -> dict[str
         "config_hash": config_hash(profile),
         "mapping": jsonable(mapping),
         "mapping_shared": _mapping_shared(container, mapping),
+        "editable_mapping": jsonable(editable),
+        "editable_mapping_exists": editable_exists,
         "fingerprint": fingerprint,
         "drivers": support,
         "state": state,
