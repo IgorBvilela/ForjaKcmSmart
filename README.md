@@ -20,11 +20,11 @@ Produto da **Forja Lógica** (automação e otimização de processos). Primeiro
 | C | Visão da planta e dashboard do equipamento | concluída |
 | D | Dosador animado e página do simulador | concluída |
 | E | Tempo Real, Tendências (gráficos sem interpolação, "o que mudou primeiro" por janela, zoom) e Histórico (tabela, eventos do período, CSV com qualidade) | concluída |
-| F | Alertas, aviso antecipado e casos anteriores | planejada |
+| F | Alertas (alarme do KCM, eventos e avisos da Forja separados, reconhecimento auditado), **aviso antecipado** por tendência e desvio do padrão com limites configurados (não é previsão), casos anteriores e "antes do evento" | concluída |
 | G | Comunicação KCM: configuração por equipamento, validação sem rede, **teste somente leitura** (bruto, decodificado, qualidade, latência), editor de mapping com versão e histórico, coleta ativada só com teste válido | concluída |
 | H | Multi-equipamento na interface (cadastro e troca) | planejada |
-| J | Driver **Modbus TCP** real, somente leitura (funções 01 a 04, leitura em bloco, timeout, reconexão, quadro bruto) | concluída |
-| K | **EtherNet/IP** somente leitura configurável (leitura de atributo CIP, nada fixo no código) | experimental |
+| J | Driver **Modbus TCP** real, somente leitura (funções 01 a 04, leitura em bloco, timeout, reconexão, quadro bruto) | implementado e testado em bancada; experimental até validação no KCM real |
+| K | **EtherNet/IP** somente leitura configurável (cliente CIP mínimo próprio, leitura de atributo, nada fixo no código) | implementado e testado em bancada; experimental até validação no KCM real |
 | L | Saúde e logs: estado da coleta por equipamento, disco, bancos, logs do serviço, da comunicação e da auditoria | concluída |
 | M | Relatórios, exportações e backup pela interface | planejada |
 | N | Instalação no Windows: executável, serviço, instalador e atualizador com backup, pacote `.zip` | concluída (registro do serviço ainda não executado em PC da planta) |
@@ -88,7 +88,7 @@ Dosador → KCM → interface Host/Anybus → Forja Edge (PC da planta)
 - **Offline-first:** sem CDN, sem fontes remotas, sem script externo. Escuta só em `127.0.0.1` por padrão.
 - **Multi-equipamento desde o início:** falha de um KCM não derruba a leitura dos outros.
 
-Stack: Python 3.14, FastAPI, Pydantic v2, SQLite (dois arquivos, SQL à mão, migrações numeradas), SSE para tempo real, pymodbus (fase J). Interface: Vite + Svelte 5 + TypeScript, compilada para arquivos estáticos servidos pelo próprio backend. Fontes IBM Plex (OFL), ícones Lucide (ISC), gráficos uPlot (MIT), todos embutidos.
+Stack: Python 3.14, FastAPI, Pydantic v2, SQLite (dois arquivos, SQL à mão, migrações numeradas), SSE para tempo real, pymodbus (Modbus TCP) e cliente CIP próprio (EtherNet/IP). Interface: Vite + Svelte 5 + TypeScript, compilada para arquivos estáticos servidos pelo próprio backend. Fontes IBM Plex (OFL), ícones Lucide (ISC), gráficos uPlot (MIT), todos embutidos.
 
 ---
 

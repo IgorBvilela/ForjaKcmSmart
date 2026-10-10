@@ -87,8 +87,9 @@ def load_stop_by_catalog(dir_: Path) -> StopByCatalog:
 
 
 class ConfigStore:
-    """Le a semente em config/. Em runtime, a fonte da verdade da configuracao editavel
-    e o banco core (fase G); ate la, esta classe e a fonte."""
+    """Le a configuracao em config/ (perfis, mappings, alarmes, motivos de parada). E a fonte da
+    verdade em runtime: a Central de Comunicacao grava os YAML com historico e auditoria
+    (forja.config.writer, ADR 0024) e recarrega so o equipamento afetado."""
 
     def __init__(self, paths: ForjaPaths | None = None) -> None:
         self.paths = paths or resolve_paths()

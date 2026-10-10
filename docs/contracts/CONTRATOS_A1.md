@@ -1,5 +1,7 @@
 # Contratos da Fase A1 — núcleo do Forja KCM Intelligence
 
+> Registro da fase A1. Onde as fases seguintes mudaram o contrato, vale o documento da fase: estados e planos de leitura dos drivers Modbus TCP e EtherNet/IP (hoje `EXPERIMENTAL`, um bloco por classe/instância/atributo) em `CONTRATOS_J_K.md`; Central de Comunicação em `CONTRATOS_G.md`; origem dos eventos e aviso antecipado em `CONTRATOS_F.md`.
+
 Este documento é o acordo entre os módulos. Quem implementa um módulo lê isto inteiro, lê `src/forja/domain/**`
 (já pronto; **não alterar**), `src/forja/config/**` e `src/forja/infra/**` (já prontos; **não alterar**) e entrega
 apenas os arquivos do seu bloco. Se precisar de mudança no domínio, **não faça**: registre o pedido na sua saída
