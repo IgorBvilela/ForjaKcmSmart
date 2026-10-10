@@ -85,3 +85,44 @@ async def test_unknown_route_uses_error_envelope(client: httpx.AsyncClient) -> N
     assert set(body["error"]) == {"code", "message_pt", "details"}
     assert body["error"]["code"] == "NOT_FOUND"
     assert body["error"]["message_pt"] == "Rota não encontrada."
+
+
+async def test_relatorio_de_saude_em_portugues(client: httpx.AsyncClient, world: ApiWorld) -> None:
+    resp = await client.get("/api/v1/system/health-report")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] in {"ok", "info", "warn", "crit"}
+    assert body["status_pt"]
+    assert {e["equipment_id"] for e in body["equipment"]} == set(world.store.profiles)
+    assert "storage" in body
+    assert all({"severity", "area", "text_pt"} <= set(f) for f in body["findings"])
+
+
+async def test_logs_de_auditoria_e_comunicacao(client: httpx.AsyncClient, world: ApiWorld) -> None:
+    await world.core.audit(
+        user="tecnico",
+        action="COMM_CONFIG_SAVE",
+        entity_type="equipment",
+        entity_id="X",
+        before=None,
+        after=None,
+        reason_pt="teste",
+    )
+    resp = await client.get("/api/v1/system/logs", params={"source": "audit"})
+    assert resp.status_code == 200
+    entries = resp.json()["entries"]
+    assert entries[0]["origin"] == "tecnico"
+    assert entries[0]["message_pt"] == "Configuração de comunicação salva (X): teste"
+    assert entries[0]["detail"]["action"] == "COMM_CONFIG_SAVE"
+    resp = await client.get("/api/v1/system/logs", params={"source": "comm"})
+    assert resp.status_code == 200
+    resp = await client.get("/api/v1/system/logs", params={"source": "app"})
+    assert resp.status_code == 200
+    resp = await client.get("/api/v1/system/logs.csv", params={"source": "audit"})
+    assert resp.status_code == 200
+    assert resp.text.lstrip("﻿").startswith("instante;nivel;origem;mensagem;detalhe")
+
+
+async def test_logs_fonte_invalida_e_recusada(client: httpx.AsyncClient) -> None:
+    resp = await client.get("/api/v1/system/logs", params={"source": "qualquer"})
+    assert resp.status_code == 422

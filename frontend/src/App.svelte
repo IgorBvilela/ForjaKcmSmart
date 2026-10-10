@@ -19,6 +19,7 @@
   import PlantPage from './routes/PlantPage.svelte'
   import RealtimePage from './routes/RealtimePage.svelte'
   import SimulatorPage from './routes/SimulatorPage.svelte'
+  import SystemLogsPage from './routes/SystemLogsPage.svelte'
   import TrendsPage from './routes/TrendsPage.svelte'
 
   const PRODUCT = 'Forja KCM Intelligence'
@@ -99,6 +100,8 @@
       {:else if route.name === 'system'}
         {#if route.sub === 'about'}
           <AboutPage />
+        {:else if route.sub === 'logs'}
+          <SystemLogsPage />
         {:else}
           <ComingSoonPage item={systemItem(route.sub)} />
         {/if}

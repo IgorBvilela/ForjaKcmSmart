@@ -216,12 +216,10 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       {
         slug: 'system-logs',
-        label: 'Logs',
+        label: 'Saúde e logs',
         icon: ScrollText,
         kind: 'system',
         to: () => href.system('logs'),
-        phase: 'L',
-        reason: 'Logs do serviço e saúde detalhada (historiador, bus, motor de eventos).',
       },
       { slug: 'system-about', label: 'Sobre', icon: Info, kind: 'system', to: () => href.system('about') },
     ],

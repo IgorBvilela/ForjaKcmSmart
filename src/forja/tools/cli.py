@@ -742,6 +742,9 @@ async def _run_async(paths: ForjaPaths, host: str | None, port: int | None) -> i
         container = await build_container(paths)
     except ImportError as exc:
         raise CliError(f"um bloco do núcleo ainda não existe neste build: {exc}") from exc
+    from forja.service.logsetup import configure_logging
+
+    configure_logging(paths.logs_dir, container.store.config.logging)
     edge = container.store.config.edge
     bind_host = host or edge.bind_host
     bind_port = port or edge.bind_port
