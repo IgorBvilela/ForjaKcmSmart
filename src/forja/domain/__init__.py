@@ -10,15 +10,24 @@ from forja.domain.alarms import (
     StopByEntry,
 )
 from forja.domain.assets import (
+    REAL_DRIVERS,
     Area,
     CommunicationConfig,
     Component,
     ComponentType,
     ControllerInfo,
+    DriverName,
     EquipmentProfile,
     HostInterface,
     Line,
     Plant,
+)
+from forja.domain.commissioning import (
+    CheckResult,
+    CommissioningCheck,
+    CommissioningHeader,
+    CommissioningSession,
+    CommissioningStatus,
 )
 from forja.domain.connection import ConnectionState, EquipmentRuntimeStatus, ReadTestStage
 from forja.domain.diagnosis import (
@@ -92,6 +101,7 @@ from forja.domain.tags import TAG_CODES, TAGS, SemanticTag, TagKind, get_tag, is
 __all__ = [
     "MANDATORY_CAVEAT_PT",
     "OFFICIAL_SECTIONS_PT",
+    "REAL_DRIVERS",
     "TAGS",
     "TAG_CODES",
     "TOPIC_CONNECTION",
@@ -105,8 +115,13 @@ __all__ = [
     "AlarmLookup",
     "Area",
     "Caveat",
+    "CheckResult",
     "Clock",
     "CommLogEntry",
+    "CommissioningCheck",
+    "CommissioningHeader",
+    "CommissioningSession",
+    "CommissioningStatus",
     "CommunicationConfig",
     "Component",
     "ComponentType",
@@ -121,6 +136,7 @@ __all__ = [
     "DriverConnectError",
     "DriverError",
     "DriverHealth",
+    "DriverName",
     "DriverReadError",
     "DriverSupportState",
     "DriverTimeout",

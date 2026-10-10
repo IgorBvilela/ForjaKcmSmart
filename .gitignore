@@ -19,3 +19,4 @@ frontend/dist/
 *.pem
 *.key
 src/forja_kcm.egg-info/
+config/_history/

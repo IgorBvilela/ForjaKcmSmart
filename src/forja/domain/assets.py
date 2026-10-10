@@ -14,7 +14,11 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from forja.domain.evidence import UNKNOWN, KnowledgeState
 
-DriverName = Literal["simulator", "modbus_tcp", "ethernet_ip"]
+DriverName = Literal["simulator", "modbus_tcp", "ethernet_ip", "UNKNOWN"]
+"""UNKNOWN: protocolo ainda não identificado em campo. Nunca se escolhe um driver por suposição
+(RJ45 + Anybus não define o protocolo)."""
+
+REAL_DRIVERS: tuple[str, ...] = ("modbus_tcp", "ethernet_ip")
 
 
 class ComponentType(StrEnum):
@@ -80,12 +84,16 @@ class CommunicationConfig(BaseModel):
     max_block_size: int | str = UNKNOWN
     options: dict[str, Any] = Field(default_factory=dict)
     """Opcoes especificas do driver (ex.: simulador: scenario, seed, time_scale)."""
+    collection_enabled: bool = True
+    """Coleta local da Forja ligada. Desligar NÃO comanda o KCM: só para de ler."""
 
     @property
     def needs_configuration(self) -> bool:
-        """Driver real sem IP ou protocolo e NEEDS_CONFIGURATION."""
+        """Driver real sem IP ou protocolo, ou protocolo não identificado: NEEDS_CONFIGURATION."""
         if self.driver == "simulator":
             return False
+        if self.driver == UNKNOWN:
+            return True
         return self.ip == UNKNOWN or self.protocol == UNKNOWN
 
 

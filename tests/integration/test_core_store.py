@@ -66,12 +66,20 @@ async def test_open_cria_tabelas_triggers_e_migracao(core: SqliteCoreStore) -> N
         ("trigger", "audit_log_no_delete"),
     } <= names
     assert fetch_all(core.db_path, "SELECT version, name FROM schema_migrations") == [
-        (1, "0001_core")
+        (1, "0001_core"),
+        (2, "0002_core_validacao"),
     ]
     assert fetch_all(core.db_path, "PRAGMA journal_mode") == [("wal",)]
     st = await core.stats()
-    assert st["rows"] == {"events": 0, "diagnoses": 0, "audit_log": 0}
-    assert st["schema_version"] == 1
+    assert st["rows"] == {
+        "events": 0,
+        "diagnoses": 0,
+        "audit_log": 0,
+        "read_tests": 0,
+        "commissioning_sessions": 0,
+        "commissioning_checks": 0,
+    }
+    assert st["schema_version"] == 2
 
 
 # ----------------------------------------------------------------------------- eventos
@@ -247,7 +255,7 @@ async def test_audit_e_append_only(core: SqliteCoreStore, clock: FakeClock) -> N
 def test_migracao_idempotente_e_recusa_versao_maior() -> None:
     conn = sqlite3.connect(":memory:", autocommit=True)
     try:
-        assert migrate(conn, MIGRATIONS_DIR, "core") == ["0001_core"]
+        assert migrate(conn, MIGRATIONS_DIR, "core") == ["0001_core", "0002_core_validacao"]
         assert migrate(conn, MIGRATIONS_DIR, "core") == []
         conn.execute(
             "INSERT INTO schema_migrations (version, name, applied_at_ms, checksum) "

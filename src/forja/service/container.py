@@ -64,6 +64,8 @@ class Container:
     diagnosis_engine: DiagnosisEnginePort
     started_at_utc: datetime
     runtime: ServiceRuntime = field(default_factory=ServiceRuntime)
+    core: Any = None
+    """Core store (testes somente leitura, comissionamento, auditoria). None em testes mínimos."""
 
     @property
     def uptime_s(self) -> float:

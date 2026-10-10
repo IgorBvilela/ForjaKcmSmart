@@ -24,13 +24,18 @@ MUTATING_ALLOWLIST: frozenset[tuple[str, str]] = frozenset(
     {
         ("POST", "/api/v1/events/{event_id}/ack"),
         ("POST", "/api/v1/communication/test-read"),
+        ("POST", "/api/v1/communication/{equipment_id}/validate"),
+        ("POST", "/api/v1/communication/{equipment_id}/config"),
+        ("POST", "/api/v1/communication/{equipment_id}/mapping"),
+        ("POST", "/api/v1/communication/{equipment_id}/collection"),
         ("POST", "/api/v1/simulator/{equipment_id}/scenario"),
         ("POST", "/api/v1/simulator/{equipment_id}/controls"),
         ("DELETE", "/api/v1/simulator/{equipment_id}/controls"),
     }
 )
 """Tudo que muta estado. Nada aqui chega ao equipamento: ack é auditoria, test-read só lê,
-simulador só muda o modelo físico simulado."""
+validate não abre conexão, config/mapping gravam arquivos da Forja (auditados), collection liga
+ou pausa a LEITURA periódica da Forja, simulador só muda o modelo físico simulado."""
 
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 

@@ -222,6 +222,7 @@ async def build_container(paths: ForjaPaths | None = None, clock: Clock | None =
         rule_engine=rule_engine,
         diagnosis_engine=diagnosis_engine,
         started_at_utc=clock.now_utc(),
+        core=core,
     )
     container.runtime.closeables = [historian, core]
     container.runtime.bridge = EngineBridge(

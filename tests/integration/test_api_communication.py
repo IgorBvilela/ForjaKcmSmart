@@ -1,4 +1,7 @@
-"""Comunicação: suporte honesto por driver e teste somente leitura (409 para UNSUPPORTED)."""
+"""Comunicação: suporte honesto por driver e teste somente leitura (409 para UNSUPPORTED).
+
+Modbus TCP é EXPERIMENTAL (driver real, validação de campo pendente); EtherNet/IP segue
+UNSUPPORTED no registro falso para provar a resposta honesta."""
 
 from __future__ import annotations
 
@@ -40,12 +43,13 @@ async def test_drivers_never_claim_false_availability(
     drivers = body["drivers"]
     assert drivers["simulator"]["state"] == "AVAILABLE"
     assert drivers["simulator"]["state_pt"] == "Disponível"
-    assert drivers["modbus_tcp"]["state"] == "UNSUPPORTED"
-    assert drivers["modbus_tcp"]["state_pt"] == "Não suportado"
+    assert drivers["modbus_tcp"]["state"] == "EXPERIMENTAL"
+    assert drivers["modbus_tcp"]["state_pt"] == "Experimental"
     assert drivers["ethernet_ip"]["state"] == "UNSUPPORTED"
+    assert [n for n, d in drivers.items() if d["state"] == "AVAILABLE"] == ["simulator"]
     by_id = {e["equipment_id"]: e for e in body["equipments"]}
     assert set(by_id) == set(world.store.profiles)
-    assert by_id[MODBUS_TEST_ID]["support_state"] == "UNSUPPORTED"
+    assert by_id[MODBUS_TEST_ID]["support_state"] == "EXPERIMENTAL"
     assert by_id[MODBUS_TEST_ID]["message_pt"] == FIELD_CONFIG_PT
     assert by_id[NEEDS_CONFIG_TEST_ID]["support_state"] == "NEEDS_CONFIGURATION"
     assert by_id[NEEDS_CONFIG_TEST_ID]["needs_configuration"] is True
@@ -59,19 +63,22 @@ async def test_drivers_never_claim_false_availability(
 async def test_test_read_unsupported_driver_is_honest_409(
     client: httpx.AsyncClient, world: ApiWorld
 ) -> None:
-    resp = await client.post("/api/v1/communication/test-read", json=_body(world, MODBUS_TEST_ID))
+    body = _body(world, MODBUS_TEST_ID)
+    body["profile"]["communication"]["driver"] = "ethernet_ip"
+    body["profile"]["communication"]["protocol"] = "ethernet_ip"
+    resp = await client.post("/api/v1/communication/test-read", json=body)
     assert resp.status_code == 409
     err = resp.json()["error"]
     assert err["code"] == "DRIVER_UNSUPPORTED"
     assert err["message_pt"] == FIELD_CONFIG_PT
-    assert err["details"]["driver"] == "modbus_tcp"
+    assert err["details"]["driver"] == "ethernet_ip"
     assert world.manager.test_read_calls == []  # nem tentou
 
 
 async def test_test_read_needs_configuration_is_409(
     client: httpx.AsyncClient, world: ApiWorld
 ) -> None:
-    # Driver real sem IP/protocolo: UNSUPPORTED vence hoje (fase J/K), mas a resposta é 409 honesta.
+    # Driver real sem IP/protocolo: 409 honesto antes de qualquer conexão.
     resp = await client.post(
         "/api/v1/communication/test-read", json=_body(world, NEEDS_CONFIG_TEST_ID)
     )
@@ -167,11 +174,27 @@ async def test_test_read_uses_profile_mapping_pair(
     client: httpx.AsyncClient, world: ApiWorld
 ) -> None:
     eid = world.healthy_sim_id
-    resp = await client.post(
-        "/api/v1/communication/test-read", json=_body(world, eid, TEST_MAPPING_ID)
-    )
-    # mapping de teste é "*": aceito; o fake manager recebe o par e responde
+    profile = world.store.profiles[eid]
+    resp = await client.post("/api/v1/communication/test-read", json=_body(world, eid))
     assert resp.status_code == 200
-    profile, mapping = world.manager.test_read_calls[-1]
-    assert profile.id == eid
-    assert mapping.mapping_id == TEST_MAPPING_ID
+    sent_profile, sent_mapping = world.manager.test_read_calls[-1]
+    assert sent_profile.id == eid
+    assert sent_mapping.mapping_id == profile.mapping_profile
+    detail = resp.json()["detail"]
+    assert {row["tag"] for row in detail["tags"]} == {
+        e.semantic_tag for e in world.store.mappings[profile.mapping_profile].readable_entries
+    }
+
+
+async def test_test_read_mapping_of_other_protocol_is_refused_before_connecting(
+    client: httpx.AsyncClient, world: ApiWorld
+) -> None:
+    resp = await client.post(
+        "/api/v1/communication/test-read",
+        json=_body(world, world.healthy_sim_id, TEST_MAPPING_ID),
+    )
+    assert resp.status_code == 422
+    err = resp.json()["error"]
+    assert err["code"] == "CONFIG_INVALID"
+    assert err["details"]["errors"]
+    assert world.manager.test_read_calls == []

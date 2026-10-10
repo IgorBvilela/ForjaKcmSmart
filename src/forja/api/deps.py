@@ -65,7 +65,7 @@ def data_source_for(profiles: Iterable[EquipmentProfile]) -> str:
     for p in profiles:
         if p.is_simulated:
             simulated += 1
-        else:
+        elif not p.communication.needs_configuration:
             real += 1
     if real and simulated:
         return "MIXED"

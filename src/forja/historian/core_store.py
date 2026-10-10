@@ -26,6 +26,7 @@ from typing import Any, Final, TypeVar
 
 from pydantic import ValidationError
 
+from forja.domain.commissioning import CommissioningCheck, CommissioningSession
 from forja.domain.diagnosis import Diagnosis
 from forja.domain.errors import HistorianError
 from forja.domain.events import Event
@@ -42,12 +43,21 @@ from forja.historian.writer import (
 
 T = TypeVar("T")
 
-CORE_TABLES: Final[tuple[str, ...]] = ("events", "diagnoses", "audit_log")
+CORE_TABLES: Final[tuple[str, ...]] = (
+    "events",
+    "diagnoses",
+    "audit_log",
+    "read_tests",
+    "commissioning_sessions",
+    "commissioning_checks",
+)
 
 # A classe define um metodo chamado ``list``; estes apelidos evitam a sombra nas anotacoes.
 EventList = list[Event]
 DiagnosisList = list[Diagnosis]
 AuditRows = list[dict[str, Any]]
+CommissioningList = list[CommissioningSession]
+CheckList = list[CommissioningCheck]
 
 # ----------------------------------------------------------------------------- SQL
 
@@ -96,6 +106,40 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 SQL_AUDIT_LIST: Final[str] = """
 SELECT id, ts_ms, user, action, entity_type, entity_id, before_json, after_json, reason_pt
 FROM audit_log ORDER BY ts_ms DESC, id DESC LIMIT ?
+"""
+
+SQL_INSERT_READ_TEST: Final[str] = """
+INSERT INTO read_tests (equipment_id, ts_ms, driver, final_stage, success, latency_ms,
+                        fingerprint, user, result_json)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+"""
+SQL_LIST_READ_TESTS: Final[str] = """
+SELECT id, equipment_id, ts_ms, driver, final_stage, success, latency_ms, fingerprint, user,
+       result_json
+FROM read_tests WHERE equipment_id = ? ORDER BY ts_ms DESC, id DESC LIMIT ?
+"""
+
+SQL_UPSERT_COMMISSIONING: Final[str] = """
+INSERT INTO commissioning_sessions (id, equipment_id, created_ms, updated_ms, status, session_json)
+VALUES (?, ?, ?, ?, ?, ?)
+ON CONFLICT (id) DO UPDATE SET
+    updated_ms = excluded.updated_ms, status = excluded.status,
+    session_json = excluded.session_json
+"""
+SQL_GET_COMMISSIONING: Final[str] = "SELECT session_json FROM commissioning_sessions WHERE id = ?"
+SQL_COMMISSIONING_STATUS: Final[str] = "SELECT status FROM commissioning_sessions WHERE id = ?"
+SQL_LIST_COMMISSIONING: Final[str] = (
+    "SELECT session_json FROM commissioning_sessions ORDER BY created_ms DESC LIMIT ?"
+)
+SQL_LIST_COMMISSIONING_EQ: Final[str] = (
+    "SELECT session_json FROM commissioning_sessions WHERE equipment_id = ? "
+    "ORDER BY created_ms DESC LIMIT ?"
+)
+SQL_INSERT_COMMISSIONING_CHECK: Final[str] = """
+INSERT INTO commissioning_checks (session_id, ts_ms, tag, check_json) VALUES (?, ?, ?, ?)
+"""
+SQL_LIST_COMMISSIONING_CHECKS: Final[str] = """
+SELECT id, check_json FROM commissioning_checks WHERE session_id = ? ORDER BY ts_ms, id
 """
 
 
@@ -349,6 +393,126 @@ class SqliteCoreStore:
 
         return await self._read(run)
 
+    # ------------------------------------------------------------------ testes somente leitura
+
+    async def save_read_test(
+        self,
+        *,
+        equipment_id: str,
+        driver: str,
+        final_stage: str,
+        success: bool,
+        latency_ms: float | None,
+        fingerprint: str,
+        user: str,
+        result: dict[str, Any],
+    ) -> int:
+        """Registra um teste somente leitura (sucesso ou falha). Devolve o id da linha."""
+        params = (
+            equipment_id,
+            to_ms(self._clock.now_utc()),
+            driver,
+            final_stage,
+            1 if success else 0,
+            latency_ms,
+            fingerprint,
+            user,
+            json.dumps(result, ensure_ascii=False, default=str),
+        )
+
+        def run(conn: sqlite3.Connection) -> int:
+            cur = conn.execute(SQL_INSERT_READ_TEST, params)
+            return int(cur.lastrowid or 0)
+
+        return await self._writer_or_raise().submit(run)
+
+    async def list_read_tests(self, equipment_id: str, limit: int = 50) -> AuditRows:
+        lim = max(1, int(limit))
+
+        def run(conn: sqlite3.Connection) -> list[dict[str, Any]]:
+            rows = conn.execute(SQL_LIST_READ_TESTS, (equipment_id, lim)).fetchall()
+            return [_read_test_from_row(r) for r in rows]
+
+        return await self._read(run)
+
+    async def latest_read_test(self, equipment_id: str) -> dict[str, Any] | None:
+        rows = await self.list_read_tests(equipment_id, limit=1)
+        return rows[0] if rows else None
+
+    # ------------------------------------------------------------------ comissionamento
+
+    async def save_commissioning(self, session: CommissioningSession) -> None:
+        """Cria ou atualiza a sessão. Sessão encerrada é final (trigger recusa)."""
+        params = (
+            session.id,
+            session.equipment_id,
+            to_ms(session.created_at_utc),
+            to_ms(session.updated_at_utc),
+            session.status.value,
+            session.model_dump_json(),
+        )
+
+        def run(conn: sqlite3.Connection) -> None:
+            try:
+                conn.execute(SQL_UPSERT_COMMISSIONING, params)
+            except sqlite3.IntegrityError as exc:
+                raise HistorianError(
+                    f"sessão de comissionamento {session.id} encerrada: não pode ser alterada"
+                ) from exc
+
+        await self._writer_or_raise().submit(run)
+
+    async def get_commissioning(self, session_id: str) -> CommissioningSession | None:
+        def run(conn: sqlite3.Connection) -> CommissioningSession | None:
+            row = conn.execute(SQL_GET_COMMISSIONING, (session_id,)).fetchone()
+            return None if row is None else _commissioning_from_json(row[0])
+
+        return await self._read(run)
+
+    async def list_commissioning(
+        self, equipment_id: str | None = None, limit: int = 50
+    ) -> CommissioningList:
+        lim = max(1, int(limit))
+
+        def run(conn: sqlite3.Connection) -> list[CommissioningSession]:
+            if equipment_id is None:
+                rows = conn.execute(SQL_LIST_COMMISSIONING, (lim,)).fetchall()
+            else:
+                rows = conn.execute(SQL_LIST_COMMISSIONING_EQ, (equipment_id, lim)).fetchall()
+            return [_commissioning_from_json(r[0]) for r in rows]
+
+        return await self._read(run)
+
+    async def add_commissioning_check(self, check: CommissioningCheck) -> int:
+        """Acrescenta uma conferência a uma sessão ABERTA. Devolve o id."""
+        params = (
+            check.session_id,
+            to_ms(check.ts_utc),
+            check.tag,
+            check.model_dump_json(exclude={"id"}),
+        )
+
+        def run(conn: sqlite3.Connection) -> int:
+            row = conn.execute(SQL_COMMISSIONING_STATUS, (check.session_id,)).fetchone()
+            if row is None:
+                raise HistorianError(f"sessão de comissionamento {check.session_id} não existe")
+            if row[0] != "OPEN":
+                raise HistorianError(
+                    f"sessão de comissionamento {check.session_id} encerrada: nova conferência "
+                    "recusada"
+                )
+            cur = conn.execute(SQL_INSERT_COMMISSIONING_CHECK, params)
+            return int(cur.lastrowid or 0)
+
+        return await self._writer_or_raise().submit(run)
+
+    async def list_commissioning_checks(self, session_id: str) -> CheckList:
+        def run(conn: sqlite3.Connection) -> list[CommissioningCheck]:
+            rows = conn.execute(SQL_LIST_COMMISSIONING_CHECKS, (session_id,)).fetchall()
+            return [_check_from_row(r) for r in rows]
+
+        return await self._read(run)
+
     # ------------------------------------------------------------------ manutencao
 
     async def backup(self, dest_dir: Path) -> Path:
@@ -484,6 +648,39 @@ def _audit_from_row(row: tuple[object, ...]) -> dict[str, Any]:
         "after": _load_json(after),
         "reason_pt": str(reason_pt),
     }
+
+
+def _read_test_from_row(row: tuple[object, ...]) -> dict[str, Any]:
+    id_, eq, ts_ms, driver, stage, success, latency, fingerprint, user, result = row
+    loaded = json.loads(str(result)) if result else {}
+    return {
+        "id": int(id_),  # type: ignore[call-overload]
+        "equipment_id": str(eq),
+        "ts_utc": from_ms(int(ts_ms)),  # type: ignore[call-overload]
+        "driver": str(driver),
+        "final_stage": str(stage),
+        "success": bool(success),
+        "latency_ms": None if latency is None else float(latency),  # type: ignore[arg-type]
+        "fingerprint": str(fingerprint),
+        "user": str(user),
+        "result": loaded if isinstance(loaded, dict) else {"value": loaded},
+    }
+
+
+def _commissioning_from_json(raw: object) -> CommissioningSession:
+    try:
+        return CommissioningSession.model_validate_json(str(raw))
+    except ValidationError as exc:
+        raise HistorianError(f"sessão de comissionamento em formato incompatível: {exc}") from exc
+
+
+def _check_from_row(row: tuple[object, ...]) -> CommissioningCheck:
+    id_, raw = row
+    try:
+        check = CommissioningCheck.model_validate_json(str(raw))
+    except ValidationError as exc:
+        raise HistorianError(f"conferência em formato incompatível: {exc}") from exc
+    return check.model_copy(update={"id": int(id_)})  # type: ignore[call-overload]
 
 
 def _count_table(conn: sqlite3.Connection, table: str) -> int:

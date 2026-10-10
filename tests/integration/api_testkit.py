@@ -36,6 +36,7 @@ from forja.domain import (
     EventStatus,
     EvidenceItem,
     EvidenceLevel,
+    HistorianError,
     Hypothesis,
     Mapping,
     NextCheck,
@@ -55,6 +56,9 @@ from forja.service.container import Container
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 UNSUPPORTED_REASON_PT = "Disponível na fase J/K; requer configuração de campo"
+MODBUS_EXPERIMENTAL_PT = (
+    "Driver somente leitura testado em bancada; validação no KCM real pendente."
+)
 MODBUS_TEST_ID = "TESTE_MODBUS_01"
 NEEDS_CONFIG_TEST_ID = "TESTE_SEM_CONFIG_01"
 TEST_MAPPING_ID = "teste_modbus_vazio"
@@ -81,7 +85,8 @@ class FakeSupportInfo(BaseModel):
 
 
 class FakeRegistry:
-    """simulator AVAILABLE; modbus_tcp e ethernet_ip UNSUPPORTED. Nunca AVAILABLE falso."""
+    """simulator AVAILABLE; modbus_tcp EXPERIMENTAL; ethernet_ip UNSUPPORTED. Nunca AVAILABLE
+    falso."""
 
     def __init__(self) -> None:
         self._support = {
@@ -93,9 +98,9 @@ class FakeRegistry:
             ),
             "modbus_tcp": FakeSupportInfo(
                 name="modbus_tcp",
-                state=DriverSupportState.UNSUPPORTED,
+                state=DriverSupportState.EXPERIMENTAL,
                 library="pymodbus",
-                reason_pt=UNSUPPORTED_REASON_PT,
+                reason_pt=MODBUS_EXPERIMENTAL_PT,
             ),
             "ethernet_ip": FakeSupportInfo(
                 name="ethernet_ip",
@@ -156,6 +161,7 @@ class FakeManager:
         self.test_read_calls: list[tuple[EquipmentProfile, Mapping]] = []
         self.test_read_result: FakeReadTestResult | None = None
         self.test_read_error: Exception | None = None
+        self.reloads: list[str] = []
 
     def set_status(self, equipment_id: str, **changes: Any) -> None:
         self._status.setdefault(equipment_id, {}).update(changes)
@@ -214,6 +220,20 @@ class FakeManager:
             stale_for_s=stale_for_s,
             last_ok_utc=status.last_ok_utc,
         )
+
+    async def reload(
+        self,
+        equipment_id: str,
+        *,
+        profile: EquipmentProfile | None = None,
+        mapping: Mapping | None = None,
+    ) -> None:
+        """Aplica a configuração nova em memória (sem aquisição real) e registra a chamada."""
+        if profile is not None:
+            self._store.profiles[equipment_id] = profile
+        if mapping is not None:
+            self._store.mappings[mapping.mapping_id] = mapping
+        self.reloads.append(equipment_id)
 
     async def test_read(self, profile: EquipmentProfile, mapping: Mapping) -> FakeReadTestResult:
         self.test_read_calls.append((profile, mapping))
@@ -441,6 +461,88 @@ class AuditingEventRepo:
         return self.audits[-limit:]
 
 
+class MemoryCore:
+    """Espelho em memória do SqliteCoreStore: auditoria, testes de leitura, comissionamento."""
+
+    def __init__(self, clock: FakeClock) -> None:
+        self._clock = clock
+        self.audits: list[dict[str, Any]] = []
+        self.read_tests: list[dict[str, Any]] = []
+        self.sessions: dict[str, Any] = {}
+        self.checks: list[Any] = []
+
+    async def audit(
+        self,
+        user: str,
+        action: str,
+        entity_type: str,
+        entity_id: str,
+        before: dict[str, Any] | None,
+        after: dict[str, Any] | None,
+        reason_pt: str = "",
+    ) -> None:
+        self.audits.append(
+            {
+                "ts_utc": self._clock.now_utc(),
+                "user": user,
+                "action": action,
+                "entity_type": entity_type,
+                "entity_id": entity_id,
+                "before": before,
+                "after": after,
+                "reason_pt": reason_pt,
+            }
+        )
+
+    async def audit_list(self, limit: int = 200) -> list[dict[str, Any]]:
+        return list(reversed(self.audits))[:limit]
+
+    async def save_read_test(self, **record: Any) -> int:
+        row = {"id": len(self.read_tests) + 1, "ts_utc": self._clock.now_utc(), **record}
+        self.read_tests.append(row)
+        return int(row["id"])
+
+    async def list_read_tests(self, equipment_id: str, limit: int = 50) -> list[dict[str, Any]]:
+        rows = [t for t in self.read_tests if t["equipment_id"] == equipment_id]
+        return list(reversed(rows))[:limit]
+
+    async def latest_read_test(self, equipment_id: str) -> dict[str, Any] | None:
+        rows = await self.list_read_tests(equipment_id, 1)
+        return rows[0] if rows else None
+
+    async def save_commissioning(self, session: Any) -> None:
+        current = self.sessions.get(session.id)
+        if current is not None and current.status.value == "CLOSED":
+            raise HistorianError(f"sessão de comissionamento {session.id} encerrada")
+        self.sessions[session.id] = session
+
+    async def get_commissioning(self, session_id: str) -> Any:
+        return self.sessions.get(session_id)
+
+    async def list_commissioning(
+        self, equipment_id: str | None = None, limit: int = 50
+    ) -> list[Any]:
+        rows = [
+            s
+            for s in self.sessions.values()
+            if equipment_id is None or s.equipment_id == equipment_id
+        ]
+        return sorted(rows, key=lambda s: s.created_at_utc, reverse=True)[:limit]
+
+    async def add_commissioning_check(self, check: Any) -> int:
+        session = self.sessions.get(check.session_id)
+        if session is None:
+            raise HistorianError(f"sessão de comissionamento {check.session_id} não existe")
+        if session.status.value != "OPEN":
+            raise HistorianError(f"sessão de comissionamento {check.session_id} encerrada")
+        new_id = len(self.checks) + 1
+        self.checks.append(check.model_copy(update={"id": new_id}))
+        return new_id
+
+    async def list_commissioning_checks(self, session_id: str) -> list[Any]:
+        return [c for c in self.checks if c.session_id == session_id]
+
+
 class FakeRuleEngine:
     rules: tuple[Any, ...] = ()
 
@@ -615,6 +717,7 @@ class ApiWorld:
     events_repo: AuditingEventRepo
     diagnoses_repo: Any
     registry: FakeRegistry
+    core: MemoryCore
 
     @property
     def simulator_ids(self) -> list[str]:
@@ -651,9 +754,28 @@ class ApiWorld:
         return self.app.state.stream_hub
 
 
-def build_world(*, dev_mode: bool = False, extra_real_profiles: bool = True) -> ApiWorld:
-    """Container de teste: config real da semente + fakes locais + FakeClock."""
-    paths = resolve_paths(REPO_ROOT)
+def copy_seed_config(dest: Path) -> Path:
+    """Cópia de config/ e knowledge/ da semente numa pasta temporária (testes que gravam)."""
+    import shutil
+
+    for name in ("config", "knowledge"):
+        shutil.copytree(REPO_ROOT / name, dest / name, ignore=shutil.ignore_patterns("_history"))
+    (dest / "pyproject.toml").write_text("", encoding="utf-8")
+    return dest
+
+
+def build_world(
+    *,
+    dev_mode: bool = False,
+    extra_real_profiles: bool = True,
+    config_root: Path | None = None,
+) -> ApiWorld:
+    """Container de teste: config da semente + fakes locais + FakeClock.
+
+    `config_root`: pasta com cópia da semente; obrigatória para testes que GRAVAM configuração
+    (nada pode ser escrito no config/ do repositório).
+    """
+    paths = resolve_paths(config_root or REPO_ROOT)
     store = ConfigStore(paths).load_all()
     edge = store.config.edge.model_copy(
         update={"name": DEV_EDGE_NAME if dev_mode else PROD_EDGE_NAME}
@@ -690,6 +812,7 @@ def build_world(*, dev_mode: bool = False, extra_real_profiles: bool = True) -> 
     events_inner, diagnoses_repo = _memory_repos()
     events_repo = AuditingEventRepo(events_inner)
     manager = FakeManager(store, clock)
+    core = MemoryCore(clock)
     container = Container(
         paths=paths,
         store=store,
@@ -703,6 +826,7 @@ def build_world(*, dev_mode: bool = False, extra_real_profiles: bool = True) -> 
         rule_engine=FakeRuleEngine(),
         diagnosis_engine=FakeDiagnosisEngine(),
         started_at_utc=clock.now_utc(),
+        core=core,
     )
     app = create_app(container)
     return ApiWorld(
@@ -716,6 +840,7 @@ def build_world(*, dev_mode: bool = False, extra_real_profiles: bool = True) -> 
         events_repo=events_repo,
         diagnoses_repo=diagnoses_repo,
         registry=registry,
+        core=core,
     )
 
 
@@ -753,6 +878,23 @@ async def world() -> AsyncIterator[ApiWorld]:
 @pytest.fixture
 async def client(world: ApiWorld) -> AsyncIterator[httpx.AsyncClient]:
     transport = httpx.ASGITransport(app=world.app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as c:
+        yield c
+
+
+@pytest.fixture
+async def cfg_world(tmp_path: Path) -> AsyncIterator[ApiWorld]:
+    """Mundo com a configuração copiada para tmp_path: pode gravar sem tocar no repositório."""
+    w = build_world(config_root=copy_seed_config(tmp_path / "home"))
+    try:
+        yield w
+    finally:
+        await shutdown_world(w)
+
+
+@pytest.fixture
+async def cfg_client(cfg_world: ApiWorld) -> AsyncIterator[httpx.AsyncClient]:
+    transport = httpx.ASGITransport(app=cfg_world.app)
     async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as c:
         yield c
 

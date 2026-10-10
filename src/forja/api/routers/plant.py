@@ -40,6 +40,7 @@ STATE_CRITICAL_PT = "Crítico"
 STATE_NO_COMM_PT = "Sem comunicação"
 STATE_STOPPED_PT = "Parado"
 STATE_UNKNOWN_PT = "Desconhecido"
+STATE_PAUSED_PT = "Coleta pausada"
 
 _NO_COMM_STATES = frozenset(
     {
@@ -117,7 +118,11 @@ async def build_plant_card(container: Any, profile: EquipmentProfile) -> dict[st
     card = equipment_summary(profile)
     card.update(
         {
-            "state_pt": classify_state(status, samples, open_events),
+            "state_pt": (
+                classify_state(status, samples, open_events)
+                if profile.communication.collection_enabled
+                else STATE_PAUSED_PT
+            ),
             "connection": status.connection.value,
             "connection_pt": status.connection.label_pt,
             "is_stale": status.is_stale,

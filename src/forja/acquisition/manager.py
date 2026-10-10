@@ -22,7 +22,12 @@ from forja.acquisition.loop import (
     default_pipeline,
     mark_unobserved_gap,
 )
-from forja.acquisition.state import NEEDS_FIELD_CONFIG_PT, EquipmentState, reason_pt_for
+from forja.acquisition.state import (
+    COLLECTION_PAUSED_PT,
+    NEEDS_FIELD_CONFIG_PT,
+    EquipmentState,
+    reason_pt_for,
+)
 from forja.acquisition.test_read import ReadTestResult, run_read_test
 from forja.acquisition.watchdog import Watchdog
 from forja.config import ConfigStore
@@ -154,7 +159,8 @@ class EquipmentManager:
         """Marca o intervalo sem coleta de um equipamento configurado. Nunca lança."""
         try:
             profile = self._store.profiles[equipment_id]
-            if profile.communication.needs_configuration:
+            comm = profile.communication
+            if comm.needs_configuration or not comm.collection_enabled:
                 return
             mapping = self._store.mapping_for(equipment_id)
             state = self._state_for(profile)
@@ -198,6 +204,11 @@ class EquipmentManager:
             state.support_state = DriverSupportState.NEEDS_CONFIGURATION
             state.connection = ConnectionState.NOT_CONFIGURED
             state.detail_pt = f"{NEEDS_FIELD_CONFIG_PT}: IP ou protocolo não definidos"
+            return
+        if not profile.communication.collection_enabled:
+            state.support_state = self._registry_state(profile)
+            state.connection = ConnectionState.DISCONNECTED
+            state.detail_pt = COLLECTION_PAUSED_PT
             return
         try:
             driver = self._registry.create(profile, mapping, self._clock)
@@ -363,6 +374,16 @@ class EquipmentManager:
             state = EquipmentState(equipment_id=profile.id, driver=profile.communication.driver)
             self._states[profile.id] = state
         return state
+
+    def _registry_state(self, profile: EquipmentProfile) -> DriverSupportState:
+        """Estado de suporte declarado pelo registry, sem criar driver."""
+        try:
+            info = self._registry.support().get(profile.communication.driver)
+            if info is not None:
+                return DriverSupportState(info.state)
+        except Exception:
+            logger.debug("aquisição %s: registry.support() falhou", profile.id)
+        return DriverSupportState.UNSUPPORTED
 
     def _support_state_of(
         self, driver: ReadOnlyDriverBase, profile: EquipmentProfile

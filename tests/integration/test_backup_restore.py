@@ -80,7 +80,14 @@ EXPECTED_HIST = {
     "samples_agg_1h": 0,
     "comm_log": 1,
 }
-EXPECTED_CORE = {"events": 2, "diagnoses": 1, "audit_log": 2}
+EXPECTED_CORE = {
+    "events": 2,
+    "diagnoses": 1,
+    "audit_log": 2,
+    "read_tests": 0,
+    "commissioning_sessions": 0,
+    "commissioning_checks": 0,
+}
 
 
 async def seed(s: Stores) -> None:
@@ -115,7 +122,7 @@ async def test_backup_all_gera_arquivos_e_manifesto(stores: Stores, clock: FakeC
     assert hist.tables == EXPECTED_HIST
     assert core.tables == EXPECTED_CORE
     assert hist.schema_version == 1
-    assert core.schema_version == 1
+    assert core.schema_version == 2
     assert manifest.created_at_utc == clock.now_utc()
     assert manifest.app_version == __version__
     reread = BackupManifest.model_validate_json((dest / MANIFEST_NAME).read_text(encoding="utf-8"))

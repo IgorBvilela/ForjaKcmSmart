@@ -28,6 +28,8 @@ SAMPLES_WINDOW_S = 60.0
 
 NEEDS_FIELD_CONFIG_PT = "Disponível após configuração de campo"
 
+COLLECTION_PAUSED_PT = "Coleta pausada: a Forja não está lendo este equipamento"
+
 
 class ConnectionChanged(BaseModel):
     """Payload publicado em TOPIC_CONNECTION a cada mudança de estado de conexão."""
