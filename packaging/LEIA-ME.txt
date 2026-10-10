@@ -54,6 +54,10 @@ BACKUP E RESTAURAÇÃO (PowerShell como Administrador)
   Restaurar:   Stop-Service ForjaKCM
                & "C:\Program Files\ForjaKCM\ForjaKCM.exe" backup restore "<pasta do backup>" --sim
                Start-Service ForjaKCM
+  Para trazer de volta também a configuração, acrescente --configuracao ao restore (a
+  configuração atual fica guardada antes em var\backups\antes_da_restauracao_...).
+  O serviço também faz backup sozinho todo dia (horário e quantos guardar em
+  config\forja.yaml, seção backup). A tela Sistema > Backup lista, confere e mostra o comando.
   Os backups ficam em C:\ProgramData\ForjaKCM\var\backups. Copie-os para outro disco ou rede
   de acordo com a política da planta. Com a pasta de dados em outro lugar, acrescente
   --home "<pasta de dados>" aos comandos.

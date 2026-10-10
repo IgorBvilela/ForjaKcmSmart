@@ -22,11 +22,11 @@ Produto da **Forja Lógica** (automação e otimização de processos). Primeiro
 | E | Tempo Real, Tendências (gráficos sem interpolação, "o que mudou primeiro" por janela, zoom) e Histórico (tabela, eventos do período, CSV com qualidade) | concluída |
 | F | Alertas (alarme do KCM, eventos e avisos da Forja separados, reconhecimento auditado), **aviso antecipado** por tendência e desvio do padrão com limites configurados (não é previsão), casos anteriores e "antes do evento" | concluída |
 | G | Comunicação KCM: configuração por equipamento, validação sem rede, **teste somente leitura** (bruto, decodificado, qualidade, latência), editor de mapping com versão e histórico, coleta ativada só com teste válido | concluída |
-| H | Multi-equipamento na interface (cadastro e troca) | planejada |
+| H | Multi-equipamento: cadastro, ficha técnica com evidência e o que falta levantar em campo, componentes, catálogo de alarmes por chave, arquivar/restaurar sem apagar histórico, planta por área | concluída |
 | J | Driver **Modbus TCP** real, somente leitura (funções 01 a 04, leitura em bloco, timeout, reconexão, quadro bruto) | implementado e testado em bancada; experimental até validação no KCM real |
 | K | **EtherNet/IP** somente leitura configurável (cliente CIP mínimo próprio, leitura de atributo, nada fixo no código) | implementado e testado em bancada; experimental até validação no KCM real |
 | L | Saúde e logs: estado da coleta por equipamento, disco, bancos, logs do serviço, da comunicação e da auditoria | concluída |
-| M | Relatórios, exportações e backup pela interface | planejada |
+| M | Relatório por período (qualidade do dado no tempo, eventos, alarmes do KCM), exportações CSV, backup com configuração e rotina diária, configuração em uso | concluída |
 | N | Instalação no Windows: executável, serviço, instalador e atualizador com backup, pacote `.zip` | concluída (registro do serviço ainda não executado em PC da planta) |
 | O | Comissionamento: sessão com cabeçalho, conferência Forja × tela do KCM, relatório para impressão | ferramenta concluída; validação em campo pendente |
 

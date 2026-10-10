@@ -24,9 +24,9 @@ Mesmos comandos em `forja` (desenvolvimento) e `ForjaKCM.exe` (pacote):
 | Comando | Efeito |
 |---|---|
 | `init [--home]` | Copia a semente (`config/`, `knowledge/`, sem `_history`) para a pasta de dados e cria `var`, `var\logs`, `var\backups`. Nunca sobrescreve arquivo existente. |
-| `backup create [--home] [--dest]` | Backup consistente dos dois bancos com manifesto (sha256, integridade) — pode rodar com o Edge ligado. Padrão: `var\backups\backup_<UTC>`. |
+| `backup create [--home] [--dest]` | Backup consistente dos dois bancos e da configuração (`config/` e `knowledge/` em zip) com manifesto (sha256, integridade) — pode rodar com o Edge ligado. Padrão: `var\backups\backup_<UTC>`. |
 | `backup verify PASTA` | Confere checksum e `integrity_check` de todos os arquivos do backup. |
-| `backup restore PASTA --sim [--home]` | Substitui os bancos. Exige `--sim` e o serviço parado (consulta o gerenciador de serviços; arquivo em uso também é recusado). Valida tudo antes de tocar no destino. |
+| `backup restore PASTA --sim [--configuracao] [--home]` | Substitui os bancos; com `--configuracao`, também `config/` e `knowledge/`, guardando antes a configuração atual. Exige `--sim` e o serviço parado (consulta o gerenciador de serviços; arquivo em uso também é recusado). Valida tudo antes de tocar no destino. |
 | `service run` | Ponto de entrada chamado pelo gerenciador de serviços. |
 | `run [--home] [--port]` | Sobe o Edge no terminal (teste de bancada). |
 
