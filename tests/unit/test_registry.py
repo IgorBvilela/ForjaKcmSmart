@@ -1,10 +1,13 @@
-"""DriverRegistry: simulator AVAILABLE, modbus/eip UNSUPPORTED honestos, recusa escrita."""
+"""DriverRegistry: simulator AVAILABLE, modbus EXPERIMENTAL, eip UNSUPPORTED, recusa escrita.
+
+Nenhum driver real é AVAILABLE: só sai de EXPERIMENTAL depois da validação no KCM real."""
 
 from __future__ import annotations
 
 import pytest
 
 from forja.domain import (
+    ConfigError,
     DriverCapabilities,
     DriverError,
     DriverHealth,
@@ -40,12 +43,18 @@ def test_default_registry_names() -> None:
 def test_support_states_are_honest() -> None:
     support = build_default_registry().support()
     assert support["simulator"].state is DriverSupportState.AVAILABLE
-    for name in ("modbus_tcp", "ethernet_ip"):
-        info = support[name]
-        assert info.name == name
-        assert info.state is DriverSupportState.UNSUPPORTED
-        assert info.reason_pt == EXPECTED_REASON_PT == UNSUPPORTED_REASON_PT
-    assert probe_modbus_tcp().state is DriverSupportState.UNSUPPORTED
+    # nenhum driver real AVAILABLE antes da validação no KCM real
+    assert [n for n, i in support.items() if i.state is DriverSupportState.AVAILABLE] == [
+        "simulator"
+    ]
+    modbus = support["modbus_tcp"]
+    assert modbus.state is DriverSupportState.EXPERIMENTAL
+    assert modbus.library == "pymodbus"
+    assert "pendente" in modbus.reason_pt
+    eip = support["ethernet_ip"]
+    assert eip.state is DriverSupportState.UNSUPPORTED
+    assert eip.reason_pt == EXPECTED_REASON_PT == UNSUPPORTED_REASON_PT
+    assert probe_modbus_tcp().state is DriverSupportState.EXPERIMENTAL
     assert probe_ethernet_ip().state is DriverSupportState.UNSUPPORTED
 
 
@@ -56,11 +65,17 @@ def test_create_simulator_returns_driver() -> None:
     assert driver.name == "simulator"
 
 
-@pytest.mark.parametrize("name", ["modbus_tcp", "ethernet_ip"])
+@pytest.mark.parametrize("name", ["ethernet_ip"])
 def test_create_unsupported_driver_raises(name: str) -> None:
     registry = build_default_registry()
     with pytest.raises(UnsupportedDriver, match="fase J/K"):
         registry.create(sim_profile(driver=name), load_sim_mapping(), FakeClock())
+
+
+def test_create_experimental_driver_without_address_is_refused_with_reason() -> None:
+    registry = build_default_registry()
+    with pytest.raises(ConfigError, match="IP não informado"):
+        registry.create(sim_profile(driver="modbus_tcp"), load_sim_mapping(), FakeClock())
 
 
 def test_create_unknown_name_raises() -> None:

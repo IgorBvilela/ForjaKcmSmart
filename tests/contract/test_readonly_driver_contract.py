@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from forja.domain import (
+    ConfigError,
     DriverSupportState,
     ReadOnlyContractViolation,
     ReadOnlyDriver,
@@ -82,24 +83,47 @@ def test_every_driver_class_exposes_exactly_the_contract(cls: type[ReadOnlyDrive
     assert [n for n in private if is_forbidden_name(n.lstrip("_"))] == []
 
 
+# Endereço de laboratório para instanciar drivers reais sem abrir conexão (create não conecta).
+LAB_ADDRESS: dict[str, object] = {
+    "protocol": "teste",
+    "ip": "127.0.0.1",
+    "port": 1502,
+    "unit_id": 1,
+}
+
+
 def test_every_registered_driver_instance_or_refusal() -> None:
     registry = build_default_registry()
     mapping = load_sim_mapping()
     clock = FakeClock()
-    seen_available = 0
+    available = 0
+    experimental = 0
     for name, info in registry.support().items():
-        profile = sim_profile(f"CONTRATO_{name.upper()}", driver=name)
         if info.state is DriverSupportState.UNSUPPORTED:
             with pytest.raises(UnsupportedDriver):
-                registry.create(profile, mapping, clock)
+                registry.create(
+                    sim_profile(f"CONTRATO_{name.upper()}", driver=name), mapping, clock
+                )
             continue
+        if info.state is DriverSupportState.EXPERIMENTAL:
+            # sem endereço: recusa honesta; com endereço: instância com o contrato
+            with pytest.raises(ConfigError):
+                registry.create(
+                    sim_profile(f"CONTRATO_{name.upper()}", driver=name), mapping, clock
+                )
+            profile = sim_profile(f"CONTRATO_{name.upper()}", driver=name, **LAB_ADDRESS)
+            experimental += 1
+        else:
+            profile = sim_profile(f"CONTRATO_{name.upper()}", driver=name)
+            available += 1
         driver = registry.create(profile, mapping, clock)
-        seen_available += 1
         assert isinstance(driver, ReadOnlyDriverBase)
         assert isinstance(driver, ReadOnlyDriver)
         assert public_surface(driver) == CONTRACT_SURFACE
         assert driver.name == name
-    assert seen_available == 1  # hoje so o simulador; nunca AVAILABLE sem driver funcional
+        assert driver.capabilities().support_state is info.state
+    assert available == 1  # só o simulador; nunca AVAILABLE sem validação no KCM real
+    assert experimental >= 1
 
 
 # --- base recusa escrita na definicao ------------------------------------------------------
