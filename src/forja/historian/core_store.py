@@ -408,6 +408,22 @@ class EventsView:
     async def find_open(self, equipment_id: str, dedupe_key: str) -> Event | None:
         return await self._store.find_open(equipment_id, dedupe_key)
 
+    async def audit(
+        self,
+        user: str,
+        action: str,
+        entity_type: str,
+        entity_id: str,
+        before: dict[str, Any] | None,
+        after: dict[str, Any] | None,
+        reason_pt: str = "",
+    ) -> None:
+        """Trilha de auditoria do core (o reconhecimento de evento grava por aqui)."""
+        await self._store.audit(user, action, entity_type, entity_id, before, after, reason_pt)
+
+    async def audit_list(self, limit: int = 200) -> AuditRows:
+        return await self._store.audit_list(limit)
+
 
 class DiagnosesView:
     """``DiagnosisRepository`` sem ambiguidade de nomes."""
