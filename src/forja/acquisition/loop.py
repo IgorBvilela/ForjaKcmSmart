@@ -12,6 +12,7 @@ import asyncio
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import Any, Protocol
 
 from forja.acquisition.backoff import Backoff
@@ -40,6 +41,14 @@ logger = logging.getLogger(__name__)
 _NS = 1_000_000_000
 _SLEEP_EPSILON_S = 1e-6
 """Resto de sono abaixo disto é descartado: evita um sleep infinitesimal que nunca acorda."""
+
+MIN_GAP_MARK_S = 3.0
+"""Pausa mínima, desde a última leitura observada, para a partida marcar o intervalo sem coleta."""
+
+NOT_COLLECTING_PT = (
+    "Sem leitura: a Forja não estava coletando este equipamento neste intervalo "
+    "(Forja Edge parado ou reiniciando)"
+)
 
 
 class PlanCompiler(Protocol):
@@ -106,6 +115,51 @@ def fallback_comm_error_batch(
     return SampleBatch(
         equipment_id=profile.id, ts_utc=now, samples=samples, quality=Quality.COMM_ERROR
     )
+
+
+async def mark_unobserved_gap(
+    historian: HistorianRepository,
+    profile: EquipmentProfile,
+    mapping: Mapping,
+    clock: Clock,
+    state: EquipmentState,
+) -> int:
+    """Na partida da coleta, fecha com buraco o trecho em que a Forja não estava coletando.
+
+    Com store-on-change o historiador segura o último valor até a próxima linha. Depois de uma
+    parada (reinício, atualização, queda de energia, task travada) isso inventaria leitura. Uma
+    marca sem valor 1 ms depois da última leitura observada de cada tag faz o trecho virar buraco.
+    Devolve quantas marcas gravou. Falha aqui nunca impede a coleta.
+    """
+    try:
+        latest = await historian.latest(profile.id)
+    except Exception:
+        logger.debug("aquisição %s: última leitura indisponível na partida", profile.id)
+        return 0
+    now = clock.now_utc()
+    limit = timedelta(seconds=max(2.0 * profile.communication.poll_interval_s, MIN_GAP_MARK_S))
+    marks = [
+        Sample(
+            ts_utc=last.ts_utc + timedelta(milliseconds=1),
+            equipment_id=profile.id,
+            tag=tag,
+            value=None,
+            quality=Quality.COMM_ERROR,
+            source=mapping.source_label,
+            reason_pt=NOT_COLLECTING_PT,
+        )
+        for tag, last in latest.items()
+        if last.value is not None and now - last.ts_utc > limit
+    ]
+    if not marks:
+        return 0
+    try:
+        await historian.write(marks)
+    except Exception:
+        state.historian_errors += 1
+        logger.exception("aquisição %s: falha ao marcar o intervalo sem coleta", profile.id)
+        return 0
+    return len(marks)
 
 
 class EquipmentLoop:

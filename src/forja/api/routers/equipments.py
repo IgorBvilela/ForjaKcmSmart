@@ -143,6 +143,7 @@ async def get_equipment(equipment_id: EquipmentId, container: ContainerDep) -> d
             "readable": len(mapping.readable_entries),
             "unknown": len(mapping.unknown_entries),
             "tags": [e.semantic_tag for e in mapping.entries],
+            "readable_tags": [e.semantic_tag for e in mapping.readable_entries],
         },
     }
 

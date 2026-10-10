@@ -25,6 +25,7 @@ from typing import Literal
 from forja.domain import Quality, Sample, SemanticTag, TagKind, WhatChangedItem, get_tag
 
 DeltaKind = Literal["pct", "points", "abs", "none"]
+BeforeMode = Literal["pre_departure", "baseline"]
 
 USABLE: frozenset[Quality] = frozenset(q for q in Quality if q.counts_for_rules)
 PCT_UNITS: frozenset[str] = frozenset({"kg/h", "kg/m", "kg"})
@@ -141,6 +142,7 @@ class _Departure:
     out_of_pattern: bool
     ts_start: datetime | None
     before_values: list[float]
+    baseline: float | None = None
 
 
 def _tolerance(kind: DeltaKind, baseline: float, head: Sequence[float]) -> float:
@@ -162,14 +164,16 @@ def _departure(samples: Sequence[Sample], now: float | None, kind: DeltaKind) ->
     """
     values = [(s.ts_utc, float(s.value)) for s in samples if s.value is not None]
     all_values = [v for _, v in values]
-    if not values or now is None:
+    if not values:
         return _Departure(False, None, all_values)
     head = all_values[: max(MIN_HEAD, int(len(values) * HEAD_FRACTION))]
     baseline = float(median(head))
+    if now is None:
+        return _Departure(False, None, all_values, baseline)
     tol = _tolerance(kind, baseline, head)
     direction = now - baseline
     if abs(direction) <= tol:
-        return _Departure(False, None, all_values)
+        return _Departure(False, None, all_values, baseline)
     idx = len(values)
     while idx > 0:
         dev = values[idx - 1][1] - baseline
@@ -178,8 +182,8 @@ def _departure(samples: Sequence[Sample], now: float | None, kind: DeltaKind) ->
         else:
             break
     if idx == len(values):
-        return _Departure(True, None, all_values)
-    return _Departure(True, values[idx][0], all_values[:idx] or head)
+        return _Departure(True, None, all_values, baseline)
+    return _Departure(True, values[idx][0], all_values[:idx] or head, baseline)
 
 
 def _usable(pre: Sequence[Sample], tag: str) -> list[Sample]:
@@ -193,13 +197,20 @@ def _now_value(now_sample: Sample | None) -> float | None:
 
 
 def _continuous_item(
-    tag: str, meta: SemanticTag, pre_tag: Sequence[Sample], now_sample: Sample | None
+    tag: str,
+    meta: SemanticTag,
+    pre_tag: Sequence[Sample],
+    now_sample: Sample | None,
+    before_mode: BeforeMode = "pre_departure",
 ) -> WhatChangedItem | None:
     """Continua com ANTES/AGORA/VARIACAO. Sem nenhuma leitura utilizavel, nada a comparar."""
     kind: DeltaKind = delta_kind_for(tag)
     now_value = _now_value(now_sample)
     dep = _departure(pre_tag, now_value, kind)
-    before = float(median(dep.before_values)) if dep.before_values else None
+    if before_mode == "baseline":
+        before = dep.baseline
+    else:
+        before = float(median(dep.before_values)) if dep.before_values else None
     if before is None and now_value is None:
         return None
     delta = compute_delta(before, now_value, kind)
@@ -262,12 +273,16 @@ def _discrete_item(
 
 
 def _item(
-    tag: str, pre: Sequence[Sample], now_sample: Sample | None, detail_for: DetailFor | None
+    tag: str,
+    pre: Sequence[Sample],
+    now_sample: Sample | None,
+    detail_for: DetailFor | None,
+    before_mode: BeforeMode,
 ) -> WhatChangedItem | None:
     meta = get_tag(tag)
     pre_tag = _usable(pre, tag)
     if meta.kind is TagKind.CONTINUOUS:
-        return _continuous_item(tag, meta, pre_tag, now_sample)
+        return _continuous_item(tag, meta, pre_tag, now_sample, before_mode)
     return _discrete_item(tag, meta, pre_tag, now_sample, detail_for)
 
 
@@ -276,6 +291,7 @@ def compute_what_changed(
     now: Mapping[str, Sample],
     tags: Sequence[str],
     detail_for: DetailFor | None = None,
+    before_mode: BeforeMode = "pre_departure",
 ) -> tuple[WhatChangedItem, ...]:
     """ANTES/AGORA/VARIACAO por tag, ordenado por quem saiu do padrao primeiro.
 
@@ -283,10 +299,16 @@ def compute_what_changed(
     Ficam de fora: discreta que nao mudou de valor e continua sem nenhuma leitura utilizavel
     (nem antes, nem agora). Itens sem ts_start ficam ao final, na ordem de `tags`. Empate de
     ts_start: ordem de `tags`.
+
+    `before_mode`: 'pre_departure' (eventos) = mediana de tudo antes da saida do padrao;
+    'baseline' (analise de janela longa) = o proprio padrao do inicio da janela, para que um
+    ciclo anterior dentro da janela nao contamine o ANTES.
     """
     items = [
         item
-        for item in (_item(tag, pre, now.get(tag), detail_for) for tag in dict.fromkeys(tags))
+        for item in (
+            _item(tag, pre, now.get(tag), detail_for, before_mode) for tag in dict.fromkeys(tags)
+        )
         if item is not None
     ]
     with_ts = [i for i in items if i.ts_start_utc is not None]

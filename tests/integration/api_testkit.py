@@ -241,15 +241,15 @@ class FakeManager:
 
 class MemoryHistorian:
     def __init__(self) -> None:
-        self.samples: list[Sample] = []
+        self.stored: list[Sample] = []
         self.comm: list[CommLogEntry] = []
 
     async def write(self, samples: Any) -> None:
-        self.samples.extend(s for s in samples if s.quality is not Quality.STALE)
+        self.stored.extend(s for s in samples if s.quality is not Quality.STALE)
 
     async def latest(self, equipment_id: str, tags: Any = None) -> dict[str, Sample]:
         out: dict[str, Sample] = {}
-        for s in self.samples:
+        for s in self.stored:
             if s.equipment_id == equipment_id and (tags is None or s.tag in tags):
                 out[s.tag] = s
         return out
@@ -260,7 +260,7 @@ class MemoryHistorian:
         rows = sorted(
             (
                 s
-                for s in self.samples
+                for s in self.stored
                 if s.equipment_id == equipment_id and s.tag == tag and start <= s.ts_utc <= end
             ),
             key=lambda s: s.ts_utc,
@@ -278,10 +278,34 @@ class MemoryHistorian:
             downsampled=downsampled,
         )
 
-    async def count(self, equipment_id: str | None = None) -> int:
-        return sum(
-            1 for s in self.samples if equipment_id is None or s.equipment_id == equipment_id
+    def _window(self, equipment_id: str, tags: Any, start: datetime, end: datetime) -> list[Sample]:
+        wanted = set(tags)
+        return sorted(
+            (
+                s
+                for s in self.stored
+                if s.equipment_id == equipment_id and s.tag in wanted and start <= s.ts_utc <= end
+            ),
+            key=lambda s: (s.ts_utc, s.tag),
         )
+
+    async def samples(
+        self, equipment_id: str, tags: Any, start: datetime, end: datetime, limit: int = 100_000
+    ) -> list[Sample]:
+        return self._window(equipment_id, tags, start, end)[:limit]
+
+    async def export_rows(
+        self, equipment_id: str, tags: Any, start: datetime, end: datetime, limit: int
+    ) -> list[Any]:
+        from forja.historian.sqlite import ExportRow
+
+        return [
+            ExportRow(s.tag, s.ts_utc, s.value, s.quality, s.source, s.reason_pt)
+            for s in self._window(equipment_id, tags, start, end)[:limit]
+        ]
+
+    async def count(self, equipment_id: str | None = None) -> int:
+        return sum(1 for s in self.stored if equipment_id is None or s.equipment_id == equipment_id)
 
     async def log_comm(self, entry: CommLogEntry) -> None:
         self.comm.append(entry)
@@ -299,9 +323,9 @@ class MemoryHistorian:
 
     async def stats(self) -> dict[str, Any]:
         return {
-            "samples": len(self.samples),
+            "samples": len(self.stored),
             "bytes": 0,
-            "last_sample_utc": self.samples[-1].ts_utc if self.samples else None,
+            "last_sample_utc": self.stored[-1].ts_utc if self.stored else None,
         }
 
 

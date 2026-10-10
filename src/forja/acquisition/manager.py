@@ -20,6 +20,7 @@ from forja.acquisition.loop import (
     DriverRegistryPort,
     EquipmentLoop,
     default_pipeline,
+    mark_unobserved_gap,
 )
 from forja.acquisition.state import NEEDS_FIELD_CONFIG_PT, EquipmentState, reason_pt_for
 from forja.acquisition.test_read import ReadTestResult, run_read_test
@@ -132,16 +133,36 @@ class EquipmentManager:
     # --- ciclo de vida ----------------------------------------------------------------
 
     async def start_all(self) -> None:
-        """Sobe todos. Um equipamento com problema não impede os demais de subir."""
+        """Sobe todos. Um equipamento com problema não impede os demais de subir.
+
+        As marcas de "sem coleta" de todos são gravadas antes de soltar os loops: assim nenhum
+        loop começa atrasado em relação aos outros por causa de I/O de partida.
+        """
         self._stopping = False
         self._ensure_watchdog_task()
-        for eid in self.equipment_ids():
+        ids = self.equipment_ids()
+        await asyncio.gather(*(self._mark_gap_for(eid) for eid in ids))
+        for eid in ids:
             try:
-                await self.start(eid)
+                await self.start(eid, mark_gap=False)
             except asyncio.CancelledError:
                 raise
             except Exception:
                 logger.exception("aquisição %s: falha ao iniciar; os demais seguem", eid)
+
+    async def _mark_gap_for(self, equipment_id: str) -> None:
+        """Marca o intervalo sem coleta de um equipamento configurado. Nunca lança."""
+        try:
+            profile = self._store.profiles[equipment_id]
+            if profile.communication.needs_configuration:
+                return
+            mapping = self._store.mapping_for(equipment_id)
+            state = self._state_for(profile)
+            await mark_unobserved_gap(self._historian, profile, mapping, self._clock, state)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.debug("aquisição %s: marca de intervalo sem coleta não gravada", equipment_id)
 
     async def stop_all(self, timeout_s: float = 5) -> None:
         """Parada graciosa: cancela todas as tasks e espera até timeout_s (tempo real).
@@ -164,7 +185,7 @@ class EquipmentManager:
             self._runners.pop(r.profile.id, None)
             self._mark_disconnected(r.profile.id)
 
-    async def start(self, equipment_id: str) -> None:
+    async def start(self, equipment_id: str, *, mark_gap: bool = True) -> None:
         if equipment_id in self._runners:
             return
         self._stopping = False
@@ -193,6 +214,8 @@ class EquipmentManager:
         state.support_state = self._support_state_of(driver, profile)
         state.connection = ConnectionState.DISCONNECTED
         state.detail_pt = ""
+        if mark_gap:
+            await mark_unobserved_gap(self._historian, profile, mapping, self._clock, state)
         self._launch(profile, mapping, driver, state, live)
         self._ensure_watchdog_task()
 
@@ -243,6 +266,7 @@ class EquipmentManager:
         if live is None:
             live = LiveState(equipment_id, self._clock, profile.communication.stale_after_s)
             self._lives[equipment_id] = live
+        await mark_unobserved_gap(self._historian, profile, mapping, self._clock, state)
         self._launch(profile, mapping, driver, state, live)
 
     async def reload(

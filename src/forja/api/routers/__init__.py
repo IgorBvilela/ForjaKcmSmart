@@ -12,11 +12,13 @@ from forja.api.routers import (
     plant,
     simulator,
     stream,
+    tags,
     ui,
 )
 
 ALL_ROUTERS: tuple[APIRouter, ...] = (
     health.router,
+    tags.router,
     plant.router,
     equipments.router,
     history.router,

@@ -20,11 +20,12 @@ import sqlite3
 from collections.abc import Callable, Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Final, TypeVar
+from typing import Any, Final, NamedTuple, TypeVar
 
 from forja.config.models import HistorianConfig
 from forja.domain.errors import HistorianError
 from forja.domain.ports import Clock, CommLogEntry, Series, SeriesPoint
+from forja.domain.quality import Quality
 from forja.domain.samples import Sample
 from forja.historian import queries as q
 from forja.historian.migrate import MIGRATIONS_DIR, migrate
@@ -57,6 +58,17 @@ _AGG_NATIVE_MS: Final[dict[str, int]] = {
     "samples_agg_1m": q.MINUTE_MS,
     "samples_agg_1h": q.HOUR_MS,
 }
+
+
+class ExportRow(NamedTuple):
+    """Linha bruta para exportacao: o que foi gravado, sem agregar nem preencher."""
+
+    tag: str
+    ts_utc: datetime
+    value: float | None
+    quality: Quality
+    source: str
+    reason_pt: str | None
 
 
 class SqliteHistorian:
@@ -210,6 +222,66 @@ class SqliteHistorian:
                 sample = q.sample_from_row(equipment_id, row)
                 out[sample.tag] = sample
             return out
+
+        return await self._read(run)
+
+    async def samples(
+        self,
+        equipment_id: str,
+        tags: Sequence[str],
+        start: datetime,
+        end: datetime,
+        limit: int = 100_000,
+    ) -> list[Sample]:
+        """Linhas brutas gravadas em [start, end], em ordem de tempo. Nada e agregado ou inventado.
+
+        Usado pela exportacao (CSV) e pela analise de janela. COMM_ERROR vem com value None.
+        """
+        wanted = list(dict.fromkeys(tags))
+        if not wanted:
+            return []
+        start_ms, end_ms = q.to_ms(start), q.to_ms(end)
+        if end_ms < start_ms:
+            raise HistorianError("intervalo inválido: fim antes do início")
+        params = (equipment_id, *wanted, start_ms, end_ms, max(1, int(limit)))
+        sql = q.sql_raw_samples(len(wanted))
+
+        def run(conn: sqlite3.Connection) -> list[Sample]:
+            rows = conn.execute(sql, params).fetchall()
+            return [q.sample_from_row(equipment_id, row) for row in rows]
+
+        return await self._read(run)
+
+    async def export_rows(
+        self,
+        equipment_id: str,
+        tags: Sequence[str],
+        start: datetime,
+        end: datetime,
+        limit: int,
+    ) -> list[ExportRow]:
+        """Mesmas linhas de ``samples`` em tuplas leves, para exportar muitas linhas sem pesar."""
+        wanted = list(dict.fromkeys(tags))
+        if not wanted:
+            return []
+        start_ms, end_ms = q.to_ms(start), q.to_ms(end)
+        if end_ms < start_ms:
+            raise HistorianError("intervalo inválido: fim antes do início")
+        params = (equipment_id, *wanted, start_ms, end_ms, max(1, int(limit)))
+        sql = q.sql_raw_samples(len(wanted))
+
+        def run(conn: sqlite3.Connection) -> list[ExportRow]:
+            return [
+                ExportRow(
+                    tag=str(tag),
+                    ts_utc=q.from_ms(int(ts)),
+                    value=None if value is None else float(value),
+                    quality=q.code_to_quality(int(quality)),
+                    source=str(source),
+                    reason_pt=None if reason is None else str(reason),
+                )
+                for tag, ts, value, quality, source, _raw, reason in conn.execute(sql, params)
+            ]
 
         return await self._read(run)
 

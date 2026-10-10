@@ -23,3 +23,6 @@ Decisões tomadas em 2026-09-30 na auditoria inicial (detalhe e motivos: `docs/a
 | 0017 | Alarmes por chave composta; 56 = BELTLOAD LOW só como FIELD_OBSERVED da aplicação WBF da GTEX; 06–47 HYPOTHESIS | FORJA_RULE |
 | 0018 | STOP BY: enum da spec §36; Calib/Tare UNKNOWN "candidato a PROCEDURE" (decisão do chefe) | FORJA_RULE |
 | 0019 | Código anterior não localizado: nascer limpo (A1) com porta de reconciliação; o 1.0 dele vence se aparecer | DECISÃO |
+| 0020 | Gráfico de tendência em degrau (cada ponto vale até a próxima linha gravada, coerente com store-on-change); nunca reta entre leituras | FORJA_RULE |
+| 0021 | Partida da coleta grava marca `COMM_ERROR` sem valor 1 ms após a última leitura observada quando houve pausa: trecho sem coleta vira buraco | FORJA_RULE |
+| 0022 | Análise de janela ("o que mudou") usa o padrão do início da janela como ANTES; eventos seguem com a mediana pré-saída | TECHNICAL_OPINION |

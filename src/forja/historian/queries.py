@@ -157,6 +157,19 @@ def sql_latest_tags(n_tags: int) -> str:
     return f"{SQL_LATEST_ALL} AND tag IN ({marks})"
 
 
+def sql_raw_samples(n_tags: int) -> str:
+    """Linhas brutas de N tags em [inicio, fim], em ordem de tempo e de tag, com limite.
+
+    Parametros posicionais: equipment_id, N tags, inicio_ms, fim_ms, limite.
+    """
+    marks = ", ".join("?" for _ in range(n_tags))
+    return (
+        "SELECT tag, ts_utc_ms, value, quality, source, raw, reason_pt FROM samples "  # noqa: S608
+        f"WHERE equipment_id = ? AND tag IN ({marks}) AND ts_utc_ms >= ? AND ts_utc_ms <= ? "
+        "ORDER BY ts_utc_ms, tag LIMIT ?"
+    )
+
+
 # ----------------------------------------------------------------------------- SQL: comm_log
 
 SQL_INSERT_COMM: Final[str] = """
