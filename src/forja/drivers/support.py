@@ -1,6 +1,7 @@
-"""Estado de suporte de cada driver. Nunca AVAILABLE sem driver funcional.
+"""Estado de suporte de cada driver. Nunca AVAILABLE sem validação no equipamento real.
 
-modbus_tcp e ethernet_ip ficam UNSUPPORTED ate as fases J/K e ate haver configuracao de campo.
+modbus_tcp e ethernet_ip existem, são somente leitura e são testados contra servidores de teste
+locais: ficam EXPERIMENTAL até a validação em campo.
 """
 
 from __future__ import annotations
@@ -13,7 +14,7 @@ from forja.domain.assets import EquipmentProfile
 from forja.domain.ports import DriverSupportState
 from forja.version import __version__
 
-UNSUPPORTED_REASON_PT = "Disponível na fase J/K; requer configuração de campo"
+UNSUPPORTED_REASON_PT = "Driver não disponível nesta instalação"
 
 
 class DriverSupportInfo(BaseModel):
@@ -72,13 +73,21 @@ def probe_modbus_tcp() -> DriverSupportInfo:
     )
 
 
+EIP_EXPERIMENTAL_PT = (
+    "Cliente CIP próprio, somente leitura (Get_Attribute_Single por mensagem explícita, sem "
+    "conexão de I/O), testado contra respondedor de teste local. Validação no KCM real pendente: "
+    "o protocolo da interface Host/Anybus precisa ser confirmado em campo."
+)
+
+
 def probe_ethernet_ip() -> DriverSupportInfo:
+    """EXPERIMENTAL: existe e é testado, mas nunca foi validado contra o KCM real."""
     return DriverSupportInfo(
         name="ethernet_ip",
-        state=DriverSupportState.UNSUPPORTED,
-        library="",
-        version="",
-        reason_pt=UNSUPPORTED_REASON_PT,
+        state=DriverSupportState.EXPERIMENTAL,
+        library="forja (cliente CIP mínimo)",
+        version=__version__,
+        reason_pt=EIP_EXPERIMENTAL_PT,
     )
 
 

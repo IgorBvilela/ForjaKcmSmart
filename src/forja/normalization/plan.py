@@ -3,8 +3,9 @@
 - simulator: 1 bloco "sim" com todas as entradas legiveis (payload dict, sem layout).
 - modbus_tcp: coalesce entradas contiguas por area; layout {tag: {offset, count, unit}}.
   Limites 125 registradores / 2000 bits sao do protocolo Modbus, nao de nenhum equipamento.
-- ethernet_ip: 1 bloco por entrada (assembly/attribute) com layout em bytes.
-Nenhum driver real existe ainda; isto prepara o caminho sem inventar endereco.
+- ethernet_ip: 1 bloco por atributo CIP (classe, instancia, atributo), com layout em bytes das
+  tags que moram nele. Classe, instancia e atributo sao obrigatorios: vem do documento da
+  maquina, nunca de valor padrao no codigo.
 """
 
 from __future__ import annotations
@@ -16,7 +17,7 @@ from typing import Any
 from forja.domain.assets import EquipmentProfile
 from forja.domain.errors import MappingValidationError, UnsupportedDriver
 from forja.domain.evidence import UNKNOWN
-from forja.domain.mapping import DataType, Mapping, MappingEntry
+from forja.domain.mapping import BYTE_TYPES, DataType, Mapping, MappingEntry
 from forja.domain.samples import ReadBlock, ReadPlan
 
 SIM_AREA = "sim"
@@ -142,6 +143,11 @@ class ReadPlanCompiler:
         address = addr.get("address")
         if isinstance(address, bool) or not isinstance(address, int) or address < 0:
             raise MappingValidationError(f"{e.semantic_tag}: address Modbus inválido: {address!r}")
+        if e.datatype in BYTE_TYPES:
+            raise MappingValidationError(
+                f"{e.semantic_tag}: tipo de 8 bits não existe em registrador Modbus (16 bits); "
+                "use uint16 com bit ou escala"
+            )
         count = addr.get("count", _default_count(e.datatype, area))
         if isinstance(count, bool) or not isinstance(count, int) or count < 1:
             raise MappingValidationError(f"{e.semantic_tag}: count Modbus inválido: {count!r}")
@@ -172,43 +178,69 @@ class ReadPlanCompiler:
     # --- ethernet/ip ------------------------------------------------------------------------
 
     def _eip(self, entries: Sequence[MappingEntry]) -> list[ReadBlock]:
-        blocks: list[ReadBlock] = []
+        groups: dict[tuple[int, int, int], list[tuple[str, dict[str, Any]]]] = {}
         for e in entries:
-            addr = e.protocol_address
-            if not isinstance(addr, dict):
-                raise MappingValidationError(
-                    f"{e.semantic_tag}: endereço EtherNet/IP deve ser dict "
-                    "{kind, class, instance, attribute, offset, length}"
-                )
-            kind = addr.get("kind")
-            if kind not in EIP_KINDS:
-                raise MappingValidationError(
-                    f"{e.semantic_tag}: kind EtherNet/IP inválido: {kind!r}"
-                )
-            fields = {
-                k: _non_negative_int(e.semantic_tag, k, addr.get(k, 0))
-                for k in ("class", "instance", "attribute", "offset")
-            }
-            length = _non_negative_int(
-                e.semantic_tag, "length", addr.get("length", _default_length(e.datatype))
-            )
-            if length < 1:
-                raise MappingValidationError(f"{e.semantic_tag}: length EtherNet/IP deve ser >= 1")
+            key, slot = _eip_slot(e)
+            groups.setdefault(key, []).append((e.semantic_tag, slot))
+        blocks: list[ReadBlock] = []
+        for (cls, inst, attr), items in sorted(groups.items()):
+            end = max(int(slot["offset"]) + int(slot["count"]) for _, slot in items)
             blocks.append(
                 ReadBlock(
-                    block_id=f"eip:{e.semantic_tag}",
-                    area=str(kind),
-                    address=fields["instance"],
-                    count=length,
-                    tags=(e.semantic_tag,),
+                    block_id=f"eip:{cls}:{inst}:{attr}",
+                    area="attribute",
+                    address=inst,
+                    count=end,
+                    tags=tuple(tag for tag, _ in items),
                     meta={
-                        **fields,
-                        "length": length,
-                        "layout": {e.semantic_tag: {"offset": 0, "count": length, "unit": "byte"}},
+                        "class": cls,
+                        "instance": inst,
+                        "attribute": attr,
+                        "layout": dict(items),
                     },
                 )
             )
         return blocks
+
+
+def _eip_slot(e: MappingEntry) -> tuple[tuple[int, int, int], dict[str, Any]]:
+    """(classe, instância, atributo) e o recorte da tag dentro dos dados do atributo."""
+    addr = e.protocol_address
+    tag = e.semantic_tag
+    if not isinstance(addr, dict):
+        raise MappingValidationError(
+            f"{tag}: endereço EtherNet/IP deve ser dict "
+            "{kind, class, instance, attribute, offset, length}"
+        )
+    kind = addr.get("kind", "attribute")
+    if kind not in EIP_KINDS:
+        raise MappingValidationError(f"{tag}: kind EtherNet/IP inválido: {kind!r}")
+    missing = [k for k in ("class", "instance", "attribute") if k not in addr]
+    if missing:
+        raise MappingValidationError(
+            f"{tag}: EtherNet/IP sem {', '.join(missing)}; esses números vêm do documento da "
+            "máquina e não têm valor padrão"
+        )
+    cls = _non_negative_int(tag, "class", addr["class"])
+    inst = _non_negative_int(tag, "instance", addr["instance"])
+    attr = _non_negative_int(tag, "attribute", addr["attribute"])
+    if cls < 1 or attr < 1:
+        raise MappingValidationError(f"{tag}: classe e atributo EtherNet/IP começam em 1")
+    offset = _non_negative_int(tag, "offset", addr.get("offset", 0))
+    if e.datatype == DataType.STRING and "length" not in addr:
+        raise MappingValidationError(f"{tag}: string EtherNet/IP exige 'length' em bytes")
+    length = _non_negative_int(tag, "length", addr.get("length", _default_length(e.datatype)))
+    if length < 1:
+        raise MappingValidationError(f"{tag}: length EtherNet/IP deve ser >= 1")
+    slot: dict[str, Any] = {"offset": offset, "count": length, "unit": "byte"}
+    bit = addr.get("bit")
+    if bit is not None:
+        if length not in (1, 2, 4):
+            raise MappingValidationError(f"{tag}: 'bit' exige length 1, 2 ou 4 bytes")
+        if isinstance(bit, bool) or not isinstance(bit, int) or not 0 <= bit < 8 * length:
+            raise MappingValidationError(f"{tag}: bit fora de 0..{8 * length - 1}: {bit!r}")
+        slot["bit"] = bit
+    return (cls, inst, attr), slot
 
 
 def _default_count(datatype: DataType | str, area: str) -> int:
@@ -218,7 +250,9 @@ def _default_count(datatype: DataType | str, area: str) -> int:
 
 
 def _default_length(datatype: DataType | str) -> int:
-    return datatype.word_count * 2 if isinstance(datatype, DataType) else 2
+    if not isinstance(datatype, DataType):
+        return 2
+    return 1 if datatype in BYTE_TYPES else datatype.word_count * 2
 
 
 def _non_negative_int(tag: str, key: str, value: object) -> int:

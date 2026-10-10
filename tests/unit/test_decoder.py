@@ -22,6 +22,8 @@ ENDIANNESS = list(Endianness)
 FIXED_TYPES = [dt for dt in DataType if dt is not DataType.STRING]
 
 _STRATEGIES: dict[DataType, st.SearchStrategy[object]] = {
+    DataType.INT8: st.integers(-(1 << 7), (1 << 7) - 1),
+    DataType.UINT8: st.integers(0, (1 << 8) - 1),
     DataType.INT16: st.integers(-(1 << 15), (1 << 15) - 1),
     DataType.UINT16: st.integers(0, (1 << 16) - 1),
     DataType.INT32: st.integers(-(1 << 31), (1 << 31) - 1),
@@ -50,10 +52,14 @@ def test_round_trip_datatype_x_endianness(
 ) -> None:
     value = data.draw(_STRATEGIES[datatype])
     wire = encode(value, datatype, endianness)
-    assert len(wire) == expected_size_bytes(datatype) == datatype.word_count * 2
+    one_byte = datatype in (DataType.INT8, DataType.UINT8)
+    assert (
+        len(wire) == expected_size_bytes(datatype) == (1 if one_byte else datatype.word_count * 2)
+    )
     back = decode(wire, datatype, endianness)
     assert back == value
-    assert decode(bytes_to_words(wire), datatype, endianness) == value
+    if not one_byte:  # registradores Modbus têm 16 bits; 8 bits só em dados de bytes
+        assert decode(bytes_to_words(wire), datatype, endianness) == value
     if datatype is DataType.BOOL:
         assert isinstance(back, bool)
     elif datatype in (DataType.FLOAT32, DataType.FLOAT64):

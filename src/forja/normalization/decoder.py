@@ -14,9 +14,11 @@ from __future__ import annotations
 import struct
 from collections.abc import Sequence
 
-from forja.domain.mapping import DataType, Endianness
+from forja.domain.mapping import BYTE_TYPES, DataType, Endianness
 
 _FORMAT: dict[DataType, str] = {
+    DataType.INT8: ">b",
+    DataType.UINT8: ">B",
     DataType.INT16: ">h",
     DataType.UINT16: ">H",
     DataType.INT32: ">i",
@@ -29,6 +31,8 @@ _FORMAT: dict[DataType, str] = {
 }
 
 _INT_RANGE: dict[DataType, tuple[int, int]] = {
+    DataType.INT8: (-(1 << 7), (1 << 7) - 1),
+    DataType.UINT8: (0, (1 << 8) - 1),
     DataType.INT16: (-(1 << 15), (1 << 15) - 1),
     DataType.UINT16: (0, (1 << 16) - 1),
     DataType.INT32: (-(1 << 31), (1 << 31) - 1),
@@ -45,6 +49,8 @@ def expected_size_bytes(datatype: DataType) -> int | None:
     """Tamanho fixo em bytes; None para string (tamanho vem do mapping)."""
     if datatype is DataType.STRING:
         return None
+    if datatype in BYTE_TYPES:
+        return 1
     return datatype.word_count * 2
 
 
@@ -99,7 +105,7 @@ def decode(
     expected = expected_size_bytes(datatype)
     if expected is not None and len(data) != expected:
         raise ValueError(f"{datatype.value}: esperado {expected} bytes, recebido {len(data)}")
-    canonical = reorder(data, endianness)
+    canonical = bytes(data) if datatype in BYTE_TYPES else reorder(data, endianness)
     if datatype is DataType.STRING:
         return canonical
     if datatype is DataType.BOOL:
@@ -114,6 +120,8 @@ def encode(value: object, datatype: DataType, endianness: Endianness) -> bytes:
         return _encode_string(value, endianness)
     if datatype is DataType.BOOL:
         return reorder(struct.pack(_FORMAT[datatype], 1 if value else 0), endianness)
+    if datatype in BYTE_TYPES:
+        return struct.pack(_FORMAT[datatype], _checked_int(value, datatype))
     if datatype in INT_TYPES:
         return reorder(struct.pack(_FORMAT[datatype], _checked_int(value, datatype)), endianness)
     if datatype in FLOAT_TYPES:

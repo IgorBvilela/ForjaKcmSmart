@@ -244,10 +244,14 @@ def _decode_entry(
 
 
 def _bit_of(entry: MappingEntry, raw: bytes, bit: int) -> int:
-    """Bit de um registrador (16 bits) ou par de registradores (32 bits), 0 = menos significativo.
+    """Bit de 1 byte, 1 palavra (16 bits) ou 2 palavras (32 bits); 0 = menos significativo.
 
     A ordem de bytes/palavras do mapping vale para montar o inteiro antes de extrair o bit.
     """
+    if len(raw) == 1:
+        return (raw[0] >> bit) & 1
+    if len(raw) not in (2, 4):
+        raise ValueError(f"bit só em 1, 2 ou 4 bytes (recebido {len(raw)})")
     width = DataType.UINT16 if len(raw) == 2 else DataType.UINT32
     order = entry.endianness if isinstance(entry.endianness, Endianness) else Endianness.BIG
     word = decode(raw, width, order)

@@ -450,33 +450,51 @@ def test_compiler_modbus_rejects_bad_address() -> None:
         ReadPlanCompiler().compile(profile, _mb_mapping(bad))
 
 
-def test_compiler_eip_one_block_per_entry() -> None:
-    profile = sim_profile("EIP_TESTE_01", driver="ethernet_ip", mapping_profile="eip_teste")
-    entries = [
-        MappingEntry(
-            semantic_tag=tag,
-            protocol_address={
-                "kind": "assembly",
-                "class": 4,
-                "instance": 100,
-                "offset": off,
-                "length": 4,
-            },
-            datatype=DataType.FLOAT32,
-            endianness=Endianness.LITTLE,
-            source="teste",
-        )
-        for tag, off in (("mass_flow", 0), ("rpm", 4))
-    ]
-    mapping = Mapping(
+def _eip_entry(tag: str, **addr: object) -> MappingEntry:
+    return MappingEntry(
+        semantic_tag=tag,
+        protocol_address={"kind": "assembly", **addr},
+        datatype=DataType.FLOAT32,
+        endianness=Endianness.LITTLE,
+        source="teste",
+    )
+
+
+def _eip_mapping(profile_id: str, *entries: MappingEntry) -> Mapping:
+    return Mapping(
         mapping_id="eip_teste",
-        equipment_id=profile.id,
+        equipment_id=profile_id,
         driver="ethernet_ip",
         source="teste",
-        entries=entries,
+        entries=list(entries),
+    )
+
+
+def test_compiler_eip_one_request_per_attribute_with_byte_layout() -> None:
+    profile = sim_profile("EIP_TESTE_01", driver="ethernet_ip", mapping_profile="eip_teste")
+    mapping = _eip_mapping(
+        profile.id,
+        _eip_entry("mass_flow", **{"class": 4, "instance": 101, "attribute": 3, "offset": 0}),
+        _eip_entry("rpm", **{"class": 4, "instance": 101, "attribute": 3, "offset": 8}),
+        _eip_entry("belt_load", **{"class": 4, "instance": 102, "attribute": 3, "offset": 4}),
     )
     plan = ReadPlanCompiler().compile(profile, mapping)
-    assert [b.block_id for b in plan.blocks] == ["eip:mass_flow", "eip:rpm"]
-    assert all(len(b.tags) == 1 for b in plan.blocks)
-    assert layout_of(plan.blocks[1]) == {"rpm": {"offset": 0, "count": 4, "unit": "byte"}}
-    assert plan.blocks[1].meta["offset"] == 4
+    assert [b.block_id for b in plan.blocks] == ["eip:4:101:3", "eip:4:102:3"]
+    first = plan.blocks[0]
+    assert first.tags == ("mass_flow", "rpm")
+    assert first.count == 12
+    assert layout_of(first) == {
+        "mass_flow": {"offset": 0, "count": 4, "unit": "byte"},
+        "rpm": {"offset": 8, "count": 4, "unit": "byte"},
+    }
+    assert (first.meta["class"], first.meta["instance"], first.meta["attribute"]) == (4, 101, 3)
+
+
+@pytest.mark.parametrize("missing", ["class", "instance", "attribute"])
+def test_compiler_eip_never_assumes_class_instance_or_attribute(missing: str) -> None:
+    profile = sim_profile("EIP_TESTE_02", driver="ethernet_ip", mapping_profile="eip_teste")
+    addr: dict[str, object] = {"class": 4, "instance": 101, "attribute": 3}
+    addr.pop(missing)
+    mapping = _eip_mapping(profile.id, _eip_entry("mass_flow", **addr))
+    with pytest.raises(MappingValidationError, match="não têm valor padrão"):
+        ReadPlanCompiler().compile(profile, mapping)

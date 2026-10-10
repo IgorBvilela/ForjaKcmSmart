@@ -19,6 +19,9 @@ from forja.domain.tags import is_known_tag
 
 
 class DataType(StrEnum):
+    INT8 = "int8"
+    """8 bits: só em dados de bytes (EtherNet/IP). Registrador Modbus tem 16 bits."""
+    UINT8 = "uint8"
     INT16 = "int16"
     UINT16 = "uint16"
     INT32 = "int32"
@@ -33,6 +36,8 @@ class DataType(StrEnum):
     @property
     def word_count(self) -> int:
         return {
+            DataType.INT8: 1,
+            DataType.UINT8: 1,
             DataType.INT16: 1,
             DataType.UINT16: 1,
             DataType.BOOL: 1,
@@ -44,6 +49,10 @@ class DataType(StrEnum):
             DataType.FLOAT64: 4,
             DataType.STRING: 1,
         }[self]
+
+
+BYTE_TYPES: frozenset[DataType] = frozenset({DataType.INT8, DataType.UINT8})
+"""Tipos de 1 byte: sem ordem de bytes a aplicar."""
 
 
 class Endianness(StrEnum):

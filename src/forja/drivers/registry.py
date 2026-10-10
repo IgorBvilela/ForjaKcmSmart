@@ -21,10 +21,10 @@ from forja.domain.ports import (
     DriverSupportState,
     ReadOnlyDriverBase,
 )
+from forja.drivers.ethernet_ip.driver import EthernetIpDriver
 from forja.drivers.modbus_tcp.driver import ModbusTcpDriver
 from forja.drivers.simulator.driver import SimulatorDriver
 from forja.drivers.support import (
-    UNSUPPORTED_REASON_PT,
     DriverSupportInfo,
     probe_ethernet_ip,
     probe_modbus_tcp,
@@ -120,22 +120,11 @@ class DriverRegistry:
         return driver
 
 
-def _unsupported_factory(name: str) -> DriverFactory:
-    """Factory que nunca cria nada: segunda barreira para drivers ainda nao implementados."""
-
-    def _factory(
-        _profile: EquipmentProfile, _mapping: Mapping, _clock: Clock
-    ) -> ReadOnlyDriverBase:
-        raise UnsupportedDriver(f"driver {name!r}: {UNSUPPORTED_REASON_PT}")
-
-    return _factory
-
-
 def build_default_registry() -> DriverRegistry:
-    """simulator AVAILABLE; modbus_tcp EXPERIMENTAL (somente leitura, validação de campo
-    pendente); ethernet_ip UNSUPPORTED enquanto não houver driver."""
+    """simulator AVAILABLE; modbus_tcp e ethernet_ip EXPERIMENTAL (somente leitura, validação no
+    KCM real pendente)."""
     registry = DriverRegistry()
     registry.register("simulator", SimulatorDriver, probe_simulator)
     registry.register("modbus_tcp", ModbusTcpDriver, probe_modbus_tcp)
-    registry.register("ethernet_ip", _unsupported_factory("ethernet_ip"), probe_ethernet_ip)
+    registry.register("ethernet_ip", EthernetIpDriver, probe_ethernet_ip)
     return registry

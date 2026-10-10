@@ -36,7 +36,9 @@ def _profile(**options: object) -> EquipmentProfile:
 
 
 def _mapping(*entries: MappingEntry) -> Mapping:
-    return Mapping(mapping_id="mapa_teste", equipment_id="*", driver="modbus_tcp", entries=list(entries))
+    return Mapping(
+        mapping_id="mapa_teste", equipment_id="*", driver="modbus_tcp", entries=list(entries)
+    )
 
 
 def _e(tag: str, address: int, dt: DataType = DataType.UINT16, **extra: object) -> MappingEntry:
