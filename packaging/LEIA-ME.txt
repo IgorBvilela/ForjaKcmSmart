@@ -1,0 +1,80 @@
+FORJA KCM INTELLIGENCE - INSTALAÇÃO NO WINDOWS
+Versão @VERSAO@
+
+O QUE É
+  Programa local que observa controladores KCM em modo somente leitura: coleta as leituras,
+  guarda o histórico, detecta eventos e ajuda a manutenção a diagnosticar.
+  O Forja NÃO comanda o KCM: não liga, não para, não altera setpoint, não reseta alarme,
+  não faz tara/span, não calibra e não escreve registradores. Não depende de PLC nem de SCADA.
+
+REQUISITOS
+  - Windows 10 ou 11, 64 bits.
+  - Conta de Administrador para instalar, atualizar e remover.
+  - Não precisa de internet, Python, Node.js nem VS Code.
+
+INSTALAR
+  1. Extraia o .zip inteiro numa pasta (exemplo: C:\Instaladores\ForjaKCM-@VERSAO@).
+  2. Abra o PowerShell como Administrador (botão direito > Executar como administrador).
+  3. Entre na pasta extraída:
+       cd C:\Instaladores\ForjaKCM-@VERSAO@
+  4. Libere scripts só nesta janela e instale:
+       Set-ExecutionPolicy -Scope Process Bypass -Force
+       .\install.ps1
+  5. Abra o atalho "Forja KCM" na Área de Trabalho, ou http://127.0.0.1:8765/app
+
+  Pasta de dados em outro disco: .\install.ps1 -DataDir D:\ForjaKCM
+
+ONDE FICA CADA COISA
+  Programa   C:\Program Files\ForjaKCM        trocado inteiro a cada atualização
+  Dados      C:\ProgramData\ForjaKCM          nunca apagado por atualização
+    config\        configuração: equipamentos, comunicação, mapping, regras
+    knowledge\     base de diagnóstico
+    var\           bancos locais (histórico e registros)
+    var\logs\      logs do sistema (forja.log)
+    var\backups\   backups
+  Serviço    "Forja KCM Intelligence": início automático (atrasado), conta LocalService,
+             reinício automático após falha.
+
+PRIMEIRO USO
+  - Logo após instalar, os equipamentos de exemplo aparecem com o selo DADOS SIMULADOS.
+  - KCM > Comunicação: informe protocolo, endereço e mapping conforme o equipamento real.
+    Use "Testar comunicação - somente leitura" e compare os valores com a tela do KCM antes de
+    ativar a coleta. Nada é descoberto ou varrido automaticamente na rede.
+  - KCM > Comissionamento: registre a comparação Forja x tela do KCM e exporte o relatório.
+  - Sistema > Saúde e logs: estado da coleta, do disco e os últimos registros.
+
+ATUALIZAR
+  Extraia o pacote novo e rode o install.ps1 dele, como Administrador. O instalador para o
+  serviço, faz backup dos bancos com a versão instalada, troca o programa, mantém dados e
+  configuração e inicia o serviço de novo. Se o backup falhar, nada é trocado.
+
+BACKUP E RESTAURAÇÃO (PowerShell como Administrador)
+  Criar:       & "C:\Program Files\ForjaKCM\ForjaKCM.exe" backup create
+  Conferir:    & "C:\Program Files\ForjaKCM\ForjaKCM.exe" backup verify "<pasta do backup>"
+  Restaurar:   Stop-Service ForjaKCM
+               & "C:\Program Files\ForjaKCM\ForjaKCM.exe" backup restore "<pasta do backup>" --sim
+               Start-Service ForjaKCM
+  Os backups ficam em C:\ProgramData\ForjaKCM\var\backups. Copie-os para outro disco ou rede
+  de acordo com a política da planta. Com a pasta de dados em outro lugar, acrescente
+  --home "<pasta de dados>" aos comandos.
+
+REMOVER
+  .\uninstall.ps1                remove programa, serviço e atalhos; mantém os dados
+  .\uninstall.ps1 -RemoveData    também apaga os dados (pede para digitar APAGAR)
+
+SE ALGO NÃO FUNCIONAR
+  - O atalho não abre: confira em services.msc se "Forja KCM Intelligence" está Em execução.
+    Veja C:\ProgramData\ForjaKCM\var\logs\forja.log e o Visualizador de Eventos
+    (Logs do Windows > Aplicativo, fonte ForjaKCM).
+  - Porta 8765 ocupada por outro programa: o Forja usa a próxima porta livre e registra o aviso
+    no log. Para fixar outra porta, ajuste edge.bind_port em
+    C:\ProgramData\ForjaKCM\config\forja.yaml, reinicie o serviço e rode o install.ps1 de novo
+    para atualizar o atalho.
+  - Sem leitura do KCM: veja a tela KCM > Comunicação e Sistema > Saúde e logs. O Forja só lê;
+    ele nunca tenta corrigir nada no equipamento.
+
+SEGURANÇA
+  - A interface só aceita conexões desta máquina (127.0.0.1).
+  - A pasta de dados só pode ser alterada por Administradores e pelo serviço; os demais
+    usuários têm apenas leitura.
+  - O Forja não faz varredura de rede e não envia comandos de escrita ao KCM.

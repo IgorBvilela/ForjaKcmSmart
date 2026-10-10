@@ -22,16 +22,24 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
   Write-Error 'npm não encontrado. Instale o Node.js (LTS) e abra um terminal novo.'
 }
 
+function Invoke-Native([string]$What, [scriptblock]$Command) {
+  # O código de saída decide o resultado. Aviso em stderr não é falha: com a saída redirecionada,
+  # o PowerShell 5.1 transformaria cada linha de stderr em erro fatal.
+  $saved = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try { & $Command 2>&1 | ForEach-Object { "$_" } }
+  finally { $ErrorActionPreference = $saved }
+  if ($LASTEXITCODE -ne 0) { throw "$What falhou (código $LASTEXITCODE)." }
+}
+
 Push-Location $frontend
 try {
   if (-not $SkipInstall) {
     Write-Host '> npm ci' -ForegroundColor Cyan
-    npm ci
-    if ($LASTEXITCODE -ne 0) { throw "npm ci falhou (código $LASTEXITCODE)" }
+    Invoke-Native 'npm ci' { npm ci }
   }
   Write-Host '> npm run build' -ForegroundColor Cyan
-  npm run build
-  if ($LASTEXITCODE -ne 0) { throw "npm run build falhou (código $LASTEXITCODE)" }
+  Invoke-Native 'npm run build' { npm run build }
 }
 finally {
   Pop-Location

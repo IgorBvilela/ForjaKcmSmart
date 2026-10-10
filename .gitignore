@@ -20,3 +20,4 @@ frontend/dist/
 *.key
 src/forja_kcm.egg-info/
 config/_history/
+/build/

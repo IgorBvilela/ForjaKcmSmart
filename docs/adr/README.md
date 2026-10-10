@@ -26,3 +26,4 @@ Decisões tomadas em 2026-09-30 na auditoria inicial (detalhe e motivos: `docs/a
 | 0020 | Gráfico de tendência em degrau (cada ponto vale até a próxima linha gravada, coerente com store-on-change); nunca reta entre leituras | FORJA_RULE |
 | 0021 | Partida da coleta grava marca `COMM_ERROR` sem valor 1 ms após a última leitura observada quando houve pausa: trecho sem coleta vira buraco | FORJA_RULE |
 | 0022 | Análise de janela ("o que mudou") usa o padrão do início da janela como ANTES; eventos seguem com a mediana pré-saída | TECHNICAL_OPINION |
+| 0023 | Instalação Windows: programa em `Program Files` trocado inteiro (em etapas, com volta), dados em `ProgramData` nunca apagados, `FORJA_HOME` no ambiente do serviço, conta LocalService, pasta de dados só gravável por Administradores e pelo serviço, backup antes de toda atualização, pacote sempre fora do modo desenvolvimento (contrato: `docs/contracts/CONTRATOS_N.md`) | TECHNICAL_OPINION |

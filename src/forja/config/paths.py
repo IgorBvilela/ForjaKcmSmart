@@ -1,11 +1,18 @@
-"""Resolucao de caminhos. Em desenvolvimento tudo mora na raiz do repositorio;
-em producao a semente e copiada para %ProgramData%\\ForjaKCM (fase N)."""
+"""Resolucao de caminhos.
+
+Desenvolvimento: tudo mora na raiz do repositorio. Empacotado (PyInstaller): o padrao e
+%ProgramData%/ForjaKCM, com config/, knowledge/ e var/ (bancos, logs, backups) separados da pasta
+do programa. Atualizar o programa nao toca nos dados nem na configuracao.
+"""
 
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+PRODUCT_DIR = "ForjaKCM"
 
 
 @dataclass(frozen=True)
@@ -63,12 +70,27 @@ def find_repo_root(start: Path | None = None) -> Path:
     return Path.cwd()
 
 
+def is_frozen() -> bool:
+    """Rodando a partir do executavel empacotado."""
+    return bool(getattr(sys, "frozen", False))
+
+
+def default_home() -> Path:
+    """Empacotado: %ProgramData%/ForjaKCM. Desenvolvimento: raiz do repositorio."""
+    if is_frozen():
+        base = os.environ.get("PROGRAMDATA") or os.path.join(
+            os.environ.get("SystemDrive", "C:") + os.sep, "ProgramData"
+        )
+        return Path(base) / PRODUCT_DIR
+    return find_repo_root()
+
+
 def resolve_paths(
     home: str | os.PathLike[str] | None = None, data_dir: str | None = None
 ) -> ForjaPaths:
-    """FORJA_HOME (env) > argumento > raiz do repositorio."""
+    """argumento > FORJA_HOME (env) > padrao (ProgramData empacotado, repositorio em dev)."""
     env_home = os.environ.get("FORJA_HOME")
-    root = Path(home) if home else (Path(env_home) if env_home else find_repo_root())
+    root = Path(home) if home else (Path(env_home) if env_home else default_home())
     root = root.resolve()
     data = Path(data_dir) if data_dir else Path(os.environ.get("FORJA_DATA_DIR", root / "var"))
     if not data.is_absolute():

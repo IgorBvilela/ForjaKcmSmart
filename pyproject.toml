@@ -69,6 +69,7 @@ ignore = ["RUF001", "RUF002", "RUF003", "RUF012", "S101", "N818"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "S105", "S106", "ARG001", "ARG002", "PT011", "T20"]
 "src/forja/tools/**" = ["T20"]
+"packaging/**" = ["T20"]
 
 [tool.mypy]
 python_version = "3.13"

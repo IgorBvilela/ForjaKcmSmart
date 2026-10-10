@@ -10,7 +10,7 @@ Produto da **Forja Lógica** (automação e otimização de processos). Primeiro
 
 ---
 
-## Estado atual (01/10/2026)
+## Estado atual (10/10/2026)
 
 | Fase | Conteúdo | Situação |
 |---|---|---|
@@ -21,12 +21,18 @@ Produto da **Forja Lógica** (automação e otimização de processos). Primeiro
 | D | Dosador animado e página do simulador | concluída |
 | E | Tempo Real, Tendências (gráficos sem interpolação, "o que mudou primeiro" por janela, zoom) e Histórico (tabela, eventos do período, CSV com qualidade) | concluída |
 | F | Alertas, aviso antecipado e casos anteriores | planejada |
-| G | Comunicação: assistente de descoberta, teste somente leitura, editor de mapeamento | planejada |
-| H–P | Multi-equipamento, drivers Modbus TCP e EtherNet/IP, saúde e logs, relatórios e backup, instalador Windows, validação em campo | planejadas |
+| G | Comunicação KCM: configuração por equipamento, validação sem rede, **teste somente leitura** (bruto, decodificado, qualidade, latência), editor de mapping com versão e histórico, coleta ativada só com teste válido | concluída |
+| H | Multi-equipamento na interface (cadastro e troca) | planejada |
+| J | Driver **Modbus TCP** real, somente leitura (funções 01 a 04, leitura em bloco, timeout, reconexão, quadro bruto) | concluída |
+| K | **EtherNet/IP** somente leitura configurável (leitura de atributo CIP, nada fixo no código) | experimental |
+| L | Saúde e logs: estado da coleta por equipamento, disco, bancos, logs do serviço, da comunicação e da auditoria | concluída |
+| M | Relatórios, exportações e backup pela interface | planejada |
+| N | Instalação no Windows: executável, serviço, instalador e atualizador com backup, pacote `.zip` | concluída (registro do serviço ainda não executado em PC da planta) |
+| O | Comissionamento: sessão com cabeçalho, conferência Forja × tela do KCM, relatório para impressão | ferramenta concluída; validação em campo pendente |
 
 Telas ainda não construídas aparecem na interface como **"Em desenvolvimento · próxima etapa: …"**. Nenhum botão falso.
 
-**Verificação:** 572 testes do núcleo e 38 testes de interface em navegador real (4 tamanhos de tela, zero requisição externa). Lint e verificação de tipos sem erro.
+**Verificação:** 726 testes do núcleo e 53 testes de interface em navegador real (vários tamanhos de tela, zero requisição externa). Lint e verificação de tipos sem erro.
 
 ---
 
@@ -109,6 +115,14 @@ Outros comandos:
 
 Roteiro de demonstração: **Planta → Dosador Pó Base → Simulador → "Pouco material na correia"** → em cerca de um minuto o painel muda para ATENÇÃO → **Abrir diagnóstico** → imprimir.
 
+### Instalação no PC da planta (pacote Windows)
+
+```powershell
+.\scripts\build_windows.ps1          # interface + executável + teste do executável + build\release\ForjaKCM-<versão>-win64.zip
+```
+
+No PC da planta não é preciso Python, Node nem VS Code: extrair o `.zip` e rodar `install.ps1` num PowerShell de Administrador. O programa vai para `C:\Program Files\ForjaKCM`, os dados para `C:\ProgramData\ForjaKCM` (configuração, bancos, logs, backups) e o Edge roda como serviço do Windows, somente leitura, com a interface em `http://127.0.0.1:8765/app`. Atualizar = rodar o `install.ps1` do pacote novo: ele faz backup dos bancos antes e nunca apaga dados nem configuração. Passo a passo para a TI: `packaging/LEIA-ME.txt`. Contrato: [`docs/contracts/CONTRATOS_N.md`](docs/contracts/CONTRATOS_N.md).
+
 ---
 
 ## Estrutura do repositório
@@ -119,6 +133,8 @@ knowledge/     biblioteca de diagnóstico, casos de campo, textos em português
 src/forja/     domain · config · infra · drivers · normalization · acquisition · historian · events · diagnostics · api · service · tools
 frontend/      interface (Vite + Svelte 5 + TypeScript); build vai para src/forja/ui/dist
 tests/         unit · integration · contract (read-only, fronteiras, schema) · e2e (Playwright) · fixtures
+packaging/     pacote Windows: PyInstaller (forja.spec), install.ps1, uninstall.ps1, LEIA-ME.txt
+scripts/       build da interface e do pacote Windows
 docs/          auditoria inicial, decisões (ADR), contratos entre módulos, referências, capturas de tela
 doc/           Documento Mestre do projeto (fonte de contexto; não é manual do fabricante)
 ```
@@ -137,6 +153,6 @@ Este software não promete prever falhas nem evitar paradas. O objetivo é reduz
 
 ## Licenças de terceiros
 
-IBM Plex Sans e Mono (SIL OFL 1.1), uPlot (MIT), Lucide (ISC), Svelte (MIT), FastAPI (MIT), pymodbus (BSD-3). Os textos completos estão em [`frontend/licenses/`](frontend/licenses/) e na tela **Sobre** do sistema.
+IBM Plex Sans e Mono (SIL OFL 1.1), uPlot (MIT), Lucide (ISC), Svelte (MIT), FastAPI (MIT), pymodbus (BSD-3). Os textos completos estão em [`frontend/licenses/`](frontend/licenses/) e na tela **Sobre** do sistema. O pacote Windows leva também `TERCEIROS.txt`, gerado no build com a licença de cada biblioteca Python embutida e do próprio Python.
 
 Código do produto: © Forja Lógica. Todos os direitos reservados.

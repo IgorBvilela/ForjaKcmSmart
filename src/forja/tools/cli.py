@@ -1,4 +1,5 @@
-"""Linha de comando `forja`: run, diagnose, config validate, doctor, simulate.
+"""Linha de comando `forja`: run, diagnose, config validate, doctor, simulate, init, backup e
+service (os três últimos em forja.tools.admin).
 
 Tudo local e offline. `diagnose --json` imprime SOMENTE o JSON v1.0 (o mesmo objeto que a API
 devolve em /api/v1/events/{id}/diagnosis). Sem --json imprime texto em português nas sete seções
@@ -25,6 +26,7 @@ from importlib import metadata
 from typing import Any
 
 from forja.config import ConfigStore, ForjaPaths, resolve_paths
+from forja.config.paths import is_frozen
 from forja.domain import (
     OFFICIAL_SECTIONS_PT,
     ConfigError,
@@ -39,7 +41,7 @@ from forja.domain import (
 from forja.infra import FakeClock, SystemClock
 from forja.version import DIAGNOSIS_SCHEMA_VERSION, __version__
 
-PROG = "forja"
+PROG = "ForjaKCM.exe" if is_frozen() else "forja"
 EXIT_OK = 0
 EXIT_ERROR = 1
 EXIT_USAGE = 2
@@ -715,70 +717,19 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 # ----------------------------------------------------------------------------------------------
 
 
-def _first_free_port(host: str, start: int, tries: int = 10) -> int:
-    """Devolve a primeira porta livre a partir de start (inclusive). Sem rede: so bind local."""
-    for candidate in range(start, start + tries):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            try:
-                s.bind((host, candidate))
-            except OSError:
-                continue
-            return candidate
-    raise CliError(f"nenhuma porta livre entre {start} e {start + tries - 1} em {host}")
-
-
 async def _run_async(paths: ForjaPaths, host: str | None, port: int | None) -> int:
-    # INTEGRACAO: bloco 3 (forja.service.runner.build_container/start/stop); build_container
-    # importa o bloco 2 (historian SQLite) por dentro.
     try:
-        from forja.service.runner import build_container, start, stop
+        from forja.service.edge import EdgeRunner
     except ImportError as exc:
         raise CliError(f"serviço indisponível neste build: {exc}") from exc
-    import uvicorn
 
-    from forja.api.app import create_app
+    def announce(message: str) -> None:
+        print(f"{message} · Ctrl+C para parar" if message.startswith("Forja Edge em") else message)
 
     try:
-        container = await build_container(paths)
-    except ImportError as exc:
-        raise CliError(f"um bloco do núcleo ainda não existe neste build: {exc}") from exc
-    from forja.service.logsetup import configure_logging
-
-    configure_logging(paths.logs_dir, container.store.config.logging)
-    edge = container.store.config.edge
-    bind_host = host or edge.bind_host
-    bind_port = port or edge.bind_port
-    if not _is_loopback(bind_host):
-        _eprint(
-            f"AVISO: bind em {bind_host!r} expõe o Edge fora desta máquina. "
-            "O padrão do produto é 127.0.0.1."
-        )
-    app = create_app(container)
-    free_port = _first_free_port(bind_host, bind_port)
-    if free_port != bind_port:
-        _eprint(
-            f"AVISO: porta {bind_port} ocupada por outro programa nesta máquina; "
-            f"usando {free_port}. Para fixar, ajuste edge.bind_port em config/forja.yaml."
-        )
-        bind_port = free_port
-    config = uvicorn.Config(
-        app,
-        host=bind_host,
-        port=bind_port,
-        log_level=container.store.config.logging.level.lower(),
-        lifespan="on",
-    )
-    server = uvicorn.Server(config)
-    await start(container)
-    print(
-        f"Forja Edge em http://{bind_host}:{bind_port} · {len(container.store.profiles)} "
-        "equipamento(s) · somente leitura · Ctrl+C para parar"
-    )
-    try:
-        await server.serve()
-    finally:
-        await stop(container)
-        print("Forja Edge parado.")
+        await EdgeRunner(paths, host, port, announce=announce, warn=_eprint).run()
+    except OSError as exc:
+        raise CliError(str(exc)) from exc
     return EXIT_OK
 
 
@@ -811,8 +762,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--home",
         metavar="PASTA",
         help=(
-            "Pasta raiz com config/, knowledge/ e var/. "
-            "Padrão: FORJA_HOME ou a raiz do repositório."
+            "Pasta raiz com config/, knowledge/ e var/. Padrão: FORJA_HOME; instalado, "
+            r"%%ProgramData%%\ForjaKCM; em desenvolvimento, a raiz do repositório."
         ),
     )
     sub = parser.add_subparsers(dest="command", required=True, metavar="comando")
@@ -852,6 +803,10 @@ def build_parser() -> argparse.ArgumentParser:
     sim.add_argument("--scenario", required=True, metavar="CENARIO")
     sim.add_argument("--seconds", type=float, default=DEFAULT_SIM_SECONDS)
     sim.add_argument("--equipment", metavar="ID")
+
+    from forja.tools.admin import add_admin_commands
+
+    add_admin_commands(sub, common)
     return parser
 
 
@@ -866,6 +821,14 @@ def _dispatch(args: argparse.Namespace) -> int:
         return cmd_doctor(args)
     if args.command == "simulate":
         return cmd_simulate(args)
+    if args.command in ("init", "backup", "service"):
+        from forja.tools import admin
+
+        handler = {"init": admin.cmd_init, "backup": admin.cmd_backup, "service": admin.cmd_service}
+        try:
+            return handler[args.command](args)
+        except ForjaError as exc:  # uso incorreto, backup ausente, corrompido ou em uso
+            raise CliError(str(exc)) from exc
     raise CliError(f"comando desconhecido: {args.command!r}")
 
 
