@@ -13,6 +13,7 @@
     backup: { auto: boolean; schedule: string; keep_last: number }
     logging: { level: string; rotate_mb: number; keep: number }
     paths: Record<string, string>
+    interface_url: string
     equipments: number
     version: string
     note_pt: string
@@ -59,7 +60,7 @@
       <Card title="Edge" testid="settings-edge">
         <dl class="dl">
           <div><dt>Nome</dt><dd>{data.edge.name}</dd></div>
-          <div><dt>Endereço da interface</dt><dd class="mono">http://{data.edge.bind_host}:{data.edge.bind_port}/app</dd></div>
+          <div><dt>Endereço da interface</dt><dd class="mono">{data.interface_url}</dd></div>
           <div><dt>Fuso da planta</dt><dd>{data.edge.timezone}</dd></div>
           <div><dt>Equipamentos</dt><dd>{data.equipments}</dd></div>
           <div><dt>Versão</dt><dd class="mono">{data.version}</dd></div>

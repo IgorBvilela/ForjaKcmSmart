@@ -117,7 +117,7 @@
   }
   select:focus-visible { outline: none; box-shadow: var(--focus); }
   .radio { display: inline-flex; align-items: center; gap: var(--sp-2); min-height: var(--touch); color: var(--text-1); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
-  .radio input { width: 20px; height: 20px; accent-color: var(--accent); }
+  .radio input { width: 24px; height: 24px; accent-color: var(--accent); }
   .files { display: grid; gap: var(--sp-4); grid-template-columns: 1fr; }
   @media (min-width: 768px) { .files { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .muted { margin: 0 0 var(--sp-3); color: var(--text-2); font: var(--fs-caption) / var(--lh-caption) var(--font-ui); }

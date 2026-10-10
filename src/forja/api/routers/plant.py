@@ -26,6 +26,7 @@ from forja.domain import (
     Sample,
     Severity,
 )
+from forja.service.commcenter import COLLECTION_BLOCKED_PREFIX_PT
 
 router = APIRouter(prefix="/api/v1", tags=["planta"])
 
@@ -41,6 +42,8 @@ STATE_NO_COMM_PT = "Sem comunicação"
 STATE_STOPPED_PT = "Parado"
 STATE_UNKNOWN_PT = "Desconhecido"
 STATE_PAUSED_PT = "Coleta pausada"
+STATE_BLOCKED_PT = "Coleta não iniciada"
+BLOCKED_ANOMALY_PT = "Falta o teste somente leitura desta configuração (KCM › Comunicação)."
 
 _NO_COMM_STATES = frozenset(
     {
@@ -116,20 +119,25 @@ async def build_plant_card(container: Any, profile: EquipmentProfile) -> dict[st
     anomaly = _most_severe(open_events)
     mass_flow = samples.get(MASS_FLOW_TAG)
     card = equipment_summary(profile)
+    blocked = str(status.detail_pt or "").startswith(COLLECTION_BLOCKED_PREFIX_PT)
+    if not profile.communication.collection_enabled:
+        state_pt = STATE_PAUSED_PT
+    elif blocked:
+        state_pt = STATE_BLOCKED_PT
+    else:
+        state_pt = classify_state(status, samples, open_events)
     card.update(
         {
-            "state_pt": (
-                classify_state(status, samples, open_events)
-                if profile.communication.collection_enabled
-                else STATE_PAUSED_PT
-            ),
+            "state_pt": state_pt,
             "connection": status.connection.value,
             "connection_pt": status.connection.label_pt,
             "is_stale": status.is_stale,
             "last_read_utc": jsonable(status.last_read_utc),
             "last_event": event_brief(recent_sorted[0]) if recent_sorted else None,
             "open_event_count": len(open_events),
-            "active_anomaly_pt": anomaly.title_pt if anomaly else None,
+            "active_anomaly_pt": (
+                BLOCKED_ANOMALY_PT if blocked else anomaly.title_pt if anomaly else None
+            ),
             "mass_flow": (
                 tag_view(
                     mass_flow,

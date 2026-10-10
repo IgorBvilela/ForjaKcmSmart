@@ -165,7 +165,7 @@
           </div>
 
           <footer class="pcard-foot">
-            <span>Última leitura {fmtAge(ageSince(c.last_read_utc, app.now))}</span>
+            <span>{c.last_read_utc ? `Última leitura ${fmtAge(ageSince(c.last_read_utc, app.now))}` : 'Nenhuma leitura ainda'}</span>
             {#if c.last_event}
               <span class="pcard-last">
                 Último evento: {c.last_event.title_pt} · {fmtWhen(c.last_event.start_utc, app.now)}

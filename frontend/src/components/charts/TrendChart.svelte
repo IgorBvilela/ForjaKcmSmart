@@ -218,7 +218,7 @@
       axes: [
         {
           stroke: axis,
-          font: `12px ${mono}`,
+          font: `13px ${mono}`,
           size: 30,
           gap: 4,
           grid: { stroke: grid, width: 1 },
@@ -228,7 +228,7 @@
         },
         {
           stroke: axis,
-          font: `12px ${mono}`,
+          font: `13px ${mono}`,
           size: 60,
           grid: { stroke: grid, width: 1 },
           ticks: { show: false },

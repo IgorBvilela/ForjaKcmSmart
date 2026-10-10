@@ -742,6 +742,7 @@ export function stateTone(statePt: string | null | undefined): StateTone {
       return 'info'
     case 'Parado':
     case 'Coleta pausada':
+    case 'Coleta não iniciada':
       return 'neutral'
     default:
       return 'unknown'

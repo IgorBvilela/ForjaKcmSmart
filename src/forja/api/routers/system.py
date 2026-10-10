@@ -242,6 +242,7 @@ async def settings(container: ContainerDep) -> dict[str, Any]:
             "logs": str(paths.logs_dir),
             "backups": str(paths.backups_dir),
         },
+        "interface_url": f"http://{cfg.edge.bind_host}:{cfg.edge.bind_port}/app",
         "equipments": len(container.store.profiles),
         "version": __version__,
         "note_pt": SETTINGS_NOTE_PT,

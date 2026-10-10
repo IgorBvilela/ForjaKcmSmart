@@ -213,6 +213,8 @@
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
+    /* foco por teclado rola o item inteiro para dentro, com o contorno (anel de 4 px) */
+    scroll-padding-block: var(--sp-4);
     padding: var(--sp-3) var(--sp-2);
     display: flex;
     flex-direction: column;

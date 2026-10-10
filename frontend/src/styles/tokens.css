@@ -76,10 +76,10 @@
   --fs-h3: 14px; --lh-h3: 20px;           /* título de card, 600 */
   --fs-body-lg: 16px; --lh-body-lg: 24px; /* texto de diagnóstico */
   --fs-body: 14px; --lh-body: 20px;
-  --fs-caption: 12px; --lh-caption: 16px;
-  --fs-label: 11px; --lh-label: 16px; --ls-label: .08em; /* caixa alta, 500 */
+  --fs-caption: 13px; --lh-caption: 18px; /* texto com número: mínimo de 13 px */
+  --fs-label: 13px; --lh-label: 18px; --ls-label: .06em; /* caixa alta, 500; 13 px porque rótulo e selo podem ter número */
   --fs-mono: 13px; --lh-mono: 20px;       /* tabela, código, endereço */
-  --fs-mono-sm: 12px; --lh-mono-sm: 16px;
+  --fs-mono-sm: 13px; --lh-mono-sm: 18px;
 
   /* ---- larguras ---- */
   --sidebar-w: 264px; --sidebar-w-collapsed: 64px; --drawer-w: 280px;

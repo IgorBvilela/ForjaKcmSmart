@@ -591,7 +591,7 @@
   .grid { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
   label { display: flex; flex-direction: column; gap: 4px; min-width: 0; color: var(--text-3); font: 500 var(--fs-caption) / var(--lh-caption) var(--font-ui); }
   label.check { flex-direction: row; align-items: center; gap: var(--sp-2); grid-column: 1 / -1; min-height: var(--touch); color: var(--text-1); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
-  label.check input { width: 20px; height: 20px; min-height: 0; accent-color: var(--accent); }
+  label.check input { width: 24px; height: 24px; min-height: 0; accent-color: var(--accent); }
   input { width: 100%; min-height: var(--touch); padding: 0 var(--sp-2); border: 1px solid var(--border-input); border-radius: var(--r-2); background: var(--surf-2); color: var(--text-1); font: 16px / 1.2 var(--font-ui); }
   input[type='number'] { font-family: var(--font-mono); }
   .link { align-self: flex-start; min-height: var(--touch); padding: 0; border: 0; background: none; color: var(--accent-text); font: 500 var(--fs-caption) / var(--lh-caption) var(--font-ui); text-decoration: underline; cursor: pointer; }

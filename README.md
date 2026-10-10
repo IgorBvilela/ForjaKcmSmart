@@ -111,6 +111,8 @@ Outros comandos:
 .\.venv\Scripts\forja.exe diagnose --demo BELTLOAD_LOW   # diagnóstico em texto, a partir do simulador
 .\.venv\Scripts\forja.exe diagnose --json --demo BELTLOAD_LOW   # mesmo diagnóstico no contrato JSON v1.0
 .\.venv\Scripts\forja.exe doctor                         # verifica o ambiente, sem rede
+.\.venv\Scripts\forja.exe backup create                  # backup dos bancos e da configuração (verify / restore --sim também)
+.\.venv\Scripts\forja.exe audit verify                   # confere a cadeia de hash da trilha de auditoria
 ```
 
 Roteiro de demonstração: **Planta → Dosador Pó Base → Simulador → "Pouco material na correia"** → em cerca de um minuto o painel muda para ATENÇÃO → **Abrir diagnóstico** → imprimir.

@@ -173,7 +173,7 @@
   }
   .wm-1 strong { color: var(--accent-text); font-weight: 600; }
   .wm-2 {
-    font: 500 var(--fs-label) / 12px var(--font-ui);
+    font: 500 var(--fs-label) / 14px var(--font-ui);
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--text-3);

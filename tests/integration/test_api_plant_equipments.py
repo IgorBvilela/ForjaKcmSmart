@@ -195,3 +195,15 @@ async def test_live_uses_manager_age_over_recomputation(
     world.clock.advance(30.0)  # o manager não recalculou; a API repete o que ele disse
     body = (await client.get(f"/api/v1/equipments/{eid}/live")).json()
     assert body["tags"][0]["age_s"] == 2.0
+
+
+async def test_plant_coleta_bloqueada_pela_porteira_nao_e_falha_de_comunicacao(
+    client: httpx.AsyncClient, world: ApiWorld
+) -> None:
+    from forja.service.commcenter import READ_TEST_PENDING_PT
+
+    world.manager.set_status(MODBUS_TEST_ID, detail_pt=READ_TEST_PENDING_PT)
+    cards = {c["id"]: c for c in (await client.get("/api/v1/plant")).json()["cards"]}
+    card = cards[MODBUS_TEST_ID]
+    assert card["state_pt"] == "Coleta não iniciada"
+    assert "teste somente leitura" in card["active_anomaly_pt"]

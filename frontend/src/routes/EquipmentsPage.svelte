@@ -205,7 +205,7 @@
             <div class="row-main">
               <p class="row-name">{c.name}{#if c.is_example}<Badge tone="ghost">exemplo</Badge>{/if}</p>
               <p class="row-meta">{shown(c.area)} · {shown(c.line)} · {c.application === 'UNKNOWN' ? 'aplicação não confirmada' : c.application} · <span class="mono">{c.id}</span></p>
-              <p class="row-meta">{commText(c)}{#if c.data_source === 'SIMULATED'} · <Badge tone="sim" hatch>Simulado</Badge>{/if}</p>
+              <p class="row-meta">{commText(c)}{#if c.data_source === 'SIMULATED'}&nbsp;· <Badge tone="sim" hatch>Simulado</Badge>{/if}</p>
             </div>
             <div class="row-actions">
               <a class="link" href={href.eq(c.id, 'kcm/datasheet')}>Ficha técnica</a>
