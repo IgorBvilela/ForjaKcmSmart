@@ -13,8 +13,11 @@
   import DashboardPage from './routes/DashboardPage.svelte'
   import DiagnosisPage from './routes/DiagnosisPage.svelte'
   import EventsPage from './routes/EventsPage.svelte'
+  import HistoryPage from './routes/HistoryPage.svelte'
   import PlantPage from './routes/PlantPage.svelte'
+  import RealtimePage from './routes/RealtimePage.svelte'
   import SimulatorPage from './routes/SimulatorPage.svelte'
+  import TrendsPage from './routes/TrendsPage.svelte'
 
   const PRODUCT = 'Forja KCM Intelligence'
 
@@ -74,6 +77,12 @@
           <EventsPage equipmentId={route.id} mode="diagnostics" />
         {:else if route.screen === 'simulator'}
           <SimulatorPage equipmentId={route.id} />
+        {:else if route.screen === 'realtime'}
+          <RealtimePage equipmentId={route.id} />
+        {:else if route.screen === 'trends'}
+          <TrendsPage equipmentId={route.id} />
+        {:else if route.screen === 'history'}
+          <HistoryPage equipmentId={route.id} />
         {:else}
           <ComingSoonPage item={navItemForEqScreen(route.screen)} equipmentId={route.id} />
         {/if}

@@ -19,7 +19,7 @@ Produto da **Forja Lógica** (automação e otimização de processos). Primeiro
 | B | Design system e casca da interface (menu, cabeçalho, seletor de equipamento) | concluída |
 | C | Visão da planta e dashboard do equipamento | concluída |
 | D | Dosador animado e página do simulador | concluída |
-| E | Tendências, histórico e tempo real | próxima |
+| E | Tempo Real, Tendências (gráficos sem interpolação, "o que mudou primeiro" por janela, zoom) e Histórico (tabela, eventos do período, CSV com qualidade) | concluída |
 | F | Alertas, aviso antecipado e casos anteriores | planejada |
 | G | Comunicação: assistente de descoberta, teste somente leitura, editor de mapeamento | planejada |
 | H–P | Multi-equipamento, drivers Modbus TCP e EtherNet/IP, saúde e logs, relatórios e backup, instalador Windows, validação em campo | planejadas |

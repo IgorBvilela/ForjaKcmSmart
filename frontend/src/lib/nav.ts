@@ -88,18 +88,9 @@ export const NAV_GROUPS: NavGroup[] = [
     id: 'processo',
     label: 'Processo',
     items: [
-      eq('realtime', 'realtime', 'Tempo Real', Activity, {
-        phase: 'E',
-        reason: 'Tabela ao vivo de todas as variáveis mapeadas, com qualidade e idade por tag.',
-      }),
-      eq('trends', 'trends', 'Tendências', ChartLine, {
-        phase: 'E',
-        reason: 'Gráficos por variável com janela de tempo, buracos explícitos e sem interpolação.',
-      }),
-      eq('history', 'history', 'Histórico', Archive, {
-        phase: 'E',
-        reason: 'Consulta ao historiador por período, com exportação dos pontos brutos.',
-      }),
+      eq('realtime', 'realtime', 'Tempo Real', Activity),
+      eq('trends', 'trends', 'Tendências', ChartLine),
+      eq('history', 'history', 'Histórico', Archive),
     ],
   },
   {

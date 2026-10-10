@@ -83,6 +83,9 @@ READY_BY_SLUG: dict[str, str] = {
     "diagnostics": "[data-testid='events-list'], [data-testid='empty-state']",
     "simulator": "[data-testid='sim-scenarios']",
     "system-about": "[data-testid='about']",
+    "realtime": "[data-testid='realtime']",
+    "trends": "[data-testid='trends']",
+    "history": "[data-testid='history']",
 }
 
 

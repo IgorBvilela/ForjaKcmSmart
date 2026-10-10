@@ -10,3 +10,31 @@ html, body, #app { height: 100%; margin: 0; }
 body { background: var(--bg-0); color: var(--text-1); font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
 :focus-visible { outline: none; box-shadow: var(--focus); border-radius: var(--r-1); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+
+/* Tabela de resumo no celular: cada linha vira um cartão com rótulo por célula (data-label). */
+@media (max-width: 767px) {
+  table.resp thead { display: none; }
+  table.resp, table.resp tbody { display: block; width: 100%; }
+  table.resp tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px var(--sp-4);
+    padding: var(--sp-3) 0;
+    border-bottom: 1px solid var(--border-1);
+  }
+  table.resp tbody th { grid-column: 1 / -1; padding: 0 0 var(--sp-1); border: 0; }
+  table.resp td {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    padding: 2px 0;
+    border: 0;
+    text-align: right;
+  }
+  table.resp td::before {
+    content: attr(data-label);
+    color: var(--text-3);
+    font: 500 var(--fs-caption) / var(--lh-caption) var(--font-ui);
+    text-align: left;
+  }
+}

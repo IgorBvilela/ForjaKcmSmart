@@ -65,6 +65,11 @@
     gap: var(--sp-3);
     margin-bottom: var(--sp-4);
   }
+  /* card sem padding (tabela de borda a borda): o título mantém o respiro do card */
+  .card:not(.padded) > .card-head { padding: var(--sp-5) var(--sp-5) 0; margin-bottom: var(--sp-2); }
+  @media (max-width: 767px) {
+    .card:not(.padded) > .card-head { padding: var(--sp-4) var(--sp-4) 0; }
+  }
   .card-titles {
     display: flex;
     flex-direction: column;

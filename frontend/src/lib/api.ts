@@ -184,8 +184,83 @@ export interface EquipmentDetail {
     readable: number
     unknown: number
     tags: string[]
+    readable_tags: string[]
   }
 }
+
+export interface TagMeta {
+  code: string
+  label_pt: string
+  unit: string
+  kind: 'CONTINUOUS' | 'DISCRETE' | 'STATUS_RAW'
+  decimals: number
+  explanation_pt: string
+}
+
+export interface TagWindowStats {
+  tag: string
+  label_pt: string
+  unit: string
+  decimals: number
+  points: number
+  usable_points: number
+  comm_error_points: number
+  bad_points: number
+  min: number | null
+  max: number | null
+  avg: number | null
+  first: number | null
+  last: number | null
+  qualities: Partial<Record<Quality, number>>
+}
+
+export interface WindowChange {
+  item: WhatChangedItem
+  offset_s: number | null
+  started_pt: string
+}
+
+export interface WhatChangedResponse {
+  equipment_id: string
+  from_utc: string
+  to_utc: string
+  data_source: DataSource
+  interpolated: false
+  changes: WindowChange[]
+  unchanged_tags: string[]
+  first_changed_tag: string | null
+  together: string[][]
+  stats: Record<string, TagWindowStats>
+  narrative_pt: string[]
+  caveats_pt: string[]
+  resolution_s: number
+}
+
+export interface AlarmLookupView {
+  equipment_id: string
+  code: string
+  key: {
+    manufacturer: string
+    controller: string
+    application: string
+    software_version: string
+    code: string
+  }
+  catalogued: boolean
+  title_pt: string
+  qualifier_pt: string
+  definition: {
+    title_pt?: string
+    evidence?: string
+    source?: string
+    note_pt?: string
+  } | null
+  candidates: unknown[]
+  note_pt: string
+}
+
+export type CsvDialect = 'br' | 'std'
+export type CsvResolution = 'raw' | 'auto'
 
 export interface HistoryPoint {
   ts_utc: string
@@ -495,13 +570,41 @@ export const api = {
         maxPoints: opts.maxPoints,
       })}`,
     ),
-  events: (id: string, opts: { limit?: number; open_only?: boolean } = {}) =>
+  events: (
+    id: string,
+    opts: { limit?: number; open_only?: boolean; since?: string; until?: string } = {},
+  ) =>
     request<EventsResponse>(
       `/equipments/${encodeURIComponent(id)}/events${qs({
         limit: opts.limit ?? 50,
         open_only: opts.open_only,
+        since: opts.since,
+        until: opts.until,
       })}`,
     ),
+  tags: () => request<{ tags: TagMeta[] }>('/tags'),
+  alarmLookup: (equipmentId: string, code: string) =>
+    request<AlarmLookupView>(`/alarms/lookup${qs({ equipment_id: equipmentId, code })}`),
+  whatChanged: (id: string, tags: string[], opts: { from?: string; to?: string } = {}) =>
+    request<WhatChangedResponse>(
+      `/equipments/${encodeURIComponent(id)}/what-changed${qs({
+        tags: tags.join(','),
+        from: opts.from,
+        to: opts.to,
+      })}`,
+    ),
+  /** Endereço do CSV (o navegador baixa direto; nada passa por fetch). */
+  historyCsvUrl: (
+    id: string,
+    opts: { tags: string[]; from: string; to: string; dialect: CsvDialect; resolution: CsvResolution },
+  ) =>
+    `${API_BASE}/equipments/${encodeURIComponent(id)}/history.csv${qs({
+      tags: opts.tags.join(','),
+      from: opts.from,
+      to: opts.to,
+      dialect: opts.dialect,
+      resolution: opts.resolution,
+    })}`,
   event: (eventId: string) => request<EventView>(`/events/${encodeURIComponent(eventId)}`),
   /** Diagnóstico do evento; `null` quando ainda não existe (404 DIAGNOSIS_NOT_FOUND). */
   diagnosis: async (eventId: string): Promise<Diagnosis | null> => {
