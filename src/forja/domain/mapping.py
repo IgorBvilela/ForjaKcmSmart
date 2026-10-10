@@ -11,7 +11,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from forja.domain.evidence import UNKNOWN, KnowledgeState
 from forja.domain.quality import Quality
@@ -99,6 +99,34 @@ class MappingEntry(BaseModel):
     valid_min: float | None = None
     valid_max: float | None = None
     notes_pt: str = ""
+
+    @field_validator("datatype", mode="before")
+    @classmethod
+    def _datatype(cls, value: object) -> object:
+        """Texto vindo de YAML/JSON vira DataType; erro de digitação é recusado (só UNKNOWN
+        continua texto)."""
+        if isinstance(value, str) and not isinstance(value, DataType) and value != UNKNOWN:
+            try:
+                return DataType(value.strip().lower())
+            except ValueError as exc:
+                options = ", ".join(d.value for d in DataType)
+                raise ValueError(
+                    f"datatype desconhecido {value!r}; use {options} ou UNKNOWN"
+                ) from exc
+        return value
+
+    @field_validator("endianness", mode="before")
+    @classmethod
+    def _endianness(cls, value: object) -> object:
+        if isinstance(value, str) and not isinstance(value, Endianness) and value != UNKNOWN:
+            try:
+                return Endianness(value.strip().lower())
+            except ValueError as exc:
+                options = ", ".join(e.value for e in Endianness)
+                raise ValueError(
+                    f"ordem de bytes desconhecida {value!r}; use {options} ou UNKNOWN"
+                ) from exc
+        return value
 
     @model_validator(mode="after")
     def _check(self) -> MappingEntry:

@@ -388,3 +388,21 @@ async def test_teste_somente_leitura_com_endereco_errado_e_honesto(
     assert result.final is ReadTestStage.INVALID_RESPONSE
     assert result.error_pt is not None
     assert result.values == {}
+
+
+async def test_mapping_vindo_de_texto_le_igual_ao_montado_em_codigo(
+    server: FakeModbusServer,
+) -> None:
+    """Como chega do arquivo YAML e da tela (JSON): tipos em texto. Tem que decodificar igual."""
+    w0, w1 = float32_words(1300.0, "CDAB")
+    server.holding.update({40: w0, 41: w1, 42: 0b10})
+    built = mapping_of(
+        entry("mass_flow", "holding", 40, DataType.FLOAT32, Endianness.BIG_WORD_SWAP),
+        entry("alarm_active", "holding", 42, DataType.UINT16, bit=1),
+    )
+    from_text = Mapping.model_validate(built.model_dump(mode="json"))
+    _, samples = await read_once(server.port, from_text)
+    assert samples["mass_flow"].value == pytest.approx(1300.0)
+    assert samples["mass_flow"].quality is Quality.UNCERTAIN
+    assert samples["alarm_active"].value == 1.0
+    assert [(r.function, r.start, r.quantity) for r in server.requests] == [(3, 40, 3)]
