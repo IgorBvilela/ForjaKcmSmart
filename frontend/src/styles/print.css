@@ -9,7 +9,8 @@
   .dash-actions,
   .events-filters,
   .toc,
-  .back {
+  .back,
+  .no-print {
     display: none !important;
   }
   .shell {
@@ -27,4 +28,12 @@
   a[href]::after {
     content: '';
   }
+  .print-only {
+    display: block !important;
+  }
+}
+
+/* Só aparece no papel (assinaturas, rodapé do relatório). */
+.print-only {
+  display: none;
 }

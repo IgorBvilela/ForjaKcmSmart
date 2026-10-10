@@ -15,6 +15,7 @@ export const EQ_SCREENS = [
   'simulator',
   'kcm/alarms',
   'kcm/communication',
+  'kcm/commissioning',
   'kcm/datasheet',
   'kcm/components',
 ] as const

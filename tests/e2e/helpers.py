@@ -87,6 +87,7 @@ READY_BY_SLUG: dict[str, str] = {
     "trends": "[data-testid='trends']",
     "history": "[data-testid='history']",
     "kcm-communication": "[data-testid='comm-state']",
+    "kcm-commissioning": "[data-testid='cm-header']",
 }
 
 

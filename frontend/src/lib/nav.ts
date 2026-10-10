@@ -12,6 +12,7 @@ import Radar from '@lucide/svelte/icons/radar'
 import FolderClock from '@lucide/svelte/icons/folder-clock'
 import Siren from '@lucide/svelte/icons/siren'
 import Cable from '@lucide/svelte/icons/cable'
+import ClipboardCheck from '@lucide/svelte/icons/clipboard-check'
 import FileText from '@lucide/svelte/icons/file-text'
 import ComponentIcon from '@lucide/svelte/icons/component'
 import BookOpen from '@lucide/svelte/icons/book-open'
@@ -122,6 +123,7 @@ export const NAV_GROUPS: NavGroup[] = [
         reason: 'Catálogo de alarmes por chave composta (fabricante, controlador, aplicação, versão).',
       }),
       eq('kcm/communication', 'kcm-communication', 'Comunicação', Cable),
+      eq('kcm/commissioning', 'kcm-commissioning', 'Comissionamento', ClipboardCheck),
       eq('kcm/datasheet', 'kcm-datasheet', 'Ficha Técnica', FileText, {
         phase: 'G',
         reason: 'Perfil do equipamento com classificação de cada informação (FACT, FIELD_OBSERVED, UNKNOWN).',

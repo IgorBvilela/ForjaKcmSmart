@@ -9,6 +9,7 @@
   import { app } from './lib/state.svelte'
   import { TID } from './lib/testids'
   import AboutPage from './routes/AboutPage.svelte'
+  import CommissioningPage from './routes/CommissioningPage.svelte'
   import CommunicationPage from './routes/CommunicationPage.svelte'
   import ComingSoonPage from './routes/ComingSoonPage.svelte'
   import DashboardPage from './routes/DashboardPage.svelte'
@@ -86,6 +87,8 @@
           <HistoryPage equipmentId={route.id} />
         {:else if route.screen === 'kcm/communication'}
           <CommunicationPage equipmentId={route.id} />
+        {:else if route.screen === 'kcm/commissioning'}
+          <CommissioningPage equipmentId={route.id} />
         {:else}
           <ComingSoonPage item={navItemForEqScreen(route.screen)} equipmentId={route.id} />
         {/if}
