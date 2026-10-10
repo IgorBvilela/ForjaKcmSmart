@@ -46,13 +46,29 @@ def probe_simulator() -> DriverSupportInfo:
     )
 
 
+MODBUS_EXPERIMENTAL_PT = (
+    "Driver somente leitura implementado e testado contra servidor Modbus de teste local. "
+    "Validação no KCM real pendente: o protocolo da interface Host/Anybus precisa ser confirmado "
+    "em campo."
+)
+
+
 def probe_modbus_tcp() -> DriverSupportInfo:
+    """EXPERIMENTAL: existe e é testado, mas nunca foi validado contra o KCM real."""
+    version = library_version("pymodbus")
+    if not version:
+        return DriverSupportInfo(
+            name="modbus_tcp",
+            state=DriverSupportState.UNSUPPORTED,
+            library="pymodbus",
+            reason_pt="Biblioteca pymodbus não instalada nesta máquina.",
+        )
     return DriverSupportInfo(
         name="modbus_tcp",
-        state=DriverSupportState.UNSUPPORTED,
+        state=DriverSupportState.EXPERIMENTAL,
         library="pymodbus",
-        version=library_version("pymodbus"),
-        reason_pt=UNSUPPORTED_REASON_PT,
+        version=version,
+        reason_pt=MODBUS_EXPERIMENTAL_PT,
     )
 
 

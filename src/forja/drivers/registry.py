@@ -21,6 +21,7 @@ from forja.domain.ports import (
     DriverSupportState,
     ReadOnlyDriverBase,
 )
+from forja.drivers.modbus_tcp.driver import ModbusTcpDriver
 from forja.drivers.simulator.driver import SimulatorDriver
 from forja.drivers.support import (
     UNSUPPORTED_REASON_PT,
@@ -131,9 +132,10 @@ def _unsupported_factory(name: str) -> DriverFactory:
 
 
 def build_default_registry() -> DriverRegistry:
-    """simulator AVAILABLE; modbus_tcp e ethernet_ip UNSUPPORTED ate as fases J/K."""
+    """simulator AVAILABLE; modbus_tcp EXPERIMENTAL (somente leitura, validação de campo
+    pendente); ethernet_ip UNSUPPORTED enquanto não houver driver."""
     registry = DriverRegistry()
     registry.register("simulator", SimulatorDriver, probe_simulator)
-    registry.register("modbus_tcp", _unsupported_factory("modbus_tcp"), probe_modbus_tcp)
+    registry.register("modbus_tcp", ModbusTcpDriver, probe_modbus_tcp)
     registry.register("ethernet_ip", _unsupported_factory("ethernet_ip"), probe_ethernet_ip)
     return registry

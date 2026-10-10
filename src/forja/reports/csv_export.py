@@ -17,7 +17,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Protocol
 
-from forja.domain import Quality, Series, TAGS
+from forja.domain import TAGS, Quality, Series
 from forja.events.plant_time import resolve_zone
 
 BOM = "﻿"
@@ -99,7 +99,9 @@ def local_text(ts: datetime, timezone: str) -> str:
     return local.strftime("%Y-%m-%d %H:%M:%S.") + f"{local.microsecond // 1000:03d}"
 
 
-def _chunks(header: Sequence[str], rows: Iterable[Sequence[str]], dialect: CsvDialect) -> Iterator[str]:
+def _chunks(
+    header: Sequence[str], rows: Iterable[Sequence[str]], dialect: CsvDialect
+) -> Iterator[str]:
     buf = io.StringIO()
     writer = csv.writer(buf, delimiter=_delimiter(dialect), lineterminator="\r\n")
     if dialect is CsvDialect.BR:

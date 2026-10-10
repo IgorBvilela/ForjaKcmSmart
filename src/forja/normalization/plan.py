@@ -36,6 +36,8 @@ class _Span:
     tag: str
     start: int
     count: int
+    bit: int | None = None
+    """Bit dentro do(s) registrador(es) (0 = menos significativo). Só em holding/input."""
 
     @property
     def end(self) -> int:
@@ -114,13 +116,16 @@ class ReadPlanCompiler:
             area, span = self._modbus_span(e)
             by_area.setdefault(area, []).append(span)
         blocks: list[ReadBlock] = []
+        coalesce = profile.communication.options.get("block_reads", True) is not False
         for area in MODBUS_AREAS:
             spans = by_area.get(area)
             if not spans:
                 continue
             unit: LayoutUnit = "bit" if area in MODBUS_BIT_AREAS else "word"
             limit = self._modbus_limit(area, profile)
-            for group in _coalesce(sorted(spans, key=lambda s: (s.start, s.tag)), limit):
+            ordered = sorted(spans, key=lambda s: (s.start, s.tag))
+            groups = _coalesce(ordered, limit) if coalesce else _singles(ordered, limit)
+            for group in groups:
                 blocks.append(_block_from_group(area, group, unit))
         return blocks
 
@@ -140,7 +145,21 @@ class ReadPlanCompiler:
         count = addr.get("count", _default_count(e.datatype, area))
         if isinstance(count, bool) or not isinstance(count, int) or count < 1:
             raise MappingValidationError(f"{e.semantic_tag}: count Modbus inválido: {count!r}")
-        return str(area), _Span(tag=e.semantic_tag, start=address, count=count)
+        bit = addr.get("bit")
+        if bit is not None:
+            if area in MODBUS_BIT_AREAS:
+                raise MappingValidationError(
+                    f"{e.semantic_tag}: 'bit' só vale para registradores (holding/input)"
+                )
+            if count not in (1, 2):
+                raise MappingValidationError(
+                    f"{e.semantic_tag}: 'bit' exige 1 ou 2 registradores (count={count})"
+                )
+            if isinstance(bit, bool) or not isinstance(bit, int) or not 0 <= bit < 16 * count:
+                raise MappingValidationError(
+                    f"{e.semantic_tag}: bit fora de 0..{16 * count - 1}: {bit!r}"
+                )
+        return str(area), _Span(tag=e.semantic_tag, start=address, count=count, bit=bit)
 
     @staticmethod
     def _modbus_limit(area: str, profile: EquipmentProfile) -> int:
@@ -228,10 +247,25 @@ def _coalesce(spans: Sequence[_Span], limit: int) -> list[list[_Span]]:
     return groups
 
 
+def _singles(spans: Sequence[_Span], limit: int) -> list[list[_Span]]:
+    """Uma requisição por tag (opção block_reads: false). Mesmo limite de tamanho."""
+    for s in spans:
+        if s.count > limit:
+            raise MappingValidationError(f"{s.tag}: bloco de {s.count} acima do limite {limit}")
+    return [[s] for s in spans]
+
+
+def _slot(span: _Span, start: int, unit: LayoutUnit) -> dict[str, Any]:
+    slot: dict[str, Any] = {"offset": span.start - start, "count": span.count, "unit": unit}
+    if span.bit is not None:
+        slot["bit"] = span.bit
+    return slot
+
+
 def _block_from_group(area: str, group: Sequence[_Span], unit: LayoutUnit) -> ReadBlock:
     start = min(s.start for s in group)
     end = max(s.end for s in group)
-    layout = {s.tag: {"offset": s.start - start, "count": s.count, "unit": unit} for s in group}
+    layout = {s.tag: _slot(s, start, unit) for s in group}
     return ReadBlock(
         block_id=f"{area}:{start}:{end - start}",
         area=area,

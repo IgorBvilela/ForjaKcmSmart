@@ -236,9 +236,24 @@ def _decode_entry(
         raise ValueError(f"datatype UNKNOWN no mapping ({entry.datatype!r})")
     if slot.get("unit") == "bit":
         return decode(raw, DataType.BOOL, Endianness.BIG)
+    if slot.get("bit") is not None:
+        return _bit_of(entry, raw, int(slot["bit"]))
     if not isinstance(entry.endianness, Endianness):
         raise ValueError("ordem de bytes UNKNOWN no mapping")
     return decode(raw, entry.datatype, entry.endianness)
+
+
+def _bit_of(entry: MappingEntry, raw: bytes, bit: int) -> int:
+    """Bit de um registrador (16 bits) ou par de registradores (32 bits), 0 = menos significativo.
+
+    A ordem de bytes/palavras do mapping vale para montar o inteiro antes de extrair o bit.
+    """
+    width = DataType.UINT16 if len(raw) == 2 else DataType.UINT32
+    order = entry.endianness if isinstance(entry.endianness, Endianness) else Endianness.BIG
+    word = decode(raw, width, order)
+    if not isinstance(word, int):
+        raise ValueError("registrador de status não decodificou como inteiro")
+    return (word >> bit) & 1
 
 
 def _scaled(entry: MappingEntry, number: float) -> float:
