@@ -35,6 +35,7 @@ from forja.domain import (
 )
 from forja.service.commcenter import (
     comm_state,
+    has_successful_test,
     read_test_view,
     reading_fingerprint,
     validate_candidate,
@@ -46,7 +47,6 @@ router = APIRouter(prefix="/api/v1/communication", tags=["comunicacao"])
 
 FIELD_CONFIG_PT = "Disponível após configuração de campo"
 USER_PATTERN = r"^[\w .@\-]+$"
-READ_TEST_HISTORY = 20
 
 EquipmentId = Annotated[str, PathParam(max_length=64, description="Id do equipamento")]
 
@@ -178,11 +178,7 @@ async def _latest_test(container: Any, equipment_id: str) -> dict[str, Any] | No
 
 
 async def _successful_test_for(container: Any, equipment_id: str, fingerprint: str) -> bool:
-    lister = getattr(container.core, "list_read_tests", None)
-    if not callable(lister):
-        return False
-    tests: list[dict[str, Any]] = await lister(equipment_id, READ_TEST_HISTORY)
-    return any(t.get("success") and t.get("fingerprint") == fingerprint for t in tests)
+    return await has_successful_test(container.core, equipment_id, fingerprint)
 
 
 def _mapping_of(container: Any, profile: EquipmentProfile) -> Mapping:

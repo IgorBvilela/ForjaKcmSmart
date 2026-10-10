@@ -1,4 +1,4 @@
-"""Central de Comunicação KCM: regras de negócio usadas pela API e pela CLI.
+"""Central de Comunicação KCM: regras de negócio usadas pela API.
 
 - ``validate_candidate``: confere perfil + mapping sem tocar na rede (erros bloqueiam, avisos não).
 - ``reading_fingerprint``: identifica o que de fato muda a leitura (driver, endereço, mapping).
@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, Final
 
@@ -340,13 +341,51 @@ def read_test_view(
     return {"tags": rows, "blocks": plan_blocks}
 
 
+READ_TEST_HISTORY: Final = 20
+"""Testes mais recentes consultados para liberar a coleta de um driver real."""
+READ_TEST_PENDING_PT: Final = (
+    "Coleta não iniciada: falta um teste somente leitura bem-sucedido desta configuração "
+    "(KCM › Comunicação)"
+)
+
+
+async def has_successful_test(core: Any, equipment_id: str, fingerprint: str) -> bool:
+    """Algum dos testes recentes do equipamento leu com sucesso a configuração `fingerprint`."""
+    lister = getattr(core, "list_read_tests", None)
+    if not callable(lister):
+        return False
+    tests: list[dict[str, Any]] = await lister(equipment_id, READ_TEST_HISTORY)
+    return any(t.get("success") and t.get("fingerprint") == fingerprint for t in tests)
+
+
+def collection_gate_for(core: Any) -> Callable[[EquipmentProfile, Mapping], Awaitable[str | None]]:
+    """Porteira da coleta na partida e na recarga: a mesma regra da ativação pela API (ADR 0026).
+
+    Driver real só coleta com teste somente leitura bem-sucedido da configuração em uso, mesmo
+    quando o YAML foi editado à mão. Devolve o motivo em português quando bloqueia; None libera.
+    """
+
+    async def gate(profile: EquipmentProfile, mapping: Mapping) -> str | None:
+        if profile.communication.driver not in REAL_DRIVERS:
+            return None
+        if await has_successful_test(core, profile.id, reading_fingerprint(profile, mapping)):
+            return None
+        return READ_TEST_PENDING_PT
+
+    return gate
+
+
 __all__ = [
     "ENDIANNESS_PT",
     "MODBUS_AREA_PT",
+    "READ_TEST_HISTORY",
+    "READ_TEST_PENDING_PT",
     "STATE_PT",
     "ValidationReport",
     "address_text_pt",
+    "collection_gate_for",
     "comm_state",
+    "has_successful_test",
     "read_test_view",
     "reading_fingerprint",
     "validate_candidate",

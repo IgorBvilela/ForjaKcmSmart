@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
@@ -47,6 +47,13 @@ from forja.domain import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+CollectionGate = Callable[[EquipmentProfile, Mapping], Awaitable[str | None]]
+"""Decide se a coleta de um equipamento pode começar: None libera; texto é o motivo do bloqueio."""
+GATE_FAILED_PT = (
+    "Coleta não iniciada: não foi possível conferir o teste somente leitura desta configuração"
+)
 
 
 @dataclass
@@ -92,7 +99,9 @@ class EquipmentManager:
         backoff_factory: Callable[[], Backoff] | None = None,
         watchdog: Watchdog | None = None,
         restart_grace_s: float = 2.0,
+        collection_gate: CollectionGate | None = None,
     ) -> None:
+        self._collection_gate = collection_gate
         self._store = store
         self._registry = registry
         self._historian = historian
@@ -163,6 +172,8 @@ class EquipmentManager:
             if comm.needs_configuration or not comm.collection_enabled:
                 return
             mapping = self._store.mapping_for(equipment_id)
+            if await self._blocked_reason(profile, mapping) is not None:
+                return
             state = self._state_for(profile)
             await mark_unobserved_gap(self._historian, profile, mapping, self._clock, state)
         except asyncio.CancelledError:
@@ -210,6 +221,13 @@ class EquipmentManager:
             state.connection = ConnectionState.DISCONNECTED
             state.detail_pt = COLLECTION_PAUSED_PT
             return
+        blocked = await self._blocked_reason(profile, mapping)
+        if blocked is not None:
+            logger.warning("aquisição %s: %s", equipment_id, blocked)
+            state.support_state = self._registry_state(profile)
+            state.connection = ConnectionState.DISCONNECTED
+            state.detail_pt = blocked
+            return
         try:
             driver = self._registry.create(profile, mapping, self._clock)
         except UnsupportedDriver as exc:
@@ -229,6 +247,18 @@ class EquipmentManager:
             await mark_unobserved_gap(self._historian, profile, mapping, self._clock, state)
         self._launch(profile, mapping, driver, state, live)
         self._ensure_watchdog_task()
+
+    async def _blocked_reason(self, profile: EquipmentProfile, mapping: Mapping) -> str | None:
+        """Motivo para não iniciar a coleta, ou None. Falha na conferência bloqueia (fecha)."""
+        if self._collection_gate is None:
+            return None
+        try:
+            return await self._collection_gate(profile, mapping)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("aquisição %s: conferência do teste de leitura falhou", profile.id)
+            return GATE_FAILED_PT
 
     async def stop(self, equipment_id: str, timeout_s: float = 5) -> None:
         self._watchdog.unwatch(equipment_id)

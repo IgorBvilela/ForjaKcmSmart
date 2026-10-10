@@ -174,6 +174,7 @@ async def build_container(paths: ForjaPaths | None = None, clock: Clock | None =
     from forja.events.rules import load_rules
     from forja.historian.core_store import SqliteCoreStore
     from forja.historian.sqlite import SqliteHistorian
+    from forja.service.commcenter import collection_gate_for
 
     paths = (paths or resolve_paths()).ensure()
     clock = clock or SystemClock()
@@ -207,7 +208,9 @@ async def build_container(paths: ForjaPaths | None = None, clock: Clock | None =
         clock,
         timezone=store.config.edge.timezone,
     )
-    manager = EquipmentManager(store, registry, historian, bus, clock)
+    manager = EquipmentManager(
+        store, registry, historian, bus, clock, collection_gate=collection_gate_for(core)
+    )
 
     container = Container(
         paths=paths,
