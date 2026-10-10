@@ -44,6 +44,11 @@ def add_admin_commands(
         action="store_true",
         help="Também restaura config/ e knowledge/ (a atual fica guardada antes).",
     )
+    audit = sub.add_parser("audit", help="Trilha de auditoria.")
+    asub = audit.add_subparsers(dest="audit_command", required=True, metavar="ação")
+    asub.add_parser(
+        "verify", parents=[common], help="Confere a cadeia de hash da trilha de auditoria."
+    )
     service = sub.add_parser("service", help="Serviço Windows (usado pelo instalador).")
     ssub = service.add_subparsers(dest="service_command", required=True, metavar="ação")
     ssub.add_parser("run", help="Ponto de entrada chamado pelo gerenciador de serviços.")
@@ -127,6 +132,27 @@ def cmd_backup(args: argparse.Namespace) -> int:
     raise AdminError(f"ação desconhecida: {args.backup_command!r}")
 
 
+async def _audit_verify(home: str | None) -> dict[str, object]:
+    from forja.historian.core_store import SqliteCoreStore
+    from forja.infra import SystemClock
+
+    paths = resolve_paths(home).ensure()
+    core = SqliteCoreStore(paths.core_db, SystemClock())
+    await core.open()
+    try:
+        return await core.verify_audit()
+    finally:
+        await core.close()
+
+
+def cmd_audit(args: argparse.Namespace) -> int:
+    if args.audit_command == "verify":
+        result = asyncio.run(_audit_verify(getattr(args, "home", None)))
+        print(result["message_pt"])
+        return 0 if result["ok"] else 1
+    raise AdminError(f"ação desconhecida: {args.audit_command!r}")
+
+
 def service_running() -> bool:
     """True quando o serviço do Windows está instalado e rodando. Fora do Windows, False."""
     if sys.platform != "win32":
@@ -156,6 +182,7 @@ def cmd_service(args: argparse.Namespace) -> int:
 __all__ = [
     "AdminError",
     "add_admin_commands",
+    "cmd_audit",
     "cmd_backup",
     "cmd_init",
     "cmd_service",

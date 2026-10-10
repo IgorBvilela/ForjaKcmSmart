@@ -119,6 +119,21 @@
   }
 
   const csvHref = $derived(`${API_BASE}/system/logs.csv?source=${source}`)
+
+  interface ChainResult { ok: boolean; chained: number; before_chain: number; message_pt: string }
+  let chain = $state<ChainResult | null>(null)
+  let checkingChain = $state(false)
+
+  async function verifyChain(): Promise<void> {
+    checkingChain = true
+    try {
+      chain = await get<ChainResult>('/system/audit/verify')
+    } catch (err) {
+      chain = { ok: false, chained: 0, before_chain: 0, message_pt: errorMessage(err) }
+    } finally {
+      checkingChain = false
+    }
+  }
 </script>
 
 <section class="sys" data-testid="system-logs">
@@ -239,6 +254,18 @@
         </label>
       {/if}
     </div>
+    {#if source === 'audit'}
+      <div class="chain" data-testid="audit-chain">
+        <button type="button" class="chain-btn" disabled={checkingChain} onclick={verifyChain} data-testid="audit-chain-verify">
+          {checkingChain ? 'Conferindo…' : 'Conferir integridade da trilha'}
+        </button>
+        {#if chain}
+          <p class="chain-result" data-ok={chain.ok} role="status" data-testid="audit-chain-result">{chain.message_pt}</p>
+        {:else}
+          <p class="hint">Cada registro guarda o hash do anterior: alteração feita por fora do Forja aparece aqui.</p>
+        {/if}
+      </div>
+    {/if}
     {#if entries.length === 0}
       <p class="hint">Nenhum registro.</p>
     {:else}
@@ -326,5 +353,24 @@
     .log li { grid-template-columns: minmax(0, 1fr) auto; }
     .log li .msg { grid-column: 1 / -1; }
     .lvl { margin-left: 0; }
+  }
+  .chain { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-4); margin: var(--sp-3) 0; }
+  .chain-btn {
+    min-height: var(--touch);
+    padding: 0 var(--sp-4);
+    border: 1px solid var(--border-2);
+    border-radius: var(--r-3);
+    background: var(--surf-1);
+    color: var(--text-1);
+    font: 600 var(--fs-body) / 1.2 var(--font-ui);
+    cursor: pointer;
+  }
+  .chain-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+  .chain-btn:focus-visible { outline: none; box-shadow: var(--focus); }
+  .chain-result { margin: 0; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-3); border: 1px solid var(--st-crit); background: var(--st-crit-bg); color: var(--text-1); font: var(--fs-caption) / var(--lh-caption) var(--font-ui); animation: pop var(--dur-base) var(--ease-out); }
+  .chain-result[data-ok='true'] { border-color: var(--st-ok); background: var(--st-ok-bg); }
+  @keyframes pop {
+    from { opacity: 0; transform: scale(0.97); }
+    to { opacity: 1; transform: none; }
   }
 </style>

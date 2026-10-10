@@ -93,3 +93,11 @@ Regras da Forja sobre a saúde do próprio Edge (FORJA_RULE); nenhuma é limite 
 - `tests/integration/test_api_health_about.py`: relatório em português com todos os equipamentos; registros de auditoria, comunicação e serviço; frase da auditoria; CSV com o cabeçalho; fonte inválida recusada com 422.
 - `tests/integration/test_core_store.py` e `tests/integration/test_api_real_container.py`: `audit_log` append-only; o reconhecimento de evento grava na trilha do banco real.
 - `tests/e2e/test_health.py`: a tela aponta o equipamento sem comunicação, troca de fonte dos registros, exporta CSV e cabe em 375 px.
+
+## Cadeia de hash da auditoria (ADR 0031)
+
+- Migração `0003_core_auditoria.sql`: tabela `audit_chain (audit_id, prev_hash, hash)`, append-only (triggers recusam `UPDATE` e `DELETE`).
+- Cada `audit()` grava o registro e o elo na mesma transação. `hash = sha256(prev_hash + "|" + JSON canônico de [id, ts_ms, user, action, entity_type, entity_id, before_json, after_json, reason_pt])`; o primeiro elo usa 64 zeros como anterior.
+- Conferência (`SqliteCoreStore.verify_audit`): refaz a cadeia do começo e para no primeiro problema — registro sem elo depois do início da cadeia, elo anterior que não confere, conteúdo diferente do encadeado ou elo sem registro. Registros gravados antes da migração ficam fora da cadeia e são contados em `before_chain`.
+- Onde conferir: `forja audit verify [--home]` (código de saída 1 quando quebrada), `GET /api/v1/system/audit/verify` e o botão "Conferir integridade da trilha" na aba Auditoria.
+- Prova: `tests/integration/test_audit_chain.py` (íntegra; alteração e remoção feitas por fora do Forja detectadas; registro anterior ao encadeamento contado à parte; linha de comando) e `tests/e2e/test_health.py`.

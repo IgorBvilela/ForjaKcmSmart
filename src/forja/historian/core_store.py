@@ -17,9 +17,10 @@ Implementa ``EventRepository`` (save/get/list/find_open) e ``DiagnosisRepository
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import sqlite3
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Final, TypeVar
@@ -47,6 +48,7 @@ CORE_TABLES: Final[tuple[str, ...]] = (
     "events",
     "diagnoses",
     "audit_log",
+    "audit_chain",
     "read_tests",
     "commissioning_sessions",
     "commissioning_checks",
@@ -103,6 +105,73 @@ INSERT INTO audit_log (ts_ms, user, action, entity_type, entity_id, before_json,
                        reason_pt)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 """
+SQL_LAST_LINK: Final[str] = "SELECT hash FROM audit_chain ORDER BY audit_id DESC LIMIT 1"
+SQL_INSERT_LINK: Final[str] = "INSERT INTO audit_chain (audit_id, prev_hash, hash) VALUES (?, ?, ?)"
+SQL_CHAIN_WALK: Final[str] = """
+SELECT a.id, a.ts_ms, a.user, a.action, a.entity_type, a.entity_id, a.before_json, a.after_json,
+       a.reason_pt, c.prev_hash, c.hash
+FROM audit_log a LEFT JOIN audit_chain c ON c.audit_id = a.id
+ORDER BY a.id
+"""
+AUDIT_GENESIS: Final[str] = "0" * 64
+"""Hash anterior do primeiro elo da cadeia."""
+
+
+def audit_link_hash(prev_hash: str, row: Sequence[object]) -> str:
+    """sha256(hash anterior | conteúdo canônico da linha de audit_log, na ordem das colunas)."""
+    content = json.dumps(list(row), ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(f"{prev_hash}|{content}".encode()).hexdigest()
+
+
+def verify_audit_chain(conn: sqlite3.Connection) -> dict[str, Any]:
+    """Refaz a cadeia do começo. Para no primeiro elo que não confere e diz qual."""
+    before_chain = 0
+    chained = 0
+    prev = AUDIT_GENESIS
+    started = False
+
+    def broken(audit_id: int | None, reason_pt: str) -> dict[str, Any]:
+        where = f" no registro {audit_id}" if audit_id is not None else ""
+        return {
+            "ok": False,
+            "chained": chained,
+            "before_chain": before_chain,
+            "broken_at": audit_id,
+            "message_pt": f"Trilha de auditoria alterada fora do Forja{where}: {reason_pt}.",
+        }
+
+    for row in conn.execute(SQL_CHAIN_WALK):
+        audit_row, prev_hash, link = row[:9], row[9], row[10]
+        audit_id = int(row[0])
+        if prev_hash is None:
+            if started:
+                return broken(audit_id, "registro sem elo da cadeia")
+            before_chain += 1
+            continue
+        started = True
+        if prev_hash != prev:
+            return broken(audit_id, "elo anterior não confere")
+        if audit_link_hash(str(prev_hash), audit_row) != link:
+            return broken(audit_id, "conteúdo diferente do encadeado")
+        prev = str(link)
+        chained += 1
+    total_links = int(conn.execute("SELECT COUNT(*) FROM audit_chain").fetchone()[0])
+    if total_links != chained:
+        return broken(None, "elo sem registro correspondente")
+    note = (
+        f" {before_chain} registro(s) anteriores ao encadeamento ficam fora da cadeia."
+        if before_chain
+        else ""
+    )
+    return {
+        "ok": True,
+        "chained": chained,
+        "before_chain": before_chain,
+        "broken_at": None,
+        "message_pt": f"Trilha de auditoria íntegra: {chained} registro(s) encadeado(s).{note}",
+    }
+
+
 SQL_AUDIT_LIST: Final[str] = """
 SELECT id, ts_ms, user, action, entity_type, entity_id, before_json, after_json, reason_pt
 FROM audit_log ORDER BY ts_ms DESC, id DESC LIMIT ?
@@ -381,9 +450,25 @@ class SqliteCoreStore:
         )
 
         def run(conn: sqlite3.Connection) -> None:
-            conn.execute(SQL_INSERT_AUDIT, params)
+            # Registro e elo da cadeia na mesma transação: nunca um sem o outro.
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                cursor = conn.execute(SQL_INSERT_AUDIT, params)
+                audit_id = int(cursor.lastrowid or 0)
+                last = conn.execute(SQL_LAST_LINK).fetchone()
+                prev_hash = str(last[0]) if last is not None else AUDIT_GENESIS
+                link = audit_link_hash(prev_hash, (audit_id, *params))
+                conn.execute(SQL_INSERT_LINK, (audit_id, prev_hash, link))
+                conn.execute("COMMIT")
+            except Exception:
+                conn.execute("ROLLBACK")
+                raise
 
         await self._writer_or_raise().submit(run)
+
+    async def verify_audit(self) -> dict[str, Any]:
+        """Confere a cadeia de hash da trilha de auditoria (só leitura)."""
+        return await self._read(verify_audit_chain)
 
     async def audit_list(self, limit: int = 200) -> AuditRows:
         lim = max(1, int(limit))

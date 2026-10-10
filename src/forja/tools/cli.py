@@ -821,10 +821,15 @@ def _dispatch(args: argparse.Namespace) -> int:
         return cmd_doctor(args)
     if args.command == "simulate":
         return cmd_simulate(args)
-    if args.command in ("init", "backup", "service"):
+    if args.command in ("init", "backup", "service", "audit"):
         from forja.tools import admin
 
-        handler = {"init": admin.cmd_init, "backup": admin.cmd_backup, "service": admin.cmd_service}
+        handler = {
+            "init": admin.cmd_init,
+            "backup": admin.cmd_backup,
+            "service": admin.cmd_service,
+            "audit": admin.cmd_audit,
+        }
         try:
             return handler[args.command](args)
         except ForjaError as exc:  # uso incorreto, backup ausente, corrompido ou em uso

@@ -213,6 +213,16 @@ USERS_NOTE_PT = (
 )
 
 
+@router.get("/audit/verify")
+async def verify_audit(container: ContainerDep) -> dict[str, Any]:
+    """Confere a cadeia de hash da trilha de auditoria. Só leitura."""
+    verify = getattr(container.core, "verify_audit", None)
+    if not callable(verify):
+        raise ApiError(501, "AUDIT_UNAVAILABLE", "Conferência indisponível nesta montagem.")
+    result: dict[str, Any] = await verify()
+    return result
+
+
 @router.get("/settings")
 async def settings(container: ContainerDep) -> dict[str, Any]:
     """Configuração em uso (forja.yaml) e pastas do Edge. Só leitura."""

@@ -46,3 +46,12 @@ def test_saude_cabe_no_celular(mobile_375: Page) -> None:
     expect(page.get_by_test_id("health-status")).to_be_visible()
     info = overflow_info(page)
     assert not info["overflow"], info
+
+
+def test_conferir_cadeia_da_auditoria(desktop_1366: Page) -> None:
+    page = desktop_1366
+    page.goto("/app/system/logs", wait_until="load")
+    expect(page.get_by_test_id("health-status")).to_be_visible()
+    page.get_by_test_id("logs-tab-audit").click()
+    page.get_by_test_id("audit-chain-verify").click()
+    expect(page.get_by_test_id("audit-chain-result")).to_contain_text("íntegra")
