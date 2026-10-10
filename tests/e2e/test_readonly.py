@@ -23,10 +23,7 @@ pytestmark = pytest.mark.e2e
 # "Em desenvolvimento · próxima etapa: <nome>". A letra da fase continua em `data-phase`.
 # Espelha PHASE_NAMES em frontend/src/lib/nav.ts.
 PHASE_NAMES = {
-    "E": "Tendências e histórico",
-    "F": "Alertas e diagnóstico avançado",
-    "G": "Comunicação com o KCM",
-    "L": "Saúde e registros",
+    "H": "Cadastro e ficha dos equipamentos",
     "M": "Relatórios, backup e usuários",
 }
 
@@ -66,7 +63,7 @@ def test_future_phase_routes_show_honest_empty_state(
     page = desktop_1366
     # Toda tela ainda não construída precisa ser honesta. O número cai a cada fase entregue.
     future = [r for r in nav_routes if r.phase]
-    assert {r.phase for r in future} <= {"E", "F", "G", "L", "M"}
+    assert {r.phase for r in future} <= set(PHASE_NAMES)
     for route in future:
         open_route(page, route.href, route.slug)
         empty = page.get_by_test_id("empty-state")

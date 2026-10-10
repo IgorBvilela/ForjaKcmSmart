@@ -13,6 +13,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from forja.api.deps import ContainerDep, jsonable, require_profile
 from forja.api.errors import ApiError
 from forja.domain import Event, EventStatus
+from forja.events.pre_event import pre_event_summary
+from forja.events.recurrence import ORIGIN_PT
 
 logger = logging.getLogger("forja.api")
 
@@ -47,6 +49,8 @@ def event_view(event: Event, *, include_samples: bool) -> dict[str, Any]:
     data["quality_pt"] = event.quality.label_pt
     data["is_open"] = event.is_open
     data["duration_s"] = event.duration_s
+    data["origin_pt"] = ORIGIN_PT.get(event.origin, event.origin)
+    data["pre_event"] = pre_event_summary(event)
     context = data.get("context", {})
     for field in _SAMPLE_FIELDS:
         context[f"{field[:-8]}_sample_count"] = len(getattr(event.context, field))

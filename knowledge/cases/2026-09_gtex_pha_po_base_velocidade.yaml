@@ -7,6 +7,7 @@ title_pt: "GTEX / PHA / Dosador Pó Base: leitura de velocidade zero com conjunt
 plant: GTEX
 area: PHA
 equipment: "Dosador Pó Base"
+equipment_ids: [GTEX_PHA_PO_BASE]
 application: WBF
 period_pt: "aproximadamente 11 a 13/09/2026"
 evidence: FIELD_OBSERVED

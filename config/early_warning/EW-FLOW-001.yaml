@@ -1,0 +1,35 @@
+# AVISO ANTECIPADO (FORJA_RULE). Desvio em relação ao padrão do próprio equipamento.
+# Não é alarme do KCM e não é previsão de falha. Nenhum número aqui veio do KCM.
+schema_version: 1
+id: EW-FLOW-001
+version: 1
+internal_code: EW_FLOW_DRIFTING_DOWN
+title_pt: "Vazão se afastando do padrão sem mudança no alvo"
+description_pt: >-
+  A vazão dos últimos minutos ficou abaixo do padrão do início da janela sem que o setpoint
+  mudasse. Desvio gradual que vale acompanhar antes de virar vazão abaixo do setpoint.
+severity: INFO
+window_s: 1800
+recent_s: 300
+evaluate_every_s: 60
+min_coverage: 0.6
+persist_evaluations: 3
+clear_evaluations: 3
+signals:
+  # média dos últimos 5 min pelo menos 5% abaixo da média dos primeiros 5 min da janela
+  - { tag: mass_flow, kind: deviation, direction: down, min_change: 5 }
+  # setpoint variando no máximo 1% (mudança de setpoint não é desvio)
+  - { tag: setpoint, kind: stable, max_change: 1 }
+  - { tag: machine_state, kind: state, value: 1, min_fraction: 0.95 }
+allowed_qualities: [GOOD, SIMULATED, UNCERTAIN]
+diagnosis_ref: rate_low
+sources:
+  - id: SRC-EW-EW-FLOW-001
+    kind: rule
+    title: "Aviso antecipado Forja 'Vazão se afastando do padrão sem mudança no alvo'"
+    reference: "config/early_warning/EW-FLOW-001.yaml"
+    evidence_level: FORJA_RULE
+threshold_basis: FORJA_RULE
+threshold_note_pt: >-
+  Limiares definidos pela Forja em relação ao comportamento do próprio equipamento. Não são limites
+  do KCM e precisam ser ajustados depois de observar a operação real.

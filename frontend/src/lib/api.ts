@@ -374,6 +374,34 @@ export interface EventView {
   diagnosis_ref: string | null
   is_open: boolean
   duration_s: number | null
+  /** RULE: regra determinística. EARLY_WARNING: aviso antecipado. Nenhum dos dois é alarme do KCM. */
+  origin: EventOrigin
+  origin_pt: string
+  pre_event: PreEvent
+}
+
+export type EventOrigin = 'RULE' | 'EARLY_WARNING'
+
+export interface PreEventChange {
+  tag: string
+  label_pt: string
+  started_utc: string
+  before_event_s: number
+  text_pt: string
+  /** Saiu do padrão no primeiro instante (empate conta como primeiro). */
+  first: boolean
+}
+
+/** Antes do evento: quem saiu do padrão primeiro, quanto antes e quem mudou junto. */
+export interface PreEvent {
+  pre_window_s: number
+  together_s: number
+  first_tag: string | null
+  first_label_pt: string | null
+  lead_s: number | null
+  changes: PreEventChange[]
+  together: string[][]
+  narrative_pt: string[]
 }
 
 export interface EventsResponse {
@@ -502,7 +530,7 @@ export class ApiError extends Error {
 
 export const API_BASE = '/api/v1'
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (init.body != null) headers['Content-Type'] = 'application/json'
   let res: Response

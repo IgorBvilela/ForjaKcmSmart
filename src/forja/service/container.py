@@ -23,7 +23,7 @@ from forja.domain import (
 from forja.infra import AsyncBus
 
 if TYPE_CHECKING:
-    from forja.service.runner import EngineBridge, PeriodicJobs
+    from forja.service.runner import EarlyWarningJob, EngineBridge, PeriodicJobs
 
 
 class RuleEnginePort(Protocol):
@@ -44,6 +44,7 @@ class ServiceRuntime:
 
     bridge: EngineBridge | None = None
     jobs: PeriodicJobs | None = None
+    early_warning_job: EarlyWarningJob | None = None
     tasks: list[asyncio.Task[None]] = field(default_factory=list)
     closeables: list[Any] = field(default_factory=list)
     started: bool = False
@@ -66,6 +67,8 @@ class Container:
     runtime: ServiceRuntime = field(default_factory=ServiceRuntime)
     core: Any = None
     """Core store (testes somente leitura, comissionamento, auditoria). None em testes mínimos."""
+    early_warning: Any = None
+    """EarlyWarningEngine (aviso antecipado). None em testes mínimos: telas mostram 'sem regras'."""
 
     @property
     def uptime_s(self) -> float:

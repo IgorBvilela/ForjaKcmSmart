@@ -32,6 +32,12 @@ class Severity(StrEnum):
         }[self]
 
 
+EventOrigin = Literal["RULE", "EARLY_WARNING"]
+"""RULE: regra deterministica do motor de eventos. EARLY_WARNING: aviso antecipado (tendencia,
+desvio do padrao, combinacao de variaveis). Nenhum dos dois e alarme do KCM: o alarme do KCM entra
+na linha do tempo na voz do KCM (TimelinePoint kind='kcm')."""
+
+
 class EventStatus(StrEnum):
     OPEN = "OPEN"
     ACKNOWLEDGED = "ACKNOWLEDGED"
@@ -139,6 +145,7 @@ class Event(BaseModel):
     dedupe_key: str
     diagnosis_ref: str | None = None
     """Id da entrada da biblioteca de diagnostico que explica este tipo de evento."""
+    origin: EventOrigin = "RULE"
 
     @property
     def is_open(self) -> bool:

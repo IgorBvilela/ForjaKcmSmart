@@ -1,0 +1,36 @@
+# AVISO ANTECIPADO (FORJA_RULE). Tendência em relação ao comportamento do próprio equipamento.
+# Não é alarme do KCM e não é previsão de falha. Nenhum número aqui veio do KCM.
+schema_version: 1
+id: EW-DRIVE-001
+version: 1
+internal_code: EW_EFFORT_CREEPING_UP
+title_pt: "Esforço do acionamento subindo aos poucos"
+description_pt: >-
+  O esforço do acionamento sobe de forma gradual com a vazão perto do setpoint e o material na
+  correia estável. A máquina pede mais esforço para entregar a mesma coisa; vale verificar a parte
+  mecânica antes de chegar ao teto do acionamento.
+severity: ATTENTION
+window_s: 1800           # janela observada: 30 min
+recent_s: 180
+evaluate_every_s: 60
+min_coverage: 0.6
+persist_evaluations: 3
+clear_evaluations: 3
+signals:
+  - { tag: drive_command, kind: trend, direction: up, min_change: 8, min_fit: 0.6 }
+  - { tag: mass_flow, kind: near_reference, ref_tag: setpoint, max_deviation_pct: 3 }
+  # material na correia variando no máximo 5% em relação ao início da janela
+  - { tag: belt_load, kind: stable, max_change: 5 }
+  - { tag: machine_state, kind: state, value: 1, min_fraction: 0.95 }
+allowed_qualities: [GOOD, SIMULATED, UNCERTAIN]
+diagnosis_ref: drive_command_high
+sources:
+  - id: SRC-EW-EW-DRIVE-001
+    kind: rule
+    title: "Aviso antecipado Forja 'Esforço do acionamento subindo aos poucos'"
+    reference: "config/early_warning/EW-DRIVE-001.yaml"
+    evidence_level: FORJA_RULE
+threshold_basis: FORJA_RULE
+threshold_note_pt: >-
+  Limiares definidos pela Forja em relação ao comportamento do próprio equipamento. Não são limites
+  do KCM e precisam ser ajustados depois de observar a operação real.

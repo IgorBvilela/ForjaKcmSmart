@@ -9,13 +9,17 @@
   import { app } from './lib/state.svelte'
   import { TID } from './lib/testids'
   import AboutPage from './routes/AboutPage.svelte'
+  import AlertsPage from './routes/AlertsPage.svelte'
+  import CasesPage from './routes/CasesPage.svelte'
   import CommissioningPage from './routes/CommissioningPage.svelte'
   import CommunicationPage from './routes/CommunicationPage.svelte'
   import ComingSoonPage from './routes/ComingSoonPage.svelte'
   import DashboardPage from './routes/DashboardPage.svelte'
   import DiagnosisPage from './routes/DiagnosisPage.svelte'
+  import EarlyWarningPage from './routes/EarlyWarningPage.svelte'
   import EventsPage from './routes/EventsPage.svelte'
   import HistoryPage from './routes/HistoryPage.svelte'
+  import KnowledgeCasesPage from './routes/KnowledgeCasesPage.svelte'
   import PlantPage from './routes/PlantPage.svelte'
   import RealtimePage from './routes/RealtimePage.svelte'
   import SimulatorPage from './routes/SimulatorPage.svelte'
@@ -90,11 +94,21 @@
           <CommunicationPage equipmentId={route.id} />
         {:else if route.screen === 'kcm/commissioning'}
           <CommissioningPage equipmentId={route.id} />
+        {:else if route.screen === 'alerts'}
+          <AlertsPage equipmentId={route.id} />
+        {:else if route.screen === 'early-warning'}
+          <EarlyWarningPage equipmentId={route.id} />
+        {:else if route.screen === 'cases'}
+          <CasesPage equipmentId={route.id} />
         {:else}
           <ComingSoonPage item={navItemForEqScreen(route.screen)} equipmentId={route.id} />
         {/if}
       {:else if route.name === 'knowledge'}
-        <ComingSoonPage item={knowledgeItem(route.sub)} />
+        {#if route.sub === 'cases'}
+          <KnowledgeCasesPage />
+        {:else}
+          <ComingSoonPage item={knowledgeItem(route.sub)} />
+        {/if}
       {:else if route.name === 'tools'}
         <ComingSoonPage item={toolsItem(route.sub)} />
       {:else if route.name === 'system'}

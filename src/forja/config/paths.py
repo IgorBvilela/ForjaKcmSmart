@@ -37,6 +37,10 @@ class ForjaPaths:
         return self.config_dir / "rules"
 
     @property
+    def early_warning_dir(self) -> Path:
+        return self.config_dir / "early_warning"
+
+    @property
     def alarms_dir(self) -> Path:
         return self.config_dir / "alarms"
 

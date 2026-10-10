@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 from typing import Any
 
 from forja.acquisition.manager import EquipmentManager
@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 ROLLUP_EVERY_S = 60.0
 RETENTION_EVERY_S = 3600.0
+EARLY_WARNING_TICK_S = 10.0
 
 
 class EngineBridge:
@@ -85,6 +86,11 @@ class EngineBridge:
             self.errors += 1
             logger.exception("motor de regras falhou no lote de %s", batch.equipment_id)
             return []
+        return await self.deliver(transitions)
+
+    async def deliver(self, transitions: Sequence[EventTransition]) -> list[EventTransition]:
+        """Salva, publica e (no OPEN) diagnostica cada transição. Usado também pelo aviso
+        antecipado. Erro numa transição não impede as outras."""
         done: list[EventTransition] = []
         for t in transitions:
             try:
@@ -165,12 +171,62 @@ class PeriodicJobs:
         ]
 
 
+class EarlyWarningJob:
+    """Avalia o aviso antecipado de cada equipamento a cada tick (cada regra no próprio ritmo).
+
+    Falha num equipamento é registrada e não interrompe os demais nem a aquisição.
+    """
+
+    def __init__(
+        self,
+        engine: Any,
+        historian: Any,
+        bridge: EngineBridge,
+        clock: Clock,
+        store: ConfigStore,
+        *,
+        tick_s: float = EARLY_WARNING_TICK_S,
+    ) -> None:
+        self._engine = engine
+        self._historian = historian
+        self._bridge = bridge
+        self._clock = clock
+        self._store = store
+        self.tick_s = tick_s
+        self.runs = 0
+        self.errors = 0
+        self.transitions = 0
+
+    async def run_once(self) -> int:
+        self._engine.set_profiles(self._store.profiles)
+        delivered = 0
+        for equipment_id in list(self._store.profiles):
+            try:
+                transitions = await self._engine.evaluate(self._historian, equipment_id)
+                delivered += len(await self._bridge.deliver(transitions))
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                self.errors += 1
+                logger.exception("aviso antecipado falhou para %s", equipment_id)
+        self.runs += 1
+        self.transitions += delivered
+        return delivered
+
+    async def run_forever(self) -> None:
+        while True:
+            await self._clock.sleep(self.tick_s)
+            await self.run_once()
+
+
 async def build_container(paths: ForjaPaths | None = None, clock: Clock | None = None) -> Container:
     """Monta tudo. Importa Blocos 1, 2 e 4 aqui dentro (import tardio, de propósito)."""
     from forja.diagnostics.engine import DiagnosisEngine
     from forja.diagnostics.library import load_library
     from forja.drivers.registry import build_default_registry
     from forja.events.engine import RuleEngine
+    from forja.events.ew_engine import EarlyWarningEngine
+    from forja.events.ew_rules import load_ew_rules
     from forja.events.rules import load_rules
     from forja.historian.core_store import SqliteCoreStore
     from forja.historian.sqlite import SqliteHistorian
@@ -208,6 +264,9 @@ async def build_container(paths: ForjaPaths | None = None, clock: Clock | None =
         clock,
         timezone=store.config.edge.timezone,
     )
+    early_warning = EarlyWarningEngine(
+        load_ew_rules(paths.early_warning_dir), store.profiles, clock
+    )
     manager = EquipmentManager(
         store, registry, historian, bus, clock, collection_gate=collection_gate_for(core)
     )
@@ -226,6 +285,7 @@ async def build_container(paths: ForjaPaths | None = None, clock: Clock | None =
         diagnosis_engine=diagnosis_engine,
         started_at_utc=clock.now_utc(),
         core=core,
+        early_warning=early_warning,
     )
     container.runtime.closeables = [historian, core]
     container.runtime.bridge = EngineBridge(
@@ -253,6 +313,17 @@ async def start(container: Container) -> None:
     if rt.jobs is None:
         rt.jobs = PeriodicJobs(container.historian, container.clock)
     rt.tasks.extend(rt.jobs.start_tasks())
+    if container.early_warning is not None:
+        rt.early_warning_job = EarlyWarningJob(
+            container.early_warning,
+            container.historian,
+            rt.bridge,
+            container.clock,
+            container.store,
+        )
+        rt.tasks.append(
+            asyncio.create_task(rt.early_warning_job.run_forever(), name="forja-early-warning")
+        )
     await container.manager.start_all()
     rt.started = True
     await _expire_stale_open_events(container)

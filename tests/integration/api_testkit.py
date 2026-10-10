@@ -50,6 +50,8 @@ from forja.domain import (
     UnsupportedDriver,
     WhatChangedItem,
 )
+from forja.events.ew_engine import EarlyWarningEngine
+from forja.events.ew_rules import load_ew_rules
 from forja.infra import AsyncBus, FakeClock
 from forja.service.container import Container
 
@@ -813,6 +815,9 @@ def build_world(
     events_repo = AuditingEventRepo(events_inner)
     manager = FakeManager(store, clock)
     core = MemoryCore(clock)
+    early_warning = EarlyWarningEngine(
+        load_ew_rules(paths.early_warning_dir), store.profiles, clock
+    )
     container = Container(
         paths=paths,
         store=store,
@@ -827,6 +832,7 @@ def build_world(
         diagnosis_engine=FakeDiagnosisEngine(),
         started_at_utc=clock.now_utc(),
         core=core,
+        early_warning=early_warning,
     )
     app = create_app(container)
     return ApiWorld(

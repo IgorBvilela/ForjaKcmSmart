@@ -89,6 +89,10 @@ READY_BY_SLUG: dict[str, str] = {
     "kcm-communication": "[data-testid='comm-state']",
     "kcm-commissioning": "[data-testid='cm-header']",
     "system-logs": "[data-testid='health-status']",
+    "alerts": "[data-testid='alerts-kcm']",
+    "early-warning": "[data-testid='ew-disclaimer']",
+    "cases": "[data-testid='cases-recurrence']",
+    "knowledge-cases": "[data-testid='knowledge-cases']",
 }
 
 

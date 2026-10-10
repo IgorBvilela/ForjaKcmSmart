@@ -28,14 +28,11 @@ import Info from '@lucide/svelte/icons/info'
 import { href, type EqScreen, type KnowledgeSub, type SystemSub, type ToolsSub } from './router'
 
 /** Fases do plano que ainda não têm tela. Para o usuário, cada uma vira o nome da etapa. */
-export type FuturePhase = 'E' | 'F' | 'G' | 'L' | 'M'
+export type FuturePhase = 'H' | 'M'
 
-/** Nome legível da etapa (o que o usuário lê no lugar de "fase E"). */
+/** Nome legível da etapa (o que o usuário lê no lugar de "fase H"). */
 export const PHASE_NAMES: Record<FuturePhase, string> = {
-  E: 'Tendências e histórico',
-  F: 'Alertas e diagnóstico avançado',
-  G: 'Comunicação com o KCM',
-  L: 'Saúde e registros',
+  H: 'Cadastro e ficha dos equipamentos',
   M: 'Relatórios, backup e usuários',
 }
 
@@ -98,20 +95,11 @@ export const NAV_GROUPS: NavGroup[] = [
     id: 'inteligencia',
     label: 'Inteligência',
     items: [
-      eq('alerts', 'alerts', 'Alertas', Bell, {
-        phase: 'F',
-        reason: 'Lista de condições abertas com reconhecimento auditado.',
-      }),
+      eq('alerts', 'alerts', 'Alertas', Bell),
       eq('events', 'events', 'Eventos', List),
       eq('diagnostics', 'diagnostics', 'Diagnósticos', Stethoscope),
-      eq('early-warning', 'early-warning', 'Early Warning', Radar, {
-        phase: 'F',
-        reason: 'Sinais fracos antes do alarme: tendência de desvio em relação ao padrão do equipamento.',
-      }),
-      eq('cases', 'cases', 'Casos anteriores', FolderClock, {
-        phase: 'F',
-        reason: 'Casos de campo deste equipamento, com o que foi verificado e o que se confirmou.',
-      }),
+      eq('early-warning', 'early-warning', 'Aviso antecipado', Radar),
+      eq('cases', 'cases', 'Casos anteriores', FolderClock),
     ],
   },
   {
@@ -119,17 +107,17 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'KCM',
     items: [
       eq('kcm/alarms', 'kcm-alarms', 'Alarmes', Siren, {
-        phase: 'G',
+        phase: 'H',
         reason: 'Catálogo de alarmes por chave composta (fabricante, controlador, aplicação, versão).',
       }),
       eq('kcm/communication', 'kcm-communication', 'Comunicação', Cable),
       eq('kcm/commissioning', 'kcm-commissioning', 'Comissionamento', ClipboardCheck),
       eq('kcm/datasheet', 'kcm-datasheet', 'Ficha Técnica', FileText, {
-        phase: 'G',
+        phase: 'H',
         reason: 'Perfil do equipamento com classificação de cada informação (FACT, FIELD_OBSERVED, UNKNOWN).',
       }),
       eq('kcm/components', 'kcm-components', 'Componentes', ComponentIcon, {
-        phase: 'G',
+        phase: 'H',
         reason: 'KCM, MDU, SFT, SIB, encoder, motor e Anybus com a evidência de cada um.',
       }),
     ],
@@ -162,8 +150,6 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Library,
         kind: 'knowledge',
         to: () => href.knowledge('cases'),
-        phase: 'F',
-        reason: 'Biblioteca de casos de campo de todos os equipamentos.',
       },
     ],
   },

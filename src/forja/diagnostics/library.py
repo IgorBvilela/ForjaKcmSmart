@@ -16,6 +16,7 @@ from forja.domain import (
     UNKNOWN,
     Caveat,
     ConfigError,
+    EquipmentProfile,
     EvidenceLevel,
     Hypothesis,
     KnowledgeState,
@@ -162,6 +163,8 @@ class FieldCase(BaseModel):
     plant: str = UNKNOWN
     area: str = UNKNOWN
     equipment: str = UNKNOWN
+    equipment_ids: list[str] = Field(default_factory=list)
+    """Ids dos perfis a que o caso pertence. Vazio: vale a combinação planta + área + nome."""
     application: str = UNKNOWN
     period_pt: str = UNKNOWN
     evidence: KnowledgeState = KnowledgeState.FIELD_OBSERVED
@@ -210,6 +213,31 @@ def load_case(path: Path) -> FieldCase:
         return FieldCase.model_validate(data)
     except ValidationError as exc:
         raise ConfigError(f"{path.name}: {_fmt(exc)}") from exc
+
+
+def case_belongs_to(case: FieldCase, profile: EquipmentProfile) -> bool:
+    """Caso deste equipamento: id listado ou mesma planta, área e nome (nada é inferido)."""
+    if case.equipment_ids:
+        return profile.id in case.equipment_ids
+    known = UNKNOWN not in (case.plant, case.area, case.equipment)
+    return known and (case.plant, case.area, case.equipment) == (
+        profile.plant,
+        profile.area,
+        profile.name,
+    )
+
+
+def cases_for(
+    cases: list[FieldCase], profile: EquipmentProfile
+) -> tuple[list[FieldCase], list[FieldCase]]:
+    """(casos deste equipamento, casos de outros equipamentos com a mesma aplicação)."""
+    own = [c for c in cases if case_belongs_to(c, profile)]
+    same_application = [
+        c
+        for c in cases
+        if c not in own and profile.application != UNKNOWN and c.application == profile.application
+    ]
+    return own, same_application
 
 
 def load_cases(dir_: Path) -> list[FieldCase]:

@@ -103,6 +103,7 @@
         <Badge tone={severityTone(event.severity)} size="md">{event.severity_pt}</Badge>
         <Badge tone={event.status === 'OPEN' ? 'warn' : event.status === 'ACKNOWLEDGED' ? 'info' : 'ghost'} size="md">{event.status_pt}</Badge>
         <QualityBadge quality={event.quality} qualityPt={event.quality_pt} />
+        <Badge tone="ghost" size="md">{event.origin_pt}</Badge>
       </div>
       <h1 class="ev-title">{event.title_pt}</h1>
       <p class="ev-summary">{event.summary_pt}</p>
@@ -118,6 +119,23 @@
           <div><dt class="label">Reconhecido por</dt><dd>{event.acked_by} · {fmtDateTime(event.acked_at_utc)}</dd></div>
         {/if}
       </dl>
+      {#if event.pre_event}
+        <section class="before" data-testid="event-before" aria-labelledby="before-title">
+          <h2 class="label sub" id="before-title">Antes do evento</h2>
+          {#if event.pre_event.changes.length}
+            <ol class="before-list">
+              {#each event.pre_event.changes as c, i (c.tag)}
+                <li class="before-item" class:first={c.first} style:--i={i}>
+                  <span class="lead num">{c.before_event_s >= 1 ? `−${fmtDuration(c.before_event_s)}` : 'na abertura'}</span>
+                  <span class="who">{c.label_pt}{#if c.first}<span class="first-tag">saiu primeiro</span>{/if}</span>
+                </li>
+              {/each}
+              <li class="before-item open"><span class="lead num">0</span><span class="who">Abertura do evento</span></li>
+            </ol>
+          {/if}
+          {#each event.pre_event.narrative_pt as line (line)}<p class="before-line">{line}</p>{/each}
+        </section>
+      {/if}
       {#if contextTimeline.length}
         <h2 class="label sub">Linha do tempo do evento</h2>
         <Timeline items={contextTimeline} testid="event-context-timeline" />
@@ -242,4 +260,52 @@
     .tech { padding: var(--sp-2) var(--sp-4); }
     .json { max-height: 320px; }
   }
+  .before { margin-top: var(--sp-4); }
+  .before-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+    margin: var(--sp-2) 0;
+    padding: 0 0 0 var(--sp-3);
+    list-style: none;
+    border-left: 2px solid var(--border-2);
+  }
+  .before-item {
+    position: relative;
+    display: grid;
+    grid-template-columns: 5.5em minmax(0, 1fr);
+    align-items: baseline;
+    gap: var(--sp-2);
+    padding: 2px 0 2px var(--sp-2);
+    animation: slide var(--dur-screen) var(--ease-out) backwards;
+    animation-delay: calc(var(--i, 0) * var(--stagger));
+  }
+  .before-item::before {
+    content: '';
+    position: absolute;
+    left: calc(-1 * var(--sp-3) - 6px);
+    top: 9px;
+    width: 10px;
+    height: 10px;
+    border-radius: var(--r-pill);
+    background: var(--surf-1);
+    border: 2px solid var(--st-info);
+  }
+  .before-item.first::before { background: var(--st-warn); border-color: var(--st-warn); }
+  .before-item.open::before { background: var(--accent); border-color: var(--accent); }
+  @keyframes slide {
+    from { opacity: 0; transform: translateX(-6px); }
+    to { opacity: 1; transform: none; }
+  }
+  .lead { color: var(--text-2); font: 500 var(--fs-mono-sm) / var(--lh-mono-sm) var(--font-mono); }
+  .who { color: var(--text-1); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
+  .first-tag {
+    margin-left: var(--sp-2);
+    padding: 0 6px;
+    border-radius: var(--r-pill);
+    background: var(--st-warn-bg);
+    color: var(--st-warn);
+    font: 600 var(--fs-caption) / var(--lh-caption) var(--font-ui);
+  }
+  .before-line { margin: var(--sp-1) 0 0; color: var(--text-2); font: var(--fs-caption) / var(--lh-caption) var(--font-ui); max-width: 80ch; }
 </style>

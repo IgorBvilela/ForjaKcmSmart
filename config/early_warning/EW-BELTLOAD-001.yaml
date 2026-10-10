@@ -1,0 +1,41 @@
+# AVISO ANTECIPADO (FORJA_RULE). Tendência e desvio em relação ao comportamento do próprio
+# equipamento. Não é alarme do KCM e não é previsão de falha. Nenhum número aqui veio do KCM:
+# são pontos de partida da Forja, a ajustar depois de observar a operação real.
+schema_version: 1
+id: EW-BELTLOAD-001
+version: 1
+internal_code: EW_EFFORT_UP_LOAD_DOWN
+title_pt: "Esforço subindo, vazão mantida e menos material na correia"
+description_pt: >-
+  O esforço do acionamento sobe aos poucos enquanto a vazão segue perto do setpoint e o material
+  sobre a correia diminui. O controlador está compensando; a condição merece atenção antes de
+  virar parada ou alarme.
+severity: ATTENTION
+applications: [WBF]
+window_s: 900            # janela observada: 15 min
+recent_s: 180            # "agora" para a proximidade do setpoint: últimos 3 min
+evaluate_every_s: 60
+min_coverage: 0.6        # pelo menos 60% da janela com leitura utilizável
+persist_evaluations: 3   # 3 avaliações seguidas antes de abrir o aviso
+clear_evaluations: 3
+signals:
+  # subida de pelo menos 8 pontos na janela, com reta de ajuste >= 0,6 (mudança gradual, não ruído)
+  - { tag: drive_command, kind: trend, direction: up, min_change: 8, min_fit: 0.6 }
+  # vazão a no máximo 3% do setpoint nos últimos 3 min (o controlador ainda entrega)
+  - { tag: mass_flow, kind: near_reference, ref_tag: setpoint, max_deviation_pct: 3 }
+  # queda de pelo menos 10% do material na correia na janela, reta de ajuste >= 0,5
+  - { tag: belt_load, kind: trend, direction: down, min_change: 10, min_fit: 0.5 }
+  # convenção da tag semântica machine_state: 1 = em operação
+  - { tag: machine_state, kind: state, value: 1, min_fraction: 0.95 }
+allowed_qualities: [GOOD, SIMULATED, UNCERTAIN]
+diagnosis_ref: belt_load_low
+sources:
+  - id: SRC-EW-EW-BELTLOAD-001
+    kind: rule
+    title: "Aviso antecipado Forja 'Esforço subindo, vazão mantida e menos material na correia'"
+    reference: "config/early_warning/EW-BELTLOAD-001.yaml"
+    evidence_level: FORJA_RULE
+threshold_basis: FORJA_RULE
+threshold_note_pt: >-
+  Limiares definidos pela Forja em relação ao comportamento do próprio equipamento. Não são limites
+  do KCM e precisam ser ajustados depois de observar a operação real.

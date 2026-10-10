@@ -53,6 +53,10 @@ CAUSE_UNKNOWN_CAVEAT_PT = (
     "A causa confirmada permanece desconhecida até haver evidência de campo que feche a "
     "cadeia causal."
 )
+EARLY_WARNING_CAVEAT_PT = (
+    "Aviso antecipado: tendência e desvio em relação ao comportamento do próprio equipamento. "
+    "Não é previsão de falha e não é alarme do KCM."
+)
 
 
 def evidence_level_for_quality(quality: Quality | None) -> EvidenceLevel:
@@ -92,7 +96,11 @@ class DiagnosisEngine:
         hypotheses = tuple(entry.hypotheses)
         next_checks = tuple(sorted(entry.next_checks, key=lambda c: c.order))
         summary = DiagnosisSummary(
-            title_pt=self.translator.code_title(event.type, default=entry.title_pt),
+            title_pt=(
+                event.title_pt
+                if event.origin == "EARLY_WARNING"
+                else self.translator.code_title(event.type, default=entry.title_pt)
+            ),
             text_pt=f"{event.summary_pt} {entry.text_pt}".strip(),
             internal_code=event.type,
             severity=event.severity,
@@ -124,7 +132,11 @@ class DiagnosisEngine:
         items: list[EvidenceItem] = [
             EvidenceItem(
                 id="EV-RULE",
-                text_pt=f"Regra Forja '{event.title_pt}' atendida a partir de {since_pt}.",
+                text_pt=(
+                    f"Aviso antecipado Forja '{event.title_pt}' atendido a partir de {since_pt}."
+                    if event.origin == "EARLY_WARNING"
+                    else f"Regra Forja '{event.title_pt}' atendida a partir de {since_pt}."
+                ),
                 evidence_level=EvidenceLevel.FORJA_RULE,
                 ts_utc=event.start_utc,
             )
@@ -214,6 +226,8 @@ class DiagnosisEngine:
             texts.append(SIMULATED_CAVEAT_PT)
         if Quality.UNCERTAIN in qualities or event.quality == Quality.UNCERTAIN:
             texts.append(UNCERTAIN_CAVEAT_PT)
+        if event.origin == "EARLY_WARNING":
+            texts.append(EARLY_WARNING_CAVEAT_PT)
         texts.append(CAUSE_UNKNOWN_CAVEAT_PT)
         return tuple(Caveat(text_pt=t) for t in dict.fromkeys(texts))
 
