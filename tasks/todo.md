@@ -9,8 +9,8 @@ Plano: `tasks/plan.md`. Especificação: `docs/produto/especificacao_interface_e
 ## Fase 1 · Agora
 - [x] T1 · Junção dos dados e `GET /api/v1/situation`
 - [x] T2 · Início do alarme do KCM pelo historiador ("início não determinado" quando não houver)
-- [ ] T3 · Tela Agora (`/app/now`)
-- [ ] Checkpoint A · Núcleo e navegador verdes; conferência visual da tela Agora
+- [x] T3 · Tela Agora (`/app/now`)
+- [x] Checkpoint A · Núcleo e navegador verdes; conferência visual da tela Agora
 
 ## Fase 2 · Navegação enxuta
 - [ ] T4 · Títulos independentes do menu

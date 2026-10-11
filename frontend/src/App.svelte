@@ -26,6 +26,7 @@
   import EventsPage from './routes/EventsPage.svelte'
   import HistoryPage from './routes/HistoryPage.svelte'
   import KnowledgeCasesPage from './routes/KnowledgeCasesPage.svelte'
+  import NowPage from './routes/NowPage.svelte'
   import PlantPage from './routes/PlantPage.svelte'
   import RealtimePage from './routes/RealtimePage.svelte'
   import ReportsPage from './routes/ReportsPage.svelte'
@@ -52,6 +53,8 @@
   const title = $derived.by(() => {
     const r = route
     switch (r.name) {
+      case 'now':
+        return `Agora · ${PRODUCT}`
       case 'plant':
         return `Planta · ${PRODUCT}`
       case 'eq': {
@@ -79,7 +82,9 @@
 <AppShell>
   {#key app.path}
     <div class="page" data-testid={TID.page} data-route={routeSlug(route)}>
-      {#if route.name === 'plant'}
+      {#if route.name === 'now'}
+        <NowPage />
+      {:else if route.name === 'plant'}
         <PlantPage />
       {:else if route.name === 'eq'}
         {#if route.eventId}

@@ -26,6 +26,7 @@ export type ToolsSub = 'reports' | 'exports'
 export type SystemSub = 'equipments' | 'settings' | 'backup' | 'logs' | 'about'
 
 export type Route =
+  | { name: 'now' }
   | { name: 'plant' }
   | { name: 'eq'; id: string; screen: EqScreen; eventId?: string }
   | { name: 'knowledge'; sub: KnowledgeSub }
@@ -64,6 +65,8 @@ export function parseRoute(pathname: string): Route {
     return notFound
   }
   switch (segs[0]) {
+    case 'now':
+      return segs.length === 1 ? { name: 'now' } : notFound
     case 'plant':
       return segs.length === 1 ? { name: 'plant' } : notFound
     case 'eq': {
@@ -101,6 +104,7 @@ export function parseRoute(pathname: string): Route {
 }
 
 export const href = {
+  now: () => `${APP_BASE}/now`,
   plant: () => `${APP_BASE}/plant`,
   eq: (id: string, screen: EqScreen = 'dashboard') =>
     `${APP_BASE}/eq/${encodeURIComponent(id)}/${screen}`,
@@ -114,6 +118,8 @@ export const href = {
 /** Slug estável usado em `sidebar-link-<rota>` e no título do documento. */
 export function routeSlug(route: Route): string {
   switch (route.name) {
+    case 'now':
+      return 'now'
     case 'plant':
       return 'plant'
     case 'eq':

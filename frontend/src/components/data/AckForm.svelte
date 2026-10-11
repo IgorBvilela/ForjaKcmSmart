@@ -7,7 +7,10 @@
   let {
     event,
     ondone,
-  }: { event: EventView; ondone?: (updated: EventView) => void } = $props()
+  }: {
+    event: Pick<EventView, 'id' | 'status' | 'acked_by'>
+    ondone?: (updated: EventView) => void
+  } = $props()
 
   let editing = $state(false)
   let saving = $state(false)
