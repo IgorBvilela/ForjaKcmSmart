@@ -42,16 +42,32 @@
     return prefixes.size ? [...prefixes].join(' · ') : 'Planta'
   })
 
+  /** Ordem do resumo. Estado fora da lista entra no fim: nada fora do normal fica sem contagem. */
+  const SUMMARY_ORDER = [
+    'Crítico',
+    'Atenção',
+    'Sem comunicação',
+    'Coleta não iniciada',
+    'Coleta pausada',
+    'Parado',
+    'Desconhecido',
+  ]
+  const SUMMARY_LABEL: Record<string, string> = {
+    'Coleta não iniciada': 'com coleta não iniciada',
+    'Coleta pausada': 'com coleta pausada',
+  }
+
   const summary = $derived.by(() => {
     if (cards.length === 0) return ''
     const counts = new Map<string, number>()
     for (const c of cards) counts.set(c.state_pt, (counts.get(c.state_pt) ?? 0) + 1)
     const parts = [plural(cards.length, 'equipamento', 'equipamentos')]
-    for (const k of ['Crítico', 'Atenção', 'Sem comunicação', 'Parado', 'Desconhecido']) {
+    const others = [...counts.keys()].filter((k) => k !== 'Normal' && !SUMMARY_ORDER.includes(k))
+    for (const k of [...SUMMARY_ORDER, ...others]) {
       const n = counts.get(k)
-      if (n) parts.push(`${fmtNumber(n, 0)} ${k.toLowerCase()}`)
+      if (n) parts.push(`${fmtNumber(n, 0)} ${SUMMARY_LABEL[k] ?? k.toLowerCase()}`)
     }
-    if (parts.length === 1) parts.push('todos em condição normal')
+    if (counts.get('Normal') === cards.length) parts.push('todos em condição normal')
     return parts.join(' · ')
   })
 
