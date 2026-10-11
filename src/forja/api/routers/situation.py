@@ -32,6 +32,9 @@ from forja.api.routers.plant import (
     build_plant_card,
 )
 from forja.domain import Diagnosis, EquipmentProfile, Event, Quality, Sample, Severity
+from forja.events.kcm_alarm import ACTIVE as _ACTIVE
+from forja.events.kcm_alarm import INACTIVE as _INACTIVE
+from forja.events.kcm_alarm import alarm_state
 from forja.events.pre_event import pre_event_summary
 from forja.events.recurrence import ORIGIN_PT
 
@@ -67,9 +70,6 @@ ALARM_CHUNK_S = 3600
 GAP_FACTOR = 3
 """Sem amostra por mais que GAP_FACTOR vezes a amostra forçada, o trecho conta como buraco."""
 USABLE = frozenset({Quality.GOOD, Quality.SIMULATED, Quality.UNCERTAIN})
-_ACTIVE = "ACTIVE"
-_INACTIVE = "INACTIVE"
-_UNKNOWN = "UNKNOWN"
 _CONTINUE = "CONTINUE"
 
 
@@ -143,18 +143,6 @@ def order_entries(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
         )
 
     return [entry for _, entry in sorted(enumerate(entries), key=key)]
-
-
-def alarm_state(samples: Sequence[Sample]) -> str:
-    """Estado do alarme num instante, com a mesma regra da leitura atual do KCM."""
-    unknown = False
-    for s in samples:
-        if s.value is None or s.quality not in USABLE:
-            unknown = True
-            continue
-        if (s.tag == "alarm_active" and s.value == 1) or (s.tag == "alarm_code" and s.value != 0):
-            return _ACTIVE
-    return _UNKNOWN if unknown else _INACTIVE
 
 
 def alarm_run_start(samples: Sequence[Sample], max_gap_s: float) -> tuple[datetime | None, str]:

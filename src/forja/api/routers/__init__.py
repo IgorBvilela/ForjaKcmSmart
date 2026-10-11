@@ -20,6 +20,7 @@ from forja.api.routers import (
     stream,
     system,
     tags,
+    timesplit,
     ui,
 )
 
@@ -30,6 +31,7 @@ ALL_ROUTERS: tuple[APIRouter, ...] = (
     tags.router,
     plant.router,
     situation.router,
+    timesplit.router,
     equipments.router,
     equipment_admin.router,
     history.router,

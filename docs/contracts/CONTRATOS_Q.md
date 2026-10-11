@@ -46,6 +46,21 @@ Somente leitura. Uma resposta com tudo o que a tela Agora e o contador do menu m
 - **Aviso antecipado:** usa a última avaliação guardada de cada regra. A rota nunca dispara a prévia do historiador.
 - **Motivo** (`reason_pt`): o estado da conexão para sem comunicação; "Coleta pausada (em Comunicação)."; "Falta o teste somente leitura desta configuração (em Comunicação)." para coleta não iniciada.
 
+## API: medida de tempo (`GET /api/v1/time-split` e `GET /api/v1/equipments/{id}/time-split`)
+
+Classificação FORJA_RULE (`src/forja/reports/time_split.py`, `src/forja/api/routers/timesplit.py`). Somente leitura: lê o historiador e os eventos guardados. Parâmetros `from` e `to` (padrão: última hora; o fim nunca passa de agora).
+
+| Parte | Definição |
+|---|---|
+| Sem dados | Trecho sem leitura válida da variável de referência (buraco, falha de comunicação, coleta pausada ou não iniciada). Nunca conta como normal nem como fora do normal. |
+| Fora do normal | Trecho com dado e com evento de regra da Forja aberto (atenção para cima) ou com o alarme do KCM ativo. O aviso antecipado não conta. |
+| Dentro do normal | O resto do tempo com dado. |
+
+- **Variável de referência:** a vazão (`mass_flow`); sem ela no mapping, a primeira variável contínua legível.
+- **Leitura válida:** qualidade utilizável (validado, simulado ou incerto). Cada leitura vale até a seguinte, no máximo 3 vezes o intervalo da amostra forçada (o mesmo limite de buraco da tela Agora). A leitura de logo antes do início vale no começo do período.
+- **Alarme do KCM ativo:** a mesma regra da leitura ao vivo (`forja.events.kcm_alarm`): `alarm_active` = 1 ou `alarm_code` ≠ 0. Leitura sem valor ou sem qualidade encerra o trecho.
+- **Resposta:** `from_utc`, `to_utc`, `definition_pt`, `evidence_level` e, por dosador, `id`, `name`, `reference_tag`, `span_s`, `normal_s`, `out_s`, `no_data_s` e as três porcentagens. As três partes somam o período.
+
 ## Interface (`frontend/`)
 
 ### Rotas
@@ -126,6 +141,7 @@ Radio e caixa de marcar usam a classe `.choice`: o alvo é a linha inteira (44 p
 
 | Arquivo | O que prova |
 |---|---|
+| `tests/unit/test_time_split.py`, `tests/integration/test_api_time_split.py` | Medida de tempo: as três partes somam o período; sem dados nunca é normal nem fora do normal; aviso antecipado não conta; alarme do KCM ativo conta. |
 | `tests/integration/test_api_situation.py` | Regras da situação: grupos, frase do topo, ordem, evento em foco, início do alarme do KCM pelo historiador e aviso antecipado sem prévia. |
 | `tests/e2e/test_now.py` | Tela Agora: frase, cartão com o que verificar, reconhecimento, frase pronta e 375 px. |
 | `tests/e2e/test_navigation.py` | Primeira tela, ordem do menu, toda tela a até 2 cliques, contador igual ao da tela Agora, no máximo uma consulta da situação a cada 5 s, gaveta com o foco preso e a regra de texto em 21 telas. |
