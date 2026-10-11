@@ -35,14 +35,14 @@ Estado: aprovada em 2026-10-11. A intenção foi confirmada em entrevista com o 
 4. O tema escuro continua como base, porque é o único que o usuário vê hoje.
 5. O modo TV, nesta versão, usa uma TV ligada no próprio PC do Forja, como segundo monitor. A interface só abre no próprio PC (`bind_host: 127.0.0.1`, ADR 0030).
 6. Celular, nesta versão, quer dizer que as telas principais funcionam em 375 px.
-7. O código continua com nomes em inglês (`SituationPage`, `TvPage`), e o texto de tela em português.
+7. O código continua com nomes em inglês (`NowPage`, `TvPage`), e o texto de tela em português.
 8. O cabeçalho continua como está: seletor de equipamento, estado do Edge, selo "Somente leitura", relógio e a faixa DADOS SIMULADOS.
 
 ## 4. Menu novo
 
 | Ordem | Entrada | Trabalho único | De onde vem |
 |---|---|---|---|
-| 1 | Situação (nome provisório) | Está tudo bem? O que verifico primeiro? | Nova. Reúne o essencial de Alertas, Eventos, Diagnósticos, Aviso antecipado e Casos anteriores |
+| 1 | Agora | Está tudo bem? O que verifico primeiro? | Nova. Reúne o essencial de Alertas, Eventos, Diagnósticos, Aviso antecipado e Casos anteriores |
 | 2 | Planta | Ver todos os dosadores | Planta |
 | 3 | Dashboard | Um dosador por dentro | Dashboard. Tempo Real, Tendências, Histórico e Eventos viram abas |
 | 4 | Comunicação | Ligar um KCM: protocolo, endereço, teste | Comunicação, com o mapping numa seção fechada |
@@ -79,7 +79,7 @@ Documentos e Manuais saem do menu até existirem (fase P).
 
 ## 6. Telas
 
-### 6.1 Situação (tela de ouro, primeira tela)
+### 6.1 Agora (tela de ouro, primeira tela)
 
 **Topo, para o gerente:** uma frase grande.
 - Se tudo está bem: "Tudo dentro do normal" e, embaixo, "[4] dosadores · atualizado há [3 s]".
@@ -157,7 +157,7 @@ O resto da tela:
 ### 6.6 Modo TV
 
 - **Tela:** endereço próprio (`/app/tv`), tela cheia, sem menu e sem precisar de clique.
-- **Troca de tela:** mostra a Situação. Quando está tudo bem, alterna com a Planta a cada [20 s]. Com problema, fica parada na Situação.
+- **Troca de tela:** mostra a tela Agora. Quando está tudo bem, alterna com a Planta a cada [20 s]. Com problema, fica parada na tela Agora.
 - **Leitura:** letra grande, relógio e "atualizado há N s".
 - **Dado parado:** Edge sem resposta e dado parado aparecem em destaque. Valor velho nunca aparece como atual.
 - **Proteção da TV:** o conteúdo se desloca de leve, de tempos em tempos, para a imagem não marcar a tela.
@@ -165,7 +165,7 @@ O resto da tela:
 
 ### 6.7 Celular
 
-- **Nesta versão:** Situação, Planta, Dashboard e Comunicação funcionam em 375 px.
+- **Nesta versão:** Agora, Planta, Dashboard e Comunicação funcionam em 375 px.
 - **Etapa separada, depois do campo:** abrir o Forja na rede da planta. Isso exige três coisas:
   - login com usuários, senhas e permissões (ADR 0014);
   - HTTPS;
@@ -176,12 +176,12 @@ O resto da tela:
 
 | Exigência | Como entra aqui | Classificação |
 |---|---|---|
-| Hierarquia de telas (ISA-101): visão geral, unidade, detalhe, diagnóstico | Situação e Planta → Dashboard → Gráficos e Histórico → Diagnóstico | TECHNICAL_OPINION |
+| Hierarquia de telas (ISA-101): visão geral, unidade, detalhe, diagnóstico | Agora e Planta → Dashboard → Gráficos e Histórico → Diagnóstico | TECHNICAL_OPINION |
 | Cor reservada para o anormal (IHM de alto desempenho) | §5 | TECHNICAL_OPINION |
 | Alarme ≠ evento, reconhecimento registrado, tela sem enxurrada de alarmes (ISA-18.2) | Três origens separadas, "Reconhecer" auditado, um cartão por dosador | TECHNICAL_OPINION |
 | Qualidade sempre visível; valor velho nunca como atual; buraco nunca preenchido | Regras atuais mantidas em todas as telas | FORJA_RULE |
 | Tela de sala de controle legível de longe, sem interação, sem marcar a TV | Modo TV | TECHNICAL_OPINION |
-| Hipótese com evidência, nunca como causa | A Situação mostra o nível de evidência da verificação | FORJA_RULE |
+| Hipótese com evidência, nunca como causa | A tela Agora mostra o nível de evidência da verificação | FORJA_RULE |
 
 ## 8. Stack
 
@@ -212,10 +212,10 @@ cd frontend; npm run check; npm run build; cd ..          # tipos e build da int
 
 **Interface:**
 - Telas novas:
-  - `frontend/src/routes/SituationPage.svelte`
+  - `frontend/src/routes/NowPage.svelte`
   - `frontend/src/routes/TvPage.svelte`
 - Componentes:
-  - em `frontend/src/components/situation/`;
+  - em `frontend/src/components/now/`;
   - o menu da engrenagem e as abas do dosador, em `frontend/src/components/shell/`.
 - Menu em `frontend/src/lib/nav.ts`. Os títulos das páginas ganham um mapa próprio, porque hoje dependem do menu (`App.svelte`).
 
@@ -223,7 +223,7 @@ cd frontend; npm run check; npm run build; cd ..          # tipos e build da int
 
 **Testes:**
 - `tests/integration/test_api_situation.py`
-- `tests/e2e/test_situation.py`
+- `tests/e2e/test_now.py`
 - `tests/e2e/test_tv.py`
 - `tests/e2e/test_navigation.py`
 
@@ -258,7 +258,7 @@ cd frontend; npm run check; npm run build; cd ..          # tipos e build da int
 
 Cada passo começa pelo teste.
 
-**Núcleo (pytest), na rota da Situação:**
+**Núcleo (pytest), na rota da tela Agora:**
 - a ordem por gravidade;
 - o "desde quando" de cada tipo;
 - "sem dados" nunca vira normal;
@@ -267,14 +267,14 @@ Cada passo começa pelo teste.
 - a rota é GET e entra na prova de somente leitura.
 
 **Navegador (Playwright + Edge):**
-- Situação com tudo normal, com "pouco material na correia" e com falha de comunicação.
+- Agora com tudo normal, com "pouco material na correia" e com falha de comunicação.
 - Planta em 2 × 2 com 4 dosadores.
 - Comunicação direta, contra o servidor Modbus falso de teste.
 - Engrenagem: toda tela de hoje alcançável em até 2 cliques.
 - Modo TV:
   - sem controles;
   - troca de tela sozinha;
-  - fica na Situação quando há problema;
+  - fica na tela Agora quando há problema;
   - mostra dado parado.
 - Larguras de 375, 768, 1440 e 1920 px.
 
@@ -297,7 +297,7 @@ Cada passo começa pelo teste.
   - conferência visual antes de entregar;
   - texto em português, tokens e telas responsivas.
 - **Perguntar antes:**
-  - mudança no backend além da rota da Situação;
+  - mudança no backend além da rota da tela Agora e da medida de tempo do §16;
   - dependência nova;
   - abrir o Forja na rede ou criar login;
   - apagar qualquer função;
@@ -314,7 +314,7 @@ Cada passo começa pelo teste.
 
 1. O menu principal tem 4 entradas e a engrenagem.
 2. Todas as telas de hoje abrem em até 2 cliques, a partir do menu, da engrenagem ou das abas. A exceção são Documentos e Manuais, da fase P.
-3. A Situação funciona nos dois casos:
+3. A tela Agora funciona nos dois casos:
    - com tudo normal, mostra "Tudo dentro do normal";
    - no cenário "pouco material na correia", assim que o evento abre, mostra o cartão do dosador com: desde quando, o que mudou primeiro, o que verificar primeiro e as três origens separadas.
 4. Planta: 4 dosadores em 2 × 2 a partir de 1024 px e em 1 coluna em 375 px, sem rolagem lateral.
@@ -323,7 +323,7 @@ Cada passo começa pelo teste.
 7. Modo TV:
    - não tem menu nem controles;
    - troca de tela sozinha;
-   - fica na Situação quando há problema;
+   - fica na tela Agora quando há problema;
    - mostra "atualizado há N s" e dado parado em destaque.
 8. Provas:
    - núcleo e navegador verdes;
@@ -331,29 +331,68 @@ Cada passo começa pelo teste.
    - conferência visual com 0 erro em 375, 768, 1440 e 1920 px.
 9. O resumo da Planta continua contando "sem dados" à parte, sem nunca chamá-lo de normal (`tests/e2e/test_plant_collection.py` verde).
 
-## 15. Perguntas em aberto (a prévia decide)
+## 15. Decisões da prévia (2026-10-11)
 
-- O nome da tela de ouro: Situação, Agora ou Resumo.
-- O cartão da Planta: quais informações entram.
-- O Dashboard: quais abas, e com que nomes.
-- A Comunicação:
-  - lista de dosadores primeiro, ou um dosador por vez com seletor;
-  - "Salvar e ativar" num botão só ou em dois.
-- O modo TV: o tempo de troca.
-- A engrenagem: um painel que abre ao lado ou uma página própria.
+| Tema | Escolha |
+|---|---|
+| Nome da tela de ouro | **Agora** |
+| Menu | C · trilho com ícones grandes e o nome embaixo; no celular vira gaveta |
+| Tela Agora | C · gerente à esquerda (números grandes), manutenção à direita (cartões) |
+| Planta | C · cartão com o desvio do setpoint |
+| Dashboard | C · abas Visão, Variáveis, Gráficos e Ocorrências |
+| Comunicação | A · passo a passo numa coluna |
+| Engrenagem | B · página de atalhos em grupos |
+| Modo TV | sem escolha na prévia (ver abaixo) |
 
-## 16. Sugestões extras (opcionais; nada entra sem aprovação)
+Itens marcados como "quero":
+- **Tela Agora:**
+  - linha compacta para os dosadores normais;
+  - botão Reconhecer no cartão;
+  - nível de evidência ao lado da verificação;
+  - frase pronta para o gerente copiar.
+- **Planta:** desde quando, se não estiver normal; selo Simulado no cartão.
+- **Comunicação:** um botão só, "Salvar e ativar"; aviso de segurança numa frase só.
+- **Modo TV:** relógio grande; aviso forte quando um dosador entra em atenção; deslocamento leve para não marcar a TV.
 
-1. Resumo do turno para o gerente, para imprimir. Precisa de uma medida nova, "tempo fora do normal", que hoje não existe.
-2. Atalhos de teclado de 1 a 4 para as quatro telas.
-3. Tema claro opcional: a paleta já existe no CSS, só falta o botão.
-4. Aviso visual forte no modo TV quando um dosador entra em atenção, que pode ser desligado.
-5. QR code na TV para abrir no celular, depois da etapa de rede e login.
+Itens sem resposta, mantidos como a prévia mostrou (o responsável confirma ou recusa):
+- contador de problemas ao lado da entrada Agora;
+- desenho animado do dosador na aba Visão.
 
-Diferenciais:
+Decisões derivadas das escolhas (o responsável confirma ou recusa):
+- **Histórico:** as abas da opção C não têm Histórico.
+  - A tabela do historiador vira a vista "Tabela" dentro de Gráficos, porque gráfico e tabela mostram o mesmo período.
+  - A rota de hoje continua.
+- **Ocorrências:** reúne eventos, alertas (três origens), diagnósticos, aviso antecipado e casos anteriores do dosador.
+- **Modo TV:** opção B (tudo numa tela), com convicção.
+  - Quem olha a TV vê a tela Agora e a Planta juntas, sem esperar a troca.
+  - Quando a Planta não couber, as páginas da Planta alternam a cada 20 s.
+  - Com problema, a tela Agora nunca sai de vista.
+- **Rota:** a tela Agora fica em `/app/now`; os dados continuam em `GET /api/v1/situation`.
 
-- **Frase pronta:** um botão monta, sem IA, uma frase que o gerente copia. Exemplo: "[Dosador A] em atenção desde [14:32]: [material na correia caiu]; verificar primeiro [alimentação do silo]". O botão só copia; nada sai da máquina.
-- **Placar do dia na TV:** tempo dentro do normal hoje, por dosador. Depende da medida do item 1.
+## 16. Extras aprovados na prévia
+
+Todos entram nesta fase, menos o QR code:
+
+1. **Resumo do turno para imprimir:** o que aconteceu no turno e quanto tempo cada dosador ficou dentro do normal, fora do normal e sem dados.
+   - Depende da medida nova, descrita abaixo.
+   - Os horários dos turnos são da planta: vêm da configuração (`config/`), nunca do código.
+   - Sem turno configurado, a tela pede o período (início e fim).
+2. **Atalhos de teclado de 1 a 4** para Agora, Planta, Dashboard e Comunicação.
+   - Atalho de uma tecla só precisa poder ser desligado (WCAG 2.2, critério 2.1.4). Por isso fica um "ligar/desligar" na página da engrenagem, guardado no navegador.
+   - O atalho não age enquanto se digita num campo.
+3. **Tema claro opcional:** botão para trocar o tema, com a escolha guardada no navegador. A conferência visual passa a rodar nos dois temas.
+4. **Placar do dia na TV:** tempo dentro do normal hoje, por dosador, com a mesma medida nova.
+5. **Frase pronta** para o gerente copiar (já marcada na tela Agora).
+   - O botão monta a frase sem IA e só copia; nada sai da máquina.
+   - Exemplo: "[Dosador A] em atenção desde [14:32]: [material na correia caiu]; verificar primeiro [alimentação do silo]".
+6. **QR code na TV para abrir no celular:** anotado para a etapa de rede e login. Antes dela, o celular não alcança o Forja, e o código não teria para onde levar.
+
+**Medida nova: tempo dentro do normal, fora do normal e sem dados**, por dosador e por período.
+- **Sem dados:** trecho sem leitura válida (buraco, falha de comunicação, coleta pausada ou não iniciada). Nunca conta como normal nem como fora do normal.
+- **Fora do normal:** trecho com evento da Forja aberto (regra, gravidade de atenção para cima) ou com alarme do KCM ativo.
+- **Dentro do normal:** o resto do tempo com dado.
+- O aviso antecipado não conta como fora do normal: é sinal fraco e aparece à parte.
+- Classificação: FORJA_RULE. Contrato em `docs/contracts/CONTRATOS_Q.md`.
 
 ## 17. Kit de skills por etapa
 
@@ -374,7 +413,7 @@ O kit do projeto cita `design-taste-frontend` e `dataviz`, que não estão insta
 
 - Cerca de 10 testes de navegador dependem do menu. A migração está prevista no §12, sem apagar o que eles provam.
 - Os títulos das páginas vêm do menu e precisam de um mapa próprio.
-- O início do alarme do KCM não é guardado. A Situação calcula pelo historiador, numa janela limitada.
+- O início do alarme do KCM não é guardado. A tela Agora calcula pelo historiador, numa janela limitada.
 - O modo TV, nesta versão, depende de uma TV ligada no PC do Forja.
 - O uso no celular, de verdade, depende da etapa de rede e login (revisão da ADR 0030).
-- A tela de Eventos, no modo diagnósticos, faz uma consulta por evento, até 100. A Situação não repete esse padrão.
+- A tela de Eventos, no modo diagnósticos, faz uma consulta por evento, até 100. A tela Agora não repete esse padrão.

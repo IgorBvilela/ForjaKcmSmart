@@ -38,11 +38,12 @@ A0 fundação ✔ · A1 núcleo ✔ (2026-10-01, 528 testes) · B shell/design �
 
 ## Fase Q · Interface enxuta (em andamento, branch local `nova-interface`)
 Fonte da verdade: `docs/produto/especificacao_interface_enxuta.md` (aprovada). Kit da fase: §17 da especificação.
-- Menu principal com 4 entradas: Situação (tela de ouro e primeira tela: "está tudo bem? o que verifico primeiro?"), Planta, Dashboard, Comunicação. O resto atrás de uma engrenagem. Nenhuma função é apagada e nenhuma rota antiga quebra.
+- Menu principal com 4 entradas: Agora (tela de ouro e primeira tela: "está tudo bem? o que verifico primeiro?"), Planta, Dashboard, Comunicação. O resto atrás de uma engrenagem. Nenhuma função é apagada e nenhuma rota antiga quebra.
 - Texto: título curto e no máximo 1 frase de apoio por tela; o aviso de segurança fica só no selo "Somente leitura" do cabeçalho.
 - Planta em grade quase quadrada (4 dosadores = 2 × 2). Comunicação direta: protocolo → endereço → testar → salvar e ativar; tempos e mapping fechados.
-- Situação lê `GET /api/v1/situation` (somente leitura). "Desde quando" nunca inventado: o início do alarme do KCM vem do historiador ou aparece como "início não determinado"; "sem dados" nunca conta como normal.
+- A tela Agora lê `GET /api/v1/situation` (somente leitura). "Desde quando" nunca inventado: o início do alarme do KCM vem do historiador ou aparece como "início não determinado"; "sem dados" nunca conta como normal.
 - Modo TV em `/app/tv` (TV como segundo monitor do PC do Forja nesta versão). Celular nesta versão = telas em 375 px; abrir na rede com login fica para depois do campo e revisa a ADR 0030.
 - Prévia em localhost antes de construir qualquer tela da fase.
+- Escolhas da prévia (§15 da especificação): menu em trilho com ícones grandes; tela Agora com gerente à esquerda e manutenção à direita; Planta com desvio do setpoint; Dashboard com abas Visão, Variáveis, Gráficos e Ocorrências; Comunicação passo a passo numa coluna com "Salvar e ativar"; engrenagem abre a página `/app/more`. Extras aprovados no §16 (medida de tempo dentro/fora do normal, resumo do turno, placar na TV, atalhos 1 a 4 com desligar, tema claro). Plano em `tasks/plan.md`.
 
 Distribuição: `scripts\build_windows.ps1` gera `build\release\ForjaKCM-<versão>-win64.zip` (PyInstaller onedir + install/uninstall + LEIA-ME). Programa em Program Files, dados em ProgramData (`FORJA_HOME`), serviço `ForjaKCM` como LocalService. Pacote nunca sai em modo desenvolvimento (`packaging/production_seed.py`). Nunca registrar o serviço nesta máquina de desenvolvimento sem pedido explícito.
