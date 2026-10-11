@@ -25,7 +25,7 @@ Plano: `tasks/plan.md`. Especificação: `docs/produto/especificacao_interface_e
 - [x] T8 · Comunicação direta
 - [x] T9 · Texto enxuto: telas de dados (cabeçalho padrão com uma frase de apoio e "Saiba mais")
   - Corrigidos na conferência visual: resumo do diagnóstico cortado com reticências; opções de formato do CSV com 20 e 24 px (agora a linha inteira é o alvo); "Abrir diagnóstico" e títulos da linha do tempo com 20 px; eixo do gráfico repetindo "62, 62, 62"; coluna "Sem leitura" escondida atrás da rolagem no quadro estreito
-- [ ] T10 · Texto enxuto: telas de sistema
+- [x] T10 · Texto enxuto: telas de sistema (o título de Saúde passa a ser "Saúde e logs", igual ao menu)
 - [ ] T11 · Texto enxuto: telas do dosador e de inteligência
 - [ ] Checkpoint C · Uma frase de apoio por tela principal; bateria verde; conferência visual
 
@@ -45,5 +45,6 @@ Plano: `tasks/plan.md`. Especificação: `docs/produto/especificacao_interface_e
 - Etapa de rede e login (fora desta fase): QR code na TV
 
 ## Achados para decidir depois
+- No Windows, quando um navegador fecha de repente a conexão ao vivo (SSE), o `asyncio` registra "Exception in callback _ProactorBasePipeTransport._call_connection_lost()" e "socket.send() raised exception" nos registros do serviço. É ruído, mas aparece como ERROR em Saúde e logs. Proposta: tratar a desconexão do cliente no fluxo SSE e silenciar esse caso.
 - Resolvido no T9: com evento aberto o servidor manda uma atualização por segundo; o cliente agora só reconsulta quando estado, gravidade, qualidade ou reconhecimento mudam (o detalhe do próprio evento continua acompanhando).
 - Regra "Pouco material sobre a correia": o evento se encerra cerca de 50 s depois de abrir, embora a carga continue baixa, porque a regra olha a queda dentro de 60 s e não o nível. O alarme do KCM e o evento "Esforço do acionamento alto" seguem ativos. Decisão de domínio para o usuário.

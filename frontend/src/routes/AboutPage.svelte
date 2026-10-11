@@ -6,6 +6,7 @@
   import { TID } from '../lib/testids'
   import Badge from '../components/ui/Badge.svelte'
   import Card from '../components/ui/Card.svelte'
+  import PageHeader from '../components/ui/PageHeader.svelte'
   import EmptyState from '../components/ui/EmptyState.svelte'
 
   let about = $state<About | null>(null)
@@ -28,10 +29,7 @@
 </script>
 
 <section class="about" data-testid={TID.about}>
-  <header class="about-head">
-    <p class="label">Sistema</p>
-    <h1 class="about-title">Sobre</h1>
-  </header>
+  <PageHeader kicker="Sistema" title="Sobre" />
 
   <Card class="phrase-card">
     <p class="phrase">
@@ -103,15 +101,6 @@
 
 <style>
   .about { display: flex; flex-direction: column; gap: var(--sp-5); }
-  .about-head .label { margin: 0 0 var(--sp-1); }
-  .about-title {
-    margin: 0;
-    font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui);
-    color: var(--text-1);
-  }
-  @media (min-width: 1024px) {
-    .about-title { font-size: var(--fs-display); line-height: var(--lh-display); }
-  }
   .phrase {
     margin: 0;
     max-width: 60ch;

@@ -21,6 +21,7 @@
   import { href } from '../lib/router'
   import Badge from '../components/ui/Badge.svelte'
   import Card from '../components/ui/Card.svelte'
+  import PageHeader from '../components/ui/PageHeader.svelte'
   import EmptyState from '../components/ui/EmptyState.svelte'
 
   const cards = $derived(
@@ -174,14 +175,11 @@
 </script>
 
 <section class="eqs" data-testid="equipments">
-  <header class="head">
-    <p class="label">Sistema</p>
-    <h1 class="title">Equipamentos</h1>
-    <p class="sub">
-      Cadastro dos equipamentos observados pela Forja. A comunicação de cada um é configurada em
-      KCM › Comunicação, com teste somente leitura antes da coleta. Nada aqui fala com o KCM.
-    </p>
-  </header>
+  <PageHeader kicker="Sistema" title="Equipamentos" lead="Cadastro dos equipamentos que a Forja observa.">
+    {#snippet more()}
+      <p>A comunicação de cada um é configurada em Comunicação, com teste somente leitura antes da coleta. Nada aqui fala com o KCM.</p>
+    {/snippet}
+  </PageHeader>
 
   <label class="who">
     <span class="label">Responsável pelas alterações</span>
@@ -325,12 +323,6 @@
 
 <style>
   .eqs { display: flex; flex-direction: column; gap: var(--sp-5); }
-  .head .label { margin: 0 0 var(--sp-1); }
-  .title { margin: 0; color: var(--text-1); font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui); }
-  @media (min-width: 1024px) {
-    .title { font-size: var(--fs-display); line-height: var(--lh-display); }
-  }
-  .sub { margin: var(--sp-1) 0 0; max-width: 72ch; color: var(--text-2); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
   .who, .field { display: flex; flex-direction: column; gap: var(--sp-1); min-width: 0; }
   .who { max-width: 360px; }
   input, select {

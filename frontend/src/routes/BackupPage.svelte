@@ -12,6 +12,7 @@
   import { app } from '../lib/state.svelte'
   import Badge from '../components/ui/Badge.svelte'
   import Card from '../components/ui/Card.svelte'
+  import PageHeader from '../components/ui/PageHeader.svelte'
   import Disclosure from '../components/ui/Disclosure.svelte'
   import EmptyState from '../components/ui/EmptyState.svelte'
 
@@ -87,14 +88,11 @@
 </script>
 
 <section class="bk" data-testid="backup">
-  <header class="head">
-    <p class="label">Sistema</p>
-    <h1 class="title">Backup</h1>
-    <p class="sub">
-      Cópia consistente dos bancos locais e da configuração, com conferência de integridade. O backup
-      lê os bancos com o serviço funcionando; restaurar exige o serviço parado.
-    </p>
-  </header>
+  <PageHeader kicker="Sistema" title="Backup" lead="Cópia dos bancos e da configuração, com conferência de integridade.">
+    {#snippet more()}
+      <p>O backup lê os bancos com o serviço funcionando. Restaurar exige o serviço parado.</p>
+    {/snippet}
+  </PageHeader>
 
   {#if error && !data}
     <EmptyState title="Não foi possível carregar os backups" text={error} />
@@ -179,12 +177,6 @@
 
 <style>
   .bk { display: flex; flex-direction: column; gap: var(--sp-5); }
-  .head .label { margin: 0 0 var(--sp-1); }
-  .title { margin: 0; color: var(--text-1); font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui); }
-  @media (min-width: 1024px) {
-    .title { font-size: var(--fs-display); line-height: var(--lh-display); }
-  }
-  .sub { margin: var(--sp-1) 0 0; max-width: 72ch; color: var(--text-2); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
   .top { display: grid; gap: var(--sp-4); grid-template-columns: 1fr; }
   @media (min-width: 1024px) { .top { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .big { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin: 0 0 var(--sp-2); color: var(--text-1); font: 600 var(--fs-h3) / var(--lh-h3) var(--font-ui); }

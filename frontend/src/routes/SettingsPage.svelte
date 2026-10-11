@@ -4,6 +4,7 @@
   import { onMount } from 'svelte'
   import { errorMessage, request } from '../lib/api'
   import Card from '../components/ui/Card.svelte'
+  import PageHeader from '../components/ui/PageHeader.svelte'
   import EmptyState from '../components/ui/EmptyState.svelte'
 
   interface Settings {
@@ -44,11 +45,7 @@
 </script>
 
 <section class="set" data-testid="settings">
-  <header class="head">
-    <p class="label">Sistema</p>
-    <h1 class="title">Configuração</h1>
-    <p class="sub">O que este Edge está usando agora e onde fica cada pasta.</p>
-  </header>
+  <PageHeader kicker="Sistema" title="Configuração" lead="O que este Edge usa agora e onde fica cada pasta." />
 
   {#if error && !data}
     <EmptyState title="Não foi possível carregar a configuração" text={error} />
@@ -100,12 +97,6 @@
 
 <style>
   .set { display: flex; flex-direction: column; gap: var(--sp-5); }
-  .head .label { margin: 0 0 var(--sp-1); }
-  .title { margin: 0; color: var(--text-1); font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui); }
-  @media (min-width: 1024px) {
-    .title { font-size: var(--fs-display); line-height: var(--lh-display); }
-  }
-  .sub { margin: var(--sp-1) 0 0; max-width: 72ch; color: var(--text-2); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
   .note { margin: 0; padding: var(--sp-3) var(--sp-4); border: 1px solid var(--st-info); border-radius: var(--r-3); background: var(--st-info-bg); color: var(--text-1); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
   .cards { display: grid; gap: var(--sp-4); grid-template-columns: 1fr; }
   @media (min-width: 1024px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

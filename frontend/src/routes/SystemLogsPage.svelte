@@ -12,6 +12,7 @@
   import { fmtDateTime, fmtDuration, fmtNumber, fmtWhen } from '../lib/format'
   import { app } from '../lib/state.svelte'
   import Card from '../components/ui/Card.svelte'
+  import PageHeader from '../components/ui/PageHeader.svelte'
   import EmptyState from '../components/ui/EmptyState.svelte'
 
   type Sev = 'ok' | 'info' | 'warn' | 'crit'
@@ -137,13 +138,11 @@
 </script>
 
 <section class="sys" data-testid="system-logs">
-  <header class="head">
-    <div>
-      <p class="label">Sistema</p>
-      <h1 class="title">Saúde e registros</h1>
-      <p class="sub">Como está cada parte do Forja Edge agora, e os registros do serviço, da comunicação e da auditoria.</p>
-    </div>
-  </header>
+  <PageHeader kicker="Sistema" title="Saúde e logs" lead="Como está cada parte do Edge agora, com os registros do serviço.">
+    {#snippet more()}
+      <p>Os registros cobrem o serviço, a comunicação com o KCM e a auditoria das alterações.</p>
+    {/snippet}
+  </PageHeader>
 
   {#if error}
     <EmptyState title="Não foi possível consultar a saúde do Edge" text={error} />
@@ -288,10 +287,6 @@
 
 <style>
   .sys { display: flex; flex-direction: column; gap: var(--sp-5); min-width: 0; }
-  .head .label { margin: 0 0 var(--sp-1); }
-  .title { margin: 0; font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui); color: var(--text-1); }
-  @media (min-width: 1024px) { .title { font-size: var(--fs-display); line-height: var(--lh-display); } }
-  .sub { margin: var(--sp-1) 0 0; max-width: 72ch; color: var(--text-2); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
   .sk { height: 300px; border-radius: var(--r-4); background: var(--surf-2); opacity: 0.6; }
   .status { display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-4) var(--sp-5); border-radius: var(--r-4); border: 1px solid var(--border-1); background: var(--surf-1); animation: rise var(--dur-base) var(--ease-out) both; }
   .status b { display: block; color: var(--text-1); font: 600 var(--fs-h2) / var(--lh-h2) var(--font-ui); }

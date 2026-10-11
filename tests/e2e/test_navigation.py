@@ -192,6 +192,11 @@ LEAN_SCREENS = [
     (f"/app/eq/{EQ_MAIN}/history", "history"),
     ("/app/tools/exports", "tools-exports"),
     ("/app/tools/reports", "tools-reports"),
+    ("/app/system/equipments", "system-equipments"),
+    ("/app/system/backup", "system-backup"),
+    ("/app/system/logs", "system-logs"),
+    ("/app/system/settings", "system-settings"),
+    ("/app/system/about", "system-about"),
 ]
 
 
