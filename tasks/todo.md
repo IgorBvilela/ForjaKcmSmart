@@ -13,7 +13,7 @@ Plano: `tasks/plan.md`. Especificação: `docs/produto/especificacao_interface_e
 - [x] Checkpoint A · Núcleo e navegador verdes; conferência visual da tela Agora
 
 ## Fase 2 · Navegação enxuta
-- [ ] T4 · Títulos independentes do menu
+- [x] T4 · Títulos independentes do menu
 - [ ] T5 · Menu com 4 entradas e engrenagem; rota inicial `/app/now`
 - [ ] T6 · Abas do Dashboard
 - [ ] Checkpoint B · Todas as telas a até 2 cliques; bateria completa verde

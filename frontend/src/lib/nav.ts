@@ -1,4 +1,4 @@
-/** Os 7 grupos da sidebar (spec §46) e as rotas de cada item. Fase = quando a tela deixa de ser EmptyState. */
+/** Catálogo das telas e grupos da sidebar. Fase = quando a tela deixa de ser EmptyState. */
 import type { Component } from 'svelte'
 import Factory from '@lucide/svelte/icons/factory'
 import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard'
@@ -73,136 +73,124 @@ function eq(screen: EqScreen, slug: string, label: string, icon: NavItem['icon']
   }
 }
 
+/** Catálogo de todas as telas com rota. Títulos e estados vazios saem daqui; o menu só aponta. */
+export const ROUTE_ITEMS = {
+  plant: { slug: 'plant', label: 'Planta', icon: Factory, kind: 'plant', to: () => href.plant() },
+  dashboard: eq('dashboard', 'dashboard', 'Dashboard', LayoutDashboard),
+  realtime: eq('realtime', 'realtime', 'Tempo Real', Activity),
+  trends: eq('trends', 'trends', 'Tendências', ChartLine),
+  history: eq('history', 'history', 'Histórico', Archive),
+  alerts: eq('alerts', 'alerts', 'Alertas', Bell),
+  events: eq('events', 'events', 'Eventos', List),
+  diagnostics: eq('diagnostics', 'diagnostics', 'Diagnósticos', Stethoscope),
+  earlyWarning: eq('early-warning', 'early-warning', 'Aviso antecipado', Radar),
+  cases: eq('cases', 'cases', 'Casos anteriores', FolderClock),
+  kcmAlarms: eq('kcm/alarms', 'kcm-alarms', 'Alarmes', Siren),
+  kcmCommunication: eq('kcm/communication', 'kcm-communication', 'Comunicação', Cable),
+  kcmCommissioning: eq('kcm/commissioning', 'kcm-commissioning', 'Comissionamento', ClipboardCheck),
+  kcmDatasheet: eq('kcm/datasheet', 'kcm-datasheet', 'Ficha Técnica', FileText),
+  kcmComponents: eq('kcm/components', 'kcm-components', 'Componentes', ComponentIcon),
+  knowledgeDocuments: {
+    slug: 'knowledge-documents',
+    label: 'Documentos',
+    icon: BookOpen,
+    kind: 'knowledge',
+    to: () => href.knowledge('documents'),
+    phase: 'P',
+    reason: 'Biblioteca de documentos locais com classificação da fonte.',
+  },
+  knowledgeManuals: {
+    slug: 'knowledge-manuals',
+    label: 'Manuais',
+    icon: BookText,
+    kind: 'knowledge',
+    to: () => href.knowledge('manuals'),
+    phase: 'P',
+    reason: 'Manuais do fabricante e da máquina, indexados por seção.',
+  },
+  knowledgeCases: {
+    slug: 'knowledge-cases',
+    label: 'Casos',
+    icon: Library,
+    kind: 'knowledge',
+    to: () => href.knowledge('cases'),
+  },
+  simulator: eq('simulator', 'simulator', 'Simulador', SlidersHorizontal),
+  toolsReports: {
+    slug: 'tools-reports',
+    label: 'Relatórios',
+    icon: FileChartColumn,
+    kind: 'tools',
+    to: () => href.tools('reports'),
+  },
+  toolsExports: {
+    slug: 'tools-exports',
+    label: 'Exportações',
+    icon: Download,
+    kind: 'tools',
+    to: () => href.tools('exports'),
+  },
+  systemEquipments: {
+    slug: 'system-equipments',
+    label: 'Equipamentos',
+    icon: Boxes,
+    kind: 'system',
+    to: () => href.system('equipments'),
+  },
+  systemSettings: {
+    slug: 'system-settings',
+    label: 'Configuração',
+    icon: Settings,
+    kind: 'system',
+    to: () => href.system('settings'),
+  },
+  systemBackup: {
+    slug: 'system-backup',
+    label: 'Backup',
+    icon: DatabaseBackup,
+    kind: 'system',
+    to: () => href.system('backup'),
+  },
+  systemLogs: {
+    slug: 'system-logs',
+    label: 'Saúde e logs',
+    icon: ScrollText,
+    kind: 'system',
+    to: () => href.system('logs'),
+  },
+  systemAbout: { slug: 'system-about', label: 'Sobre', icon: Info, kind: 'system', to: () => href.system('about') },
+} satisfies Record<string, NavItem>
+
+const R = ROUTE_ITEMS
+
 export const NAV_GROUPS: NavGroup[] = [
-  {
-    id: 'visao',
-    label: 'Visão',
-    items: [
-      { slug: 'plant', label: 'Planta', icon: Factory, kind: 'plant', to: () => href.plant() },
-      eq('dashboard', 'dashboard', 'Dashboard', LayoutDashboard),
-    ],
-  },
-  {
-    id: 'processo',
-    label: 'Processo',
-    items: [
-      eq('realtime', 'realtime', 'Tempo Real', Activity),
-      eq('trends', 'trends', 'Tendências', ChartLine),
-      eq('history', 'history', 'Histórico', Archive),
-    ],
-  },
+  { id: 'visao', label: 'Visão', items: [R.plant, R.dashboard] },
+  { id: 'processo', label: 'Processo', items: [R.realtime, R.trends, R.history] },
   {
     id: 'inteligencia',
     label: 'Inteligência',
-    items: [
-      eq('alerts', 'alerts', 'Alertas', Bell),
-      eq('events', 'events', 'Eventos', List),
-      eq('diagnostics', 'diagnostics', 'Diagnósticos', Stethoscope),
-      eq('early-warning', 'early-warning', 'Aviso antecipado', Radar),
-      eq('cases', 'cases', 'Casos anteriores', FolderClock),
-    ],
+    items: [R.alerts, R.events, R.diagnostics, R.earlyWarning, R.cases],
   },
   {
     id: 'kcm',
     label: 'KCM',
-    items: [
-      eq('kcm/alarms', 'kcm-alarms', 'Alarmes', Siren),
-      eq('kcm/communication', 'kcm-communication', 'Comunicação', Cable),
-      eq('kcm/commissioning', 'kcm-commissioning', 'Comissionamento', ClipboardCheck),
-      eq('kcm/datasheet', 'kcm-datasheet', 'Ficha Técnica', FileText),
-      eq('kcm/components', 'kcm-components', 'Componentes', ComponentIcon),
-    ],
+    items: [R.kcmAlarms, R.kcmCommunication, R.kcmCommissioning, R.kcmDatasheet, R.kcmComponents],
   },
   {
     id: 'conhecimento',
     label: 'Conhecimento',
-    items: [
-      {
-        slug: 'knowledge-documents',
-        label: 'Documentos',
-        icon: BookOpen,
-        kind: 'knowledge',
-        to: () => href.knowledge('documents'),
-        phase: 'P',
-        reason: 'Biblioteca de documentos locais com classificação da fonte.',
-      },
-      {
-        slug: 'knowledge-manuals',
-        label: 'Manuais',
-        icon: BookText,
-        kind: 'knowledge',
-        to: () => href.knowledge('manuals'),
-        phase: 'P',
-        reason: 'Manuais do fabricante e da máquina, indexados por seção.',
-      },
-      {
-        slug: 'knowledge-cases',
-        label: 'Casos',
-        icon: Library,
-        kind: 'knowledge',
-        to: () => href.knowledge('cases'),
-      },
-    ],
+    items: [R.knowledgeDocuments, R.knowledgeManuals, R.knowledgeCases],
   },
-  {
-    id: 'ferramentas',
-    label: 'Ferramentas',
-    items: [
-      eq('simulator', 'simulator', 'Simulador', SlidersHorizontal),
-      {
-        slug: 'tools-reports',
-        label: 'Relatórios',
-        icon: FileChartColumn,
-        kind: 'tools',
-        to: () => href.tools('reports'),
-      },
-      {
-        slug: 'tools-exports',
-        label: 'Exportações',
-        icon: Download,
-        kind: 'tools',
-        to: () => href.tools('exports'),
-      },
-    ],
-  },
+  { id: 'ferramentas', label: 'Ferramentas', items: [R.simulator, R.toolsReports, R.toolsExports] },
   {
     id: 'sistema',
     label: 'Sistema',
-    items: [
-      {
-        slug: 'system-equipments',
-        label: 'Equipamentos',
-        icon: Boxes,
-        kind: 'system',
-        to: () => href.system('equipments'),
-      },
-      {
-        slug: 'system-settings',
-        label: 'Configuração',
-        icon: Settings,
-        kind: 'system',
-        to: () => href.system('settings'),
-      },
-      {
-        slug: 'system-backup',
-        label: 'Backup',
-        icon: DatabaseBackup,
-        kind: 'system',
-        to: () => href.system('backup'),
-      },
-      {
-        slug: 'system-logs',
-        label: 'Saúde e logs',
-        icon: ScrollText,
-        kind: 'system',
-        to: () => href.system('logs'),
-      },
-      { slug: 'system-about', label: 'Sobre', icon: Info, kind: 'system', to: () => href.system('about') },
-    ],
+    items: [R.systemEquipments, R.systemSettings, R.systemBackup, R.systemLogs, R.systemAbout],
   },
 ]
 
-export const NAV_ITEMS: NavItem[] = NAV_GROUPS.flatMap((g) => g.items)
+/** Todas as telas, na ordem do catálogo. Não depende de como o menu está agrupado. */
+export const NAV_ITEMS: NavItem[] = Object.values(ROUTE_ITEMS)
 
 export function navItemForEqScreen(screen: EqScreen): NavItem | undefined {
   return NAV_ITEMS.find((i) => i.kind === 'eq' && i.screen === screen)
