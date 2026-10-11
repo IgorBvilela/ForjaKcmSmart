@@ -1,4 +1,5 @@
-"""Planta: 3 cards com Normal / Atenção / Sem comunicação, badge "exemplo" e clique → dashboard."""
+"""Planta: 3 cartões com Normal / Atenção / Sem comunicação, marcação "exemplo", desvio do
+setpoint só com a máquina em operação, motivo e desde quando fora do normal, clique → dashboard."""
 
 from __future__ import annotations
 
@@ -33,6 +34,16 @@ def test_plant_shows_three_cards_with_the_three_states(desktop_1920: Page) -> No
         "data-state", "Atenção", timeout=EVENT_TIMEOUT_MS
     )
 
+    # normal: desvio do setpoint, sem linha de motivo
+    main = page.get_by_test_id(f"plant-card-{EQ_MAIN}")
+    expect(main.get_by_test_id("plant-deviation")).to_contain_text("% do setpoint")
+    expect(main.get_by_test_id("plant-extra")).to_have_count(0)
+    # fora do normal: motivo e desde quando, a mesma situação da tela Agora
+    barrilha = page.get_by_test_id(f"plant-card-{EQ_BARRILHA}")
+    expect(barrilha.get_by_test_id("plant-extra")).to_contain_text(
+        re.compile(r"desde \d{2}:\d{2}|há mais de 24 h|início não determinado")
+    )
+
     summary = page.get_by_test_id("plant-summary")
     expect(summary).to_contain_text("3 equipamentos")
     expect(summary).to_contain_text("1 atenção")
@@ -63,17 +74,26 @@ def test_plant_comm_failure_card_shows_dash_and_reason(tablet_768: Page) -> None
     expect(card).to_have_attribute("data-state", "Sem comunicação")
     expect(card).to_have_attribute("data-quality", "COMM_ERROR")
     expect(card).to_have_attribute("data-conn", re.compile(r"^(ERROR|RECONNECTING)$"))
-    # antes de 15 s: frase derivada; depois a regra R-COMM-001 abre "Comunicação degradada"
-    expect(card).to_contain_text(re.compile(r"Sem leitura do KCM|Comunicação degradada"))
+    # motivo (estado da conexão) e desde quando; nunca um horário inventado
+    extra = card.get_by_test_id("plant-extra")
+    expect(extra).to_contain_text(re.compile(r"Erro de comunicação|Reconectando"))
+    expect(extra).to_contain_text(
+        re.compile(r"sem leitura desde \d{2}:\d{2}|início não determinado")
+    )
     expect(card).to_contain_text("Sem comunicação")
     expect(card.locator(".num.big")).to_have_text("—")
+    # sem leitura não há desvio do setpoint
+    expect(card.get_by_test_id("plant-deviation")).to_have_count(0)
 
 
 def test_plant_card_click_opens_dashboard(mobile_375: Page) -> None:
     page = mobile_375
     open_route(page, "/app/plant", "plant")
     card = page.get_by_test_id(f"plant-card-{EQ_MAIN}")
-    expect(card).to_have_attribute("aria-label", re.compile(r"Dosador Pó Base: .*Abrir dashboard"))
+    # o link é o nome, esticado sobre o cartão: nome acessível curto, clique no cartão inteiro
+    expect(card.get_by_role("link")).to_have_accessible_name(
+        re.compile(r"Dosador Pó Base: .*Abrir dashboard")
+    )
     card.click()
     expect(page).to_have_url(re.compile(rf"/app/eq/{EQ_MAIN}/dashboard$"))
     expect(page.get_by_role("heading", level=1)).to_have_text("Dosador Pó Base")

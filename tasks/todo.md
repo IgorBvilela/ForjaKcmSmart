@@ -20,8 +20,8 @@ Plano: `tasks/plan.md`. Especificação: `docs/produto/especificacao_interface_e
 - [x] Checkpoint B · Todas as telas a até 2 cliques; bateria completa verde (806 núcleo + 95 navegador); conferência visual do menu e da gaveta sem achados
 
 ## Fase 3 · Planta e Comunicação
-- [ ] T7 · Planta em grade quase quadrada (4 = 2 × 2) e cartão enxuto
-  - Defeito antigo achado na conferência visual: linha "Último evento" do cartão cortada com reticências a 375 e 768 px
+- [x] T7 · Planta em grade quase quadrada (4 = 2 × 2) e cartão enxuto
+  - A linha "Último evento", cortada com reticências a 375 e 768 px, saiu do cartão
 - [ ] T8 · Comunicação direta
 - [ ] T9 · Texto enxuto: telas de dados
   - Defeitos antigos achados na conferência visual: textos dos quadros do Dashboard cortados com reticências; caixas de marcar das variáveis do Histórico com 20 px (o link "Ver todos" com 20 px foi corrigido no T5)
