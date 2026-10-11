@@ -207,7 +207,7 @@
     padding: 0 5px;
     border-radius: var(--r-pill);
     background: var(--st-warn);
-    color: var(--on-accent);
+    color: var(--on-state);
     font: 600 13px / 1 var(--font-mono);
     box-shadow: 0 0 0 2px var(--surf-1);
     animation: count-in 420ms var(--ease-out);

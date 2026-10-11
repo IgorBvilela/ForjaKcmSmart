@@ -41,7 +41,7 @@ Plano: `tasks/plan.md`. Especificação: `docs/produto/especificacao_interface_e
 - [x] T16 · Resumo do turno para imprimir (opção B: cartão por dosador, observações, assinatura, uma página A4; turnos de `config/forja.yaml`, seção `plant.shifts`; sem turnos, pede o período)
 - [x] T17 · Placar do dia na TV (opção C: bloco "Hoje" embaixo do lado Agora, do pior para o melhor, com as horas; sai de vista quando os problemas precisam do espaço)
 - [x] T18 · Atalhos de teclado de 1 a 4, com opção de desligar (página Mais, seção Teclado)
-- [ ] T19 · Tema claro opcional, conferido nos dois temas
+- [x] T19 · Tema claro opcional, conferido nos dois temas (opção C: segue o Windows, Aparência na página Mais, primeira pintura sem piscar, troca com círculo; `--on-state` para ícone e número sobre cor de estado; 27 telas × 375/768/1440 e a TV em 1920, nos dois temas, sem achado)
 - Etapa de rede e login (fora desta fase): QR code na TV
 
 ## Achados para decidir depois

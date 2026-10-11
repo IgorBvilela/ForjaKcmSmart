@@ -141,4 +141,13 @@ body { background: var(--bg-0); color: var(--text-1); font-family: var(--font-ui
 }
 .choice > input:focus-visible + .choice-mark { box-shadow: var(--focus); }
 .choice > input:disabled + .choice-mark { opacity: 0.5; }
+
+/* Troca de tema na página Mais: o tema novo nasce num círculo a partir do controle tocado
+   (View Transitions; src/lib/theme.svelte.ts liga a classe só durante a troca). */
+html.tema-troca::view-transition-old(root) { animation: none; }
+html.tema-troca::view-transition-new(root) { animation: tema-revelar 520ms var(--ease-out) both; }
+@keyframes tema-revelar {
+  from { clip-path: circle(0 at var(--tema-x, 50%) var(--tema-y, 50%)); }
+  to { clip-path: circle(var(--tema-r, 150%) at var(--tema-x, 50%) var(--tema-y, 50%)); }
+}
 .choice:has(> input:disabled) { cursor: not-allowed; color: var(--text-disabled); }

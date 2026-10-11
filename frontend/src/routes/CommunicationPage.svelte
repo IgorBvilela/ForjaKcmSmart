@@ -701,7 +701,7 @@
     font: 600 14px / 1 var(--font-mono);
     transition: background-color var(--dur-base) var(--ease-std), border-color var(--dur-base) var(--ease-std);
   }
-  .ball.done { border-color: var(--st-ok); background: var(--st-ok); color: var(--on-accent); }
+  .ball.done { border-color: var(--st-ok); background: var(--st-ok); color: var(--on-state); }
   .pop { display: inline-grid; place-items: center; animation: pop var(--dur-spring) var(--ease-spring) both; }
 
   .protocols { display: grid; gap: var(--sp-2); width: 100%; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }

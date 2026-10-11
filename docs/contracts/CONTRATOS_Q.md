@@ -159,6 +159,14 @@ Cada tela: rótulo, título de até 3 palavras, no máximo uma frase de apoio (a
 - Uma página só: a impressão usa a página A4 própria `resumo-turno` (`src/styles/print.css`), duas colunas até 4 dosadores e três acima disso. Cada cartão mostra 6 linhas até 4 dosadores, 4 linhas até 8 e 3 acima disso, com "e mais N".
 - Turno em andamento: a folha se atualiza a cada minuto.
 
+### Tema (`src/lib/theme.svelte.ts`, `public/tema-inicial.js`)
+
+- Opção C da prévia dos extras: a interface segue o tema do Windows (`prefers-color-scheme`). Na página Mais, a seção Aparência fixa escuro ou claro, ou volta para "Igual ao Windows (agora …)". A escolha fica no navegador (`localStorage`, chave `forja.tema`; "Igual ao Windows" apaga a chave).
+- Primeira pintura já no tema certo: `public/tema-inicial.js` roda no `<head>`, antes do app, e põe `data-theme` e a cor da barra do navegador. É um arquivo separado porque o CSP só aceita script servido pelo próprio Edge. O app acompanha depois a troca do Windows e a escolha feita em outra aba.
+- A troca feita na página Mais anima: o tema novo nasce num círculo a partir do controle tocado (View Transitions). Sem suporte ou com movimento reduzido, troca na hora.
+- O Modo TV segue o tema como as outras telas (o item "TV sempre escura" foi recusado na prévia). A impressão continua sempre clara.
+- Tokens (`src/styles/tokens.css`): a paleta clara vale para `:root[data-theme="light"]` e para `.surface-light`, um pedaço sempre claro como a folha do Resumo do turno. Os tokens derivados se repetem nesse bloco. `--on-state` é a cor de ícone ou número sobre preenchimento de estado: escuro no tema escuro e branco no claro, com 5:1 ou mais nos dois.
+
 ### Escolha (`src/styles/base.css`)
 
 Radio e caixa de marcar usam a classe `.choice`: o alvo é a linha inteira (44 px), o `input` fica para o teclado e o leitor de tela, e a marca visível é desenho.
@@ -182,5 +190,6 @@ Radio e caixa de marcar usam a classe `.choice`: o alvo é a linha inteira (44 p
 | `tests/e2e/test_shortcuts.py` | Atalhos 1 a 4, nada enquanto se digita, desligar na página Mais e a escolha guardada. |
 | `tests/unit/test_shifts.py`, `tests/integration/test_api_shifts.py` | Turnos: janela no fuso da planta, turno da noite até o dia seguinte, turno em andamento, validação da configuração, resumo com eventos, alarmes do KCM e aviso antecipado à parte, recusas e somente leitura. |
 | `tests/e2e/test_shift_summary.py` | Resumo do turno: sem turnos pede o período, período invertido recusado na tela, PDF em uma página A4 sem os controles, 375 px sem rolagem lateral, turnos da configuração com o turno em andamento escolhido. |
+| `tests/e2e/test_theme.py` | Tema: segue o Windows claro e o escuro; a escolha da página Mais vale sobre o Windows e volta na próxima abertura; a escolha guardada pinta antes do app montar; o Modo TV segue o tema; a impressão é sempre clara. |
 | `tests/e2e/test_tv.py` | Modo TV: sem controles, relógio e selo, tela Agora à vista com problema, troca de páginas, Edge derrubado em destaque e placar do dia (todos os dosadores, do pior para o melhor, sem dados na barra, sai de vista numa tela baixa). |
 | `tests/e2e/test_dashboard.py` | Sem recarga por segundo com evento aberto; ponto vivo só com movimento permitido. |

@@ -9,6 +9,7 @@
   import { MAIN_MENU, knowledgeItem, navItemForEqScreen, systemItem, toolsItem } from './lib/nav'
   import { href, installLinkInterceptor, routeSlug } from './lib/router'
   import { installShortcuts } from './lib/shortcuts.svelte'
+  import { installTheme } from './lib/theme.svelte'
   import { situation } from './lib/situationStore.svelte'
   import { app } from './lib/state.svelte'
   import { TID } from './lib/testids'
@@ -49,6 +50,7 @@
     live.start()
     situation.start()
     const off = installLinkInterceptor(document.body)
+    const offTheme = installTheme()
     // teclas 1 a 4: as entradas do menu principal, no equipamento dos links do menu
     const offKeys = installShortcuts((i) => {
       const target = MAIN_MENU[i]?.to(live.linkEquipmentId(app.equipmentId))
@@ -56,6 +58,7 @@
     })
     return () => {
       offKeys()
+      offTheme()
       off()
       situation.stop()
       live.stop()

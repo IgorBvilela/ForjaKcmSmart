@@ -136,7 +136,7 @@
   .headline[data-tone='crit'] { color: var(--st-crit); }
   .headline[data-tone='info'] { color: var(--st-info); }
   .ico { display: grid; place-items: center; flex: none; width: 48px; height: 48px; border-radius: var(--r-pill); background: currentColor; }
-  .ico :global(svg) { color: var(--on-accent); }
+  .ico :global(svg) { color: var(--on-state); }
   h1 { margin: 0; color: var(--text-1); font: 600 var(--fs-display) / var(--lh-display) var(--font-ui); }
   .numbers { display: flex; flex-direction: column; gap: var(--sp-2); margin: var(--sp-2) 0 0; }
   .numbers div { display: flex; align-items: baseline; gap: var(--sp-2); }

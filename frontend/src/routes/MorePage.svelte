@@ -5,6 +5,7 @@
   import { GEAR_GROUPS } from '../lib/nav'
   import { live } from '../lib/live.svelte'
   import { shortcuts } from '../lib/shortcuts.svelte'
+  import { theme, type ThemeChoice } from '../lib/theme.svelte'
   import { app } from '../lib/state.svelte'
   import { TID } from '../lib/testids'
 
@@ -12,6 +13,12 @@
   const eqName = $derived(live.cardOf(eqId)?.name ?? eqId)
   /** O nome do equipamento aparece uma vez, no primeiro grupo que depende dele. */
   const eqGroupId = GEAR_GROUPS.find((g) => g.items.some((i) => i.kind === 'eq'))?.id
+
+  const themeOptions = $derived<Array<{ value: ThemeChoice; label: string }>>([
+    { value: 'system', label: `Igual ao Windows (agora ${theme.system === 'light' ? 'claro' : 'escuro'})` },
+    { value: 'dark', label: 'Escuro' },
+    { value: 'light', label: 'Claro' },
+  ])
 </script>
 
 <section class="more" data-testid={TID.more.root} aria-labelledby="more-title">
@@ -52,7 +59,26 @@
     </section>
   {/each}
 
-  <section class="group" style:--i={GEAR_GROUPS.length} aria-labelledby="more-group-teclado">
+  <section class="group" style:--i={GEAR_GROUPS.length} aria-labelledby="more-group-aparencia">
+    <h2 class="label" id="more-group-aparencia">Aparência</h2>
+    <div class="choices" role="radiogroup" aria-labelledby="more-group-aparencia" data-testid="theme-choice">
+      {#each themeOptions as o (o.value)}
+        <label class="choice">
+          <input
+            type="radio"
+            name="forja-tema"
+            value={o.value}
+            checked={theme.choice === o.value}
+            onchange={(e) => theme.set(o.value, e.currentTarget.nextElementSibling)}
+          />
+          <span class="choice-mark" data-kind="radio" aria-hidden="true"></span>
+          {o.label}
+        </label>
+      {/each}
+    </div>
+  </section>
+
+  <section class="group" style:--i={GEAR_GROUPS.length + 1} aria-labelledby="more-group-teclado">
     <h2 class="label" id="more-group-teclado">Teclado</h2>
     <label class="choice">
       <input type="checkbox" checked={shortcuts.enabled} onchange={(e) => shortcuts.set(e.currentTarget.checked)} />

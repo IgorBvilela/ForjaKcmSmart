@@ -385,7 +385,7 @@
   .headline[data-tone='crit'] { color: var(--st-crit); }
   .headline[data-tone='info'] { color: var(--st-info); }
   .ico { display: grid; place-items: center; flex: none; width: clamp(56px, 4.6vw, 110px); height: clamp(56px, 4.6vw, 110px); border-radius: var(--r-pill); background: currentColor; }
-  .ico :global(svg) { color: var(--on-accent); width: 55%; height: 55%; }
+  .ico :global(svg) { color: var(--on-state); width: 55%; height: 55%; }
   .headline-text { margin: 0; color: var(--text-1); font: 600 clamp(28px, 2.9vw, 68px) / 1.2 var(--font-ui); }
   .counts { display: flex; gap: 2.4vw; margin: 0; }
   .counts div { display: flex; flex-direction: column; }

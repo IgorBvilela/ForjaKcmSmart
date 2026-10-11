@@ -32,6 +32,7 @@
   --st-crit: #EC6B62;     --st-crit-bg: rgba(236,107,98,.12);   /* Crítico     5,4:1 */
   --st-crit-fill: #D9463C;                                      /* só preenchimento não-texto */
   --st-info: #4FB3D9;     --st-info-bg: rgba(79,179,217,.12);   /* Informação/comunicação 6,9:1 */
+  --on-state: #141516;    /* ícone ou número sobre preenchimento de estado: 5,4:1 a 8,1:1 */
 
   /* ---- qualidade do dado (forma + cor) ---- */
   --q-good: var(--text-2);          /* ponto discreto, "Validado" */
@@ -114,6 +115,7 @@
   --st-warn: #8A5B00; --st-warn-bg: rgba(138,91,0,.10);
   --st-crit: #B8322A; --st-crit-bg: rgba(184,50,42,.10); --st-crit-fill: #B8322A;
   --st-info: #1F6F8B; --st-info-bg: rgba(31,111,139,.10);
+  --on-state: #FFFFFF; /* branco sobre os estados do claro: 5,0:1 a 5,9:1 */
   --q-sim: #6446B8; --q-sim-hatch: repeating-linear-gradient(135deg, transparent 0 6px, rgba(100,70,184,.16) 6px 8px);
   --s1: #1F1F1F; --s2: #9E5220; --s3: #3A6A8F; --s4: #6B7078; --s-ref: #8A8F96;
   --elev-2: 0 8px 24px rgba(31,31,31,.12); --elev-3: 0 24px 64px rgba(31,31,31,.18); --scrim: rgba(31,31,31,.40);
@@ -130,6 +132,7 @@
   :root { --bg-0: #FFFFFF; --surf-1: #FFFFFF; --surf-2: #F7F7F6; --surf-3: #FFFFFF;
     --border-1: #D9D9D9; --border-2: #4B4F56; --text-1: #1F1F1F; --text-2: #4B4F56; --text-3: #6B7078;
     --accent-text: #9E5220; --st-ok: #2E7D53; --st-warn: #8A5B00; --st-crit: #B8322A; --st-info: #1F6F8B; --q-sim: #6446B8;
+    --on-state: #FFFFFF;
     --s1: #1F1F1F; --s2: #9E5220; --s3: #3A6A8F; --s4: #6B7078; }
   * { animation: none !important; transition: none !important; box-shadow: none !important; }
 }
