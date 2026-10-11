@@ -11,6 +11,8 @@ recalcular o historiador.
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Sequence
+from datetime import datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter
@@ -29,7 +31,7 @@ from forja.api.routers.plant import (
     STATE_UNKNOWN_PT,
     build_plant_card,
 )
-from forja.domain import Diagnosis, EquipmentProfile, Event, Severity
+from forja.domain import Diagnosis, EquipmentProfile, Event, Quality, Sample, Severity
 from forja.events.pre_event import pre_event_summary
 from forja.events.recurrence import ORIGIN_PT
 
@@ -49,7 +51,26 @@ NO_EQUIPMENT_PT = "Nenhum dosador configurado"
 
 SINCE_EVENT = "EVENT"
 SINCE_LAST_OK = "LAST_OK"
+SINCE_HISTORIAN = "HISTORIAN"
+SINCE_BEFORE_WINDOW = "BEFORE_WINDOW"
 SINCE_UNDETERMINED = "UNDETERMINED"
+SINCE_PT = {
+    SINCE_BEFORE_WINDOW: "há mais de 24 h",
+    SINCE_UNDETERMINED: "início não determinado",
+}
+
+KCM_ALARM_TAGS = ("alarm_active", "alarm_code")
+ALARM_LOOKBACK_S = 24 * 3600
+"""Até onde a tela Agora procura, no historiador, o início do alarme ativo do KCM."""
+ALARM_CHUNK_S = 3600
+"""A busca anda para trás em blocos deste tamanho e para no primeiro trecho conclusivo."""
+GAP_FACTOR = 3
+"""Sem amostra por mais que GAP_FACTOR vezes a amostra forçada, o trecho conta como buraco."""
+USABLE = frozenset({Quality.GOOD, Quality.SIMULATED, Quality.UNCERTAIN})
+_ACTIVE = "ACTIVE"
+_INACTIVE = "INACTIVE"
+_UNKNOWN = "UNKNOWN"
+_CONTINUE = "CONTINUE"
 
 
 # ------------------------------------------------------------------------------- funções puras
@@ -124,6 +145,71 @@ def order_entries(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [entry for _, entry in sorted(enumerate(entries), key=key)]
 
 
+def alarm_state(samples: Sequence[Sample]) -> str:
+    """Estado do alarme num instante, com a mesma regra da leitura atual do KCM."""
+    unknown = False
+    for s in samples:
+        if s.value is None or s.quality not in USABLE:
+            unknown = True
+            continue
+        if (s.tag == "alarm_active" and s.value == 1) or (s.tag == "alarm_code" and s.value != 0):
+            return _ACTIVE
+    return _UNKNOWN if unknown else _INACTIVE
+
+
+def alarm_run_start(samples: Sequence[Sample], max_gap_s: float) -> tuple[datetime | None, str]:
+    """Início do episódio ativo mais recente nas amostras dadas.
+
+    HISTORIAN: achou a passagem de inativo para ativo. UNDETERMINED: o último estado não é ativo,
+    ou há leitura sem qualidade ou buraco no caminho. CONTINUE: tudo o que veio está ativo e é
+    preciso olhar mais para trás.
+    """
+    by_ts: dict[datetime, list[Sample]] = {}
+    for s in samples:
+        by_ts.setdefault(s.ts_utc, []).append(s)
+    states = [(ts, alarm_state(group)) for ts, group in sorted(by_ts.items())]
+    if not states:
+        return None, _CONTINUE
+    if states[-1][1] != _ACTIVE:
+        return None, SINCE_UNDETERMINED
+    start = states[-1][0]
+    for ts, state in reversed(states[:-1]):
+        if (start - ts).total_seconds() > max_gap_s:
+            return None, SINCE_UNDETERMINED
+        if state == _ACTIVE:
+            start = ts
+            continue
+        if state == _INACTIVE:
+            return start, SINCE_HISTORIAN
+        return None, SINCE_UNDETERMINED
+    return start, _CONTINUE
+
+
+async def kcm_alarm_since(
+    historian: Any, equipment_id: str, now: datetime, max_gap_s: float
+) -> tuple[datetime | None, str]:
+    """Início do alarme ativo pelo historiador, nunca pela hora da última leitura."""
+    limit = now - timedelta(seconds=ALARM_LOOKBACK_S)
+    collected: list[Sample] = []
+    end = now
+    while end > limit:
+        start = max(end - timedelta(seconds=ALARM_CHUNK_S), limit)
+        chunk: list[Sample] = await historian.samples(equipment_id, KCM_ALARM_TAGS, start, end)
+        if not collected:
+            latest = max((s.ts_utc for s in chunk), default=None)
+            if latest is None or (now - latest).total_seconds() > max_gap_s:
+                return None, SINCE_UNDETERMINED
+        collected = [*chunk, *collected]
+        since, basis = alarm_run_start(collected, max_gap_s)
+        if basis != _CONTINUE:
+            return since, basis
+        end = start
+    earliest = min((s.ts_utc for s in collected), default=None)
+    if earliest is None or (earliest - limit).total_seconds() > max_gap_s:
+        return None, SINCE_UNDETERMINED
+    return limit, SINCE_BEFORE_WINDOW
+
+
 def voice_event(event: Event) -> dict[str, Any]:
     """Resumo de um evento aberto, com a origem rotulada."""
     return {
@@ -188,11 +274,15 @@ def focus_view(event: Event, diagnosis: Diagnosis | None) -> dict[str, Any]:
 # ------------------------------------------------------------------------------ montagem
 
 
-def kcm_voice(container: Any, profile: EquipmentProfile) -> dict[str, Any] | None:
-    """Alarme ativo informado pelo KCM. A hora da última leitura não é o início do alarme."""
+async def kcm_voice(container: Any, profile: EquipmentProfile) -> dict[str, Any] | None:
+    """Alarme ativo informado pelo KCM. O início vem do historiador, ou fica indeterminado."""
     view = kcm_alarm_view(container, profile)
     if view["state"] != "ACTIVE":
         return None
+    max_gap_s = GAP_FACTOR * container.store.config.historian.forced_sample_every_s
+    since, basis = await kcm_alarm_since(
+        container.historian, profile.id, container.clock.now_utc(), max_gap_s
+    )
     return {
         "state": view["state"],
         "state_pt": view["state_pt"],
@@ -200,8 +290,9 @@ def kcm_voice(container: Any, profile: EquipmentProfile) -> dict[str, Any] | Non
         "title_pt": view.get("title_pt"),
         "catalogued": view.get("catalogued", False),
         "source_pt": view["source_pt"],
-        "since_utc": None,
-        "since_basis": SINCE_UNDETERMINED,
+        "since_utc": jsonable(since),
+        "since_basis": basis,
+        "since_pt": SINCE_PT.get(basis),
     }
 
 
@@ -234,7 +325,7 @@ async def situation_entry(container: Any, profile: EquipmentProfile) -> dict[str
         equipment_id=profile.id, open_only=True, limit=50
     )
     open_events.sort(key=lambda e: e.start_utc)
-    kcm = kcm_voice(container, profile)
+    kcm = await kcm_voice(container, profile)
     state_pt: str = card["state_pt"]
     group = classify_group(state_pt, kcm is not None)
     anomalies = [e for e in open_events if e.severity != Severity.INFO]
@@ -244,6 +335,8 @@ async def situation_entry(container: Any, profile: EquipmentProfile) -> dict[str
     since_basis: str | None = None
     if group == GROUP_PROBLEM and anomalies:
         since, since_basis = min(e.start_utc for e in anomalies), SINCE_EVENT
+    elif group == GROUP_PROBLEM and kcm is not None:
+        since, since_basis = kcm["since_utc"], kcm["since_basis"]
     elif group == GROUP_PROBLEM:
         since_basis = SINCE_UNDETERMINED
     elif state_pt == STATE_NO_COMM_PT:

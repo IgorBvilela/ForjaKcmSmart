@@ -7,6 +7,7 @@ inventado; o aviso antecipado usa a última avaliação guardada, sem recalcular
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from datetime import timedelta
 from typing import Any
 
 import httpx
@@ -194,3 +195,108 @@ async def test_aviso_antecipado_usa_a_ultima_avaliacao_sem_recalcular(
     assert item["voices"]["early_warnings"][0]["origin_pt"] == "Aviso antecipado da Forja"
     assert item["voices"]["forja_events"] == []
     assert item["voices"]["early_warning_confirming"] == 0
+
+
+# ------------------------------------------------- início do alarme do KCM pelo historiador
+
+SIM = Quality.SIMULATED
+
+
+def kcm_alarm_live(world: ApiWorld, eid: str) -> None:
+    """Leitura atual: alarme 56 ativo. A hora desta leitura nunca é o início do alarme."""
+    world.manager.set_status(eid, connection=ConnectionState.CONNECTED)
+    world.manager.set_samples(
+        eid,
+        {
+            "mass_flow": world.sample(eid, "mass_flow", 1000.0),
+            "alarm_active": world.sample(eid, "alarm_active", 1),
+            "alarm_code": world.sample(eid, "alarm_code", 56),
+        },
+    )
+
+
+def every_minute(
+    oldest_age_s: float, newest_age_s: float, code: float | None, quality: Quality = SIM
+) -> list[tuple[float, float | None, Quality]]:
+    """Uma amostra por minuto, como a amostra forçada do historiador."""
+    ages = range(int(oldest_age_s), int(newest_age_s) - 1, -60)
+    return [(float(age), code, quality) for age in ages]
+
+
+async def alarm_history(
+    world: ApiWorld, eid: str, points: list[tuple[float, float | None, Quality]]
+) -> None:
+    """Grava (idade em s, código, qualidade) com alarm_code e alarm_active coerentes."""
+    samples = []
+    for age_s, code, quality in points:
+        active = None if code is None else (1.0 if code else 0.0)
+        samples.append(world.sample(eid, "alarm_code", code, quality=quality, age_s=age_s))
+        samples.append(world.sample(eid, "alarm_active", active, quality=quality, age_s=age_s))
+    await world.historian.write(samples)
+
+
+async def test_inicio_do_alarme_do_kcm_vem_do_historiador(
+    api: httpx.AsyncClient, plant: ApiWorld
+) -> None:
+    all_healthy(plant)
+    eid = plant.healthy_sim_id
+    kcm_alarm_live(plant, eid)
+    await alarm_history(plant, eid, every_minute(1800, 780, 0) + every_minute(720, 60, 56))
+
+    item = entry(await situation(api), eid)
+    kcm = item["voices"]["kcm_alarm"]
+    expected = (plant.clock.now_utc() - timedelta(seconds=720)).isoformat()
+    assert kcm["since_basis"] == "HISTORIAN"
+    assert kcm["since_utc"] == expected
+    assert kcm["since_pt"] is None
+    assert item["since_utc"] == expected
+    assert item["since_basis"] == "HISTORIAN"
+
+
+async def test_alarme_ativo_desde_antes_da_janela_diz_ha_mais_de_24_h(
+    api: httpx.AsyncClient, plant: ApiWorld
+) -> None:
+    all_healthy(plant)
+    eid = plant.healthy_sim_id
+    kcm_alarm_live(plant, eid)
+    outside_window = (26 * 3600.0, 0.0, SIM)
+    await alarm_history(plant, eid, [outside_window, *every_minute(24 * 3600, 60, 56)])
+
+    kcm = entry(await situation(api), eid)["voices"]["kcm_alarm"]
+    assert kcm["since_basis"] == "BEFORE_WINDOW"
+    assert kcm["since_pt"] == "há mais de 24 h"
+
+
+async def test_falha_de_leitura_no_meio_deixa_o_inicio_indeterminado(
+    api: httpx.AsyncClient, plant: ApiWorld
+) -> None:
+    all_healthy(plant)
+    eid = plant.healthy_sim_id
+    kcm_alarm_live(plant, eid)
+    await alarm_history(
+        plant,
+        eid,
+        [
+            *every_minute(2400, 1260, 0),
+            (1200.0, None, Quality.COMM_ERROR),
+            *every_minute(1140, 60, 56),
+        ],
+    )
+
+    kcm = entry(await situation(api), eid)["voices"]["kcm_alarm"]
+    assert kcm["since_utc"] is None
+    assert kcm["since_basis"] == "UNDETERMINED"
+    assert kcm["since_pt"] == "início não determinado"
+
+
+async def test_buraco_sem_leitura_no_meio_deixa_o_inicio_indeterminado(
+    api: httpx.AsyncClient, plant: ApiWorld
+) -> None:
+    all_healthy(plant)
+    eid = plant.healthy_sim_id
+    kcm_alarm_live(plant, eid)
+    await alarm_history(plant, eid, every_minute(3600, 3000, 0) + every_minute(1200, 60, 56))
+
+    kcm = entry(await situation(api), eid)["voices"]["kcm_alarm"]
+    assert kcm["since_utc"] is None, "sem leitura entre 50 e 20 min atrás, o início é desconhecido"
+    assert kcm["since_basis"] == "UNDETERMINED"
