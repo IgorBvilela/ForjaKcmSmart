@@ -1,6 +1,7 @@
 """Modo TV (/app/tv): a tela Agora e a Planta juntas, para ler de longe. Sem menu e sem nenhum
 controle; relógio, "atualizado há" e o selo de dados simulados; a tela Agora não sai de vista com
-problema; as páginas da Planta trocam sozinhas quando não cabem; Edge sem resposta em destaque.
+problema; as páginas da Planta trocam sozinhas quando não cabem; Edge sem resposta em destaque;
+placar do dia (tempo dentro do normal desde a meia-noite) do pior para o melhor.
 """
 
 from __future__ import annotations
@@ -11,7 +12,7 @@ import pytest
 from playwright.sync_api import Browser, Page, expect
 
 from tests.e2e.conftest import running_edge, seed_home
-from tests.e2e.helpers import EQ_BARRILHA, EVENT_TIMEOUT_MS
+from tests.e2e.helpers import ALL_EQUIPMENTS, EQ_BARRILHA, EQ_KCM03, EVENT_TIMEOUT_MS
 
 pytestmark = pytest.mark.e2e
 
@@ -51,6 +52,49 @@ def test_tv_keeps_the_agora_side_in_view_with_a_problem(desktop_1920: Page) -> N
     assert box["y"] + box["height"] <= 1080, box
     # o cartão do dosador na Planta também aparece, ao lado
     expect(page.get_by_test_id(f"tv-card-{EQ_BARRILHA}")).to_be_visible()
+
+
+def test_tv_day_scoreboard_lists_every_doser_worst_first(desktop_1920: Page) -> None:
+    page = desktop_1920
+    open_tv(page)
+    board = page.get_by_test_id("tv-today")
+    expect(board).to_be_visible()
+    expect(board).to_have_attribute("data-visible", "true")
+    expect(board).to_contain_text("Hoje, dentro do normal")
+    rows = board.locator("[data-testid^='tv-today-']")
+    expect(rows).to_have_count(len(ALL_EQUIPMENTS))
+    pcts = [float(row.get_attribute("data-normal-pct") or "nan") for row in rows.all()]
+    assert pcts == sorted(pcts), f"placar fora da ordem do pior para o melhor: {pcts}"
+    for i in range(rows.count()):
+        row = rows.nth(i)
+        expect(row).to_contain_text(re.compile(r"(\d{1,3}|<1)%"))
+        expect(row).to_contain_text(re.compile(r"(\d+ h \d{2} min|\d+ min|<1 min)"))
+        expect(row.get_by_role("img")).to_have_attribute(
+            "aria-label",
+            re.compile(r"% do dia dentro do normal, .*% fora do normal e .*% sem dados"),
+        )
+    # o dosador sem comunicação desde o boot tem a parte "sem dados" na barra
+    no_data = page.get_by_test_id(f"tv-today-{EQ_KCM03}").get_by_role("img")
+    assert float(no_data.get_attribute("data-no-data") or "0") > 0
+    # fica do lado Agora, embaixo da frase do gerente
+    headline = page.get_by_test_id("tv-headline").bounding_box()
+    box = board.bounding_box()
+    assert headline is not None
+    assert box is not None
+    assert box["y"] > headline["y"], box
+    assert box["x"] < 960, box
+    assert box["y"] + box["height"] <= 1080, box
+
+
+def test_tv_day_scoreboard_gives_way_to_problems_on_a_short_screen(desktop_1920: Page) -> None:
+    page = desktop_1920
+    page.set_viewport_size({"width": 1920, "height": 420})
+    open_tv(page)
+    expect(page.get_by_test_id(f"tv-problem-{EQ_BARRILHA}")).to_be_visible(timeout=EVENT_TIMEOUT_MS)
+    board = page.get_by_test_id("tv-today")
+    expect(board).to_have_attribute("data-visible", "false")
+    expect(board).to_have_attribute("aria-hidden", "true")
+    expect(board).to_be_hidden()
 
 
 def test_tv_plant_pages_swap_by_themselves(desktop_1920: Page) -> None:

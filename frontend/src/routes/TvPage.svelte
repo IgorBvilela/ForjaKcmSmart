@@ -3,11 +3,14 @@
    *  controle. A tela Agora nunca sai de vista; quando a Planta não cabe, as páginas dela trocam
    *  sozinhas (20 s por padrão; `?troca=N` muda, de 5 a 120 s). Dosador que entra em atenção ganha
    *  brilho suave por 1 min. Edge sem resposta e dado parado aparecem em destaque, e o conteúdo se
-   *  desloca de leve, de tempos em tempos, para a imagem não marcar a TV. */
+   *  desloca de leve, de tempos em tempos, para a imagem não marcar a TV. O placar do dia (tempo
+   *  dentro do normal desde a meia-noite, do pior para o melhor) fica embaixo, do lado Agora, e
+   *  sai de vista quando o espaço é dos problemas. */
   import { onMount, untrack } from 'svelte'
   import Check from '@lucide/svelte/icons/check'
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
   import WifiOff from '@lucide/svelte/icons/wifi-off'
+  import TimeSplitBar from '../components/data/TimeSplitBar.svelte'
   import { isUsable, stateTone, type PlantCard } from '../lib/api'
   import { fmtAge, fmtClock, fmtDate, fmtNumber } from '../lib/format'
   import { live } from '../lib/live.svelte'
@@ -15,6 +18,14 @@
   import { sinceText, type SituationEntry } from '../lib/situation'
   import { situation } from '../lib/situationStore.svelte'
   import { app } from '../lib/state.svelte'
+  import {
+    hoursText,
+    pctText,
+    plantTimeSplit,
+    startOfToday,
+    worstFirst,
+    type TimeSplitItem,
+  } from '../lib/timesplit'
 
   const GAP = 20
   const CARD_MIN_W = 300
@@ -23,6 +34,8 @@
   /** Deslocamento contra marca na TV: um passo a cada 2 min, por estes pontos (px). */
   const DRIFT: Array<[number, number]> = [[0, 0], [3, 2], [6, 4], [3, 6], [0, 4], [-3, 2], [-6, 0], [-3, -2]]
   const DRIFT_STEP_MS = 120_000
+  /** O placar do dia muda devagar: uma consulta por minuto basta. */
+  const TODAY_REFRESH_MS = 60_000
 
   function swapSeconds(): number {
     const raw = Number(new URLSearchParams(window.location.search).get('troca'))
@@ -100,6 +113,36 @@
   // ---- deslocamento contra marca ----
   const drift = $derived(DRIFT[Math.floor(app.now / DRIFT_STEP_MS) % DRIFT.length])
 
+  // ---- placar do dia: tempo dentro do normal desde a meia-noite (FORJA_RULE) ----
+  let today = $state<TimeSplitItem[] | null>(null)
+  let nowH = $state(0)
+  let mainH = $state(0)
+  let todayH = $state(0)
+  /** Os problemas têm a vez: o placar só aparece se couber embaixo deles. */
+  const todayFits = $derived(narrow || mainH + viewportH * 0.02 + todayH + 8 <= nowH)
+  const barH = $derived(Math.round(Math.min(14, Math.max(6, viewportH * 0.008))))
+
+  async function loadToday(): Promise<void> {
+    try {
+      today = worstFirst((await plantTimeSplit(startOfToday())).equipments)
+    } catch {
+      // Edge sem resposta: fica o último placar (o aviso de Edge sem resposta já está na tela)
+    }
+  }
+
+  onMount(() => {
+    void loadToday()
+    const id = window.setInterval(() => void loadToday(), TODAY_REFRESH_MS)
+    return () => window.clearInterval(id)
+  })
+
+  function todayLabel(item: TimeSplitItem): string {
+    return (
+      `${item.name}: ${pctText(item.normal_pct)}% do dia dentro do normal, ` +
+      `${pctText(item.out_pct)}% fora do normal e ${pctText(item.no_data_pct)}% sem dados`
+    )
+  }
+
   onMount(() => {
     document.documentElement.classList.add('tv-mode')
     return () => document.documentElement.classList.remove('tv-mode')
@@ -168,39 +211,77 @@
     {/if}
 
     <div class="body" class:stale-all={offline}>
-      <section class="now" data-testid="tv-now" aria-label="Agora">
-        {#if !summary}
-          <p class="waiting">Lendo a situação da planta…</p>
-        {:else}
-          <div class="headline" data-tone={summary.tone}>
-            <span class="ico" aria-hidden="true">
-              {#if summary.tone === 'ok'}<Check size={40} />{:else}<TriangleAlert size={40} />{/if}
-            </span>
-            <p class="headline-text" data-testid="tv-headline">{summary.headline_pt}</p>
-          </div>
-          <dl class="counts">
-            <div><dd class="n ok">{summary.normal + summary.stopped}</dd><dt>{summary.normal + summary.stopped === 1 ? 'normal' : 'normais'}</dt></div>
-            <div><dd class="n" class:warn={summary.attention > 0}>{summary.attention}</dd><dt>em atenção</dt></div>
-            <div><dd class="n muted">{summary.no_data}</dd><dt>sem dados</dt></div>
-          </dl>
-          {#each problems as e (e.id)}
-            <article class="problem" class:fresh={isFresh(e.id)} data-testid={`tv-problem-${e.id}`}>
-              <p class="p-head">
+      <section class="now" data-testid="tv-now" aria-label="Agora" bind:clientHeight={nowH}>
+        <div class="now-main" bind:clientHeight={mainH}>
+          {#if !summary}
+            <p class="waiting">Lendo a situação da planta…</p>
+          {:else}
+            <div class="headline" data-tone={summary.tone}>
+              <span class="ico" aria-hidden="true">
+                {#if summary.tone === 'ok'}<Check size={40} />{:else}<TriangleAlert size={40} />{/if}
+              </span>
+              <p class="headline-text" data-testid="tv-headline">{summary.headline_pt}</p>
+            </div>
+            <dl class="counts">
+              <div><dd class="n ok">{summary.normal + summary.stopped}</dd><dt>{summary.normal + summary.stopped === 1 ? 'normal' : 'normais'}</dt></div>
+              <div><dd class="n" class:warn={summary.attention > 0}>{summary.attention}</dd><dt>em atenção</dt></div>
+              <div><dd class="n muted">{summary.no_data}</dd><dt>sem dados</dt></div>
+            </dl>
+            {#each problems as e (e.id)}
+              <article class="problem" class:fresh={isFresh(e.id)} data-testid={`tv-problem-${e.id}`}>
+                <p class="p-head">
+                  <span class="p-name">{e.name}</span>
+                  {#if sinceText(e)}<span class="p-since">{sinceText(e)}</span>{/if}
+                </p>
+                {#if problemLine(e)}<p class="p-what">{problemLine(e)}</p>{/if}
+                {#if e.focus?.next_check}
+                  <p class="p-check"><span class="p-label">Verificar primeiro</span> {e.focus.next_check.text_pt}</p>
+                {/if}
+              </article>
+            {/each}
+            {#each noData as e (e.id)}
+              <p class="nodata" data-testid={`tv-nodata-${e.id}`}>
                 <span class="p-name">{e.name}</span>
-                {#if sinceText(e)}<span class="p-since">{sinceText(e)}</span>{/if}
+                <span>{[e.state_pt, sinceText(e)].filter(Boolean).join(' · ')}</span>
               </p>
-              {#if problemLine(e)}<p class="p-what">{problemLine(e)}</p>{/if}
-              {#if e.focus?.next_check}
-                <p class="p-check"><span class="p-label">Verificar primeiro</span> {e.focus.next_check.text_pt}</p>
-              {/if}
-            </article>
-          {/each}
-          {#each noData as e (e.id)}
-            <p class="nodata" data-testid={`tv-nodata-${e.id}`}>
-              <span class="p-name">{e.name}</span>
-              <span>{[e.state_pt, sinceText(e)].filter(Boolean).join(' · ')}</span>
-            </p>
-          {/each}
+            {/each}
+          {/if}
+        </div>
+        {#if today && today.length}
+          <section
+            class="today"
+            class:off={!todayFits}
+            aria-label="Hoje, dentro do normal"
+            aria-hidden={!todayFits}
+            data-testid="tv-today"
+            data-visible={todayFits}
+            bind:clientHeight={todayH}
+          >
+            <div class="t-head">
+              <h2 class="t-title">Hoje, dentro do normal</h2>
+              <p class="t-legend" aria-hidden="true">
+                <span class="sw ok"></span>dentro <span class="sw out"></span>fora <span class="sw none"></span>sem dados
+              </p>
+            </div>
+            <ol class="t-list">
+              {#each today as item (item.id)}
+                <li class="t-row" data-testid={`tv-today-${item.id}`} data-normal-pct={item.normal_pct}>
+                  <span class="t-name">{item.name}</span>
+                  <span class="t-bar">
+                    <TimeSplitBar
+                      normal={item.normal_pct}
+                      out={item.out_pct}
+                      noData={item.no_data_pct}
+                      height={barH}
+                      label={todayLabel(item)}
+                    />
+                  </span>
+                  <span class="t-pct num">{pctText(item.normal_pct)}%</span>
+                  <span class="t-hours">{hoursText(item.normal_s)}</span>
+                </li>
+              {/each}
+            </ol>
+          </section>
         {/if}
       </section>
 
@@ -296,7 +377,8 @@
   .body { flex: 1; display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 2vw; min-height: 0; }
   .stale-all .card, .stale-all .now { opacity: 0.55; }
 
-  .now { display: flex; flex-direction: column; gap: 2vh; min-height: 0; padding-top: 6px; overflow: hidden; }
+  .now { position: relative; display: flex; flex-direction: column; gap: 2vh; min-height: 0; padding-top: 6px; overflow: hidden; }
+  .now-main { display: flex; flex-direction: column; gap: 2vh; min-height: 0; }
   .waiting { margin: 0; color: var(--text-2); font-size: clamp(18px, 1.6vw, 36px); }
   .headline { display: flex; align-items: center; gap: 1.2vw; color: var(--st-warn); }
   .headline[data-tone='ok'] { color: var(--st-ok); }
@@ -330,6 +412,46 @@
   .p-check { margin: 0; color: var(--text-2); font: clamp(15px, 1.15vw, 28px) / 1.35 var(--font-ui); }
   .p-label { color: var(--accent-text); font-weight: 600; }
   .nodata { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4vh 1vw; margin: 0; padding: 1vh 1.2vw; border-left: 6px solid var(--st-info); border-radius: var(--r-3); background: var(--surf-1); color: var(--text-2); font: clamp(15px, 1.15vw, 28px) / 1.3 var(--font-ui); }
+
+  /* placar do dia: embaixo do lado Agora; fora de vista (mas medido) quando não cabe */
+  .today {
+    container: placar / inline-size;
+    display: flex;
+    flex-direction: column;
+    gap: 1vh;
+    margin-top: auto;
+    padding: 1.4vh 1.2vw;
+    border-radius: var(--r-4);
+    background: var(--surf-1);
+  }
+  .today.off { position: absolute; right: 0; bottom: 0; left: 0; visibility: hidden; }
+  .t-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.6vh 1.2vw; }
+  .t-title { margin: 0; color: var(--text-2); font: 600 clamp(13px, 0.95vw, 22px) / 1.2 var(--font-ui); letter-spacing: var(--ls-label); text-transform: uppercase; }
+  .t-legend { display: flex; align-items: center; gap: 0.5vw; margin: 0; color: var(--text-2); font: clamp(13px, 0.85vw, 20px) / 1.2 var(--font-ui); }
+  .sw { display: inline-block; width: 1.4em; height: 0.6em; border-radius: var(--r-pill); }
+  .sw.ok { background: var(--st-ok); }
+  .sw.out { margin-left: max(6px, 0.4vw); background: var(--st-warn); }
+  .sw.none { margin-left: max(6px, 0.4vw); background: repeating-linear-gradient(135deg, var(--text-3) 0 3px, transparent 3px 6px); box-shadow: inset 0 0 0 1px var(--text-3); }
+  /* uma grade só para a lista: as barras e os números ficam alinhados de linha a linha */
+  .t-list {
+    display: grid;
+    grid-template-columns: minmax(0, 9em) minmax(3em, 1fr) auto auto;
+    gap: 0.8vh 1vw;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--text-1);
+    font: clamp(15px, 1.15vw, 28px) / 1.25 var(--font-ui);
+  }
+  .t-row { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; row-gap: 0.2vh; }
+  .t-name { grid-column: 1; overflow-wrap: anywhere; }
+  .t-bar { grid-column: 2; }
+  .t-pct { grid-column: 3; justify-self: end; font: 600 clamp(16px, 1.3vw, 32px) / 1 var(--font-mono); }
+  .t-hours { grid-column: 4; color: var(--text-2); font: clamp(13px, 0.95vw, 22px) / 1.2 var(--font-ui); white-space: nowrap; }
+  @container placar (max-width: 519px) {
+    .t-list { grid-template-columns: minmax(0, 8.5em) minmax(3em, 1fr) auto; }
+    .t-hours { grid-column: 2 / -1; grid-row: 2; }
+  }
 
   .plant { display: flex; flex-direction: column; gap: 1.4vh; min-height: 0; overflow: hidden; }
   .grid {
@@ -382,11 +504,11 @@
   @keyframes enter { from { opacity: 0; } to { opacity: 1; } }
   @keyframes fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
   @keyframes glow {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(227, 174, 47, 0); }
-    50% { box-shadow: 0 0 0 10px rgba(227, 174, 47, 0.22); }
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--st-warn) 0%, transparent); }
+    50% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--st-warn) 22%, transparent); }
   }
   @media (prefers-reduced-motion: reduce) {
-    .problem.fresh { animation: none; box-shadow: 0 0 0 4px rgba(227, 174, 47, 0.45); }
+    .problem.fresh { animation: none; box-shadow: 0 0 0 4px color-mix(in srgb, var(--st-warn) 45%, transparent); }
     .bar { animation: none; transform: none; opacity: 0.4; }
   }
   /* tela estreita (não é o uso da TV, mas a rota precisa caber): uma coluna, rola */

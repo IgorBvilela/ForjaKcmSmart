@@ -134,6 +134,11 @@ Cada tela: rótulo, título de até 3 palavras, no máximo uma frase de apoio (a
 - Edge sem pulso por mais de 12 s: faixa "Edge sem resposta" e a tela esmaecida. Dado parado é marcado no cartão.
 - Deslocamento de até 6 px a cada 2 min, dentro da margem, para a imagem não marcar a TV.
 - Abaixo de 900 px: uma coluna, com rolagem.
+- **Placar do dia** (bloco "Hoje, dentro do normal", embaixo do lado Agora):
+  - a medida de tempo desde a meia-noite local (`GET /api/v1/time-split?from=<meia-noite>`), consultada uma vez por minuto;
+  - um dosador por linha, do pior para o melhor (menos tempo dentro do normal primeiro), com a barra de três partes (`src/components/data/TimeSplitBar.svelte`), a porcentagem e as horas dentro do normal;
+  - a porcentagem nunca arredonda para 0 ou 100 quando não é exatamente isso ("<1%", "99%");
+  - os problemas têm a vez: quando o placar não cabe embaixo deles, sai de vista (`data-visible="false"`, `aria-hidden`) e volta quando couber. Abaixo de 900 px sempre aparece.
 
 ### Escolha (`src/styles/base.css`)
 
@@ -156,5 +161,5 @@ Radio e caixa de marcar usam a classe `.choice`: o alvo é a linha inteira (44 p
 | `tests/e2e/test_plant.py`, `test_plant_grid.py`, `test_plant_collection.py` | Planta: cartão, desvio, motivo, 2 × 2 com 4 dosadores, coleta pausada nunca como normal e animação da mudança de estado. |
 | `tests/e2e/test_communication.py` | Fluxo de campo contra o Modbus de bancada com o botão único, recusa honesta da ativação e "Testar" à vista em 1440 × 900. |
 | `tests/e2e/test_shortcuts.py` | Atalhos 1 a 4, nada enquanto se digita, desligar na página Mais e a escolha guardada. |
-| `tests/e2e/test_tv.py` | Modo TV: sem controles, relógio e selo, tela Agora à vista com problema, troca de páginas e Edge derrubado em destaque. |
+| `tests/e2e/test_tv.py` | Modo TV: sem controles, relógio e selo, tela Agora à vista com problema, troca de páginas, Edge derrubado em destaque e placar do dia (todos os dosadores, do pior para o melhor, sem dados na barra, sai de vista numa tela baixa). |
 | `tests/e2e/test_dashboard.py` | Sem recarga por segundo com evento aberto; ponto vivo só com movimento permitido. |

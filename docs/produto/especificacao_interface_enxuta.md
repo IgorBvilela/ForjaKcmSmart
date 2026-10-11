@@ -380,12 +380,39 @@ Todos entram nesta fase, menos o QR code:
 2. **Atalhos de teclado de 1 a 4** para Agora, Planta, Dashboard e Comunicação.
    - Atalho de uma tecla só precisa poder ser desligado (WCAG 2.2, critério 2.1.4). Por isso fica um "ligar/desligar" na página da engrenagem, guardado no navegador.
    - O atalho não age enquanto se digita num campo.
-3. **Tema claro opcional:** botão para trocar o tema, com a escolha guardada no navegador. A conferência visual passa a rodar nos dois temas.
+3. **Tema claro opcional:** a escolha fica guardada no navegador. A conferência visual passa a rodar nos dois temas. Onde fica a troca: ver as decisões da prévia dos extras, abaixo.
 4. **Placar do dia na TV:** tempo dentro do normal hoje, por dosador, com a mesma medida nova.
 5. **Frase pronta** para o gerente copiar (já marcada na tela Agora).
    - O botão monta a frase sem IA e só copia; nada sai da máquina.
    - Exemplo: "[Dosador A] em atenção desde [14:32]: [material na correia caiu]; verificar primeiro [alimentação do silo]".
 6. **QR code na TV para abrir no celular:** anotado para a etapa de rede e login. Antes dela, o celular não alcança o Forja, e o código não teria para onde levar.
+
+### Decisões da prévia dos extras (2026-10-11)
+
+| Extra | Escolha |
+|---|---|
+| Placar do dia na TV | C · bloco "Hoje, dentro do normal" embaixo do lado Agora da TV, junto da frase do gerente |
+| Resumo do turno | B · cartão por dosador |
+| Tema claro | C · segue o tema do Windows; a página Mais fixa escuro ou claro |
+
+Itens marcados como "quero":
+- **Resumo do turno:**
+  - linha de assinatura do responsável;
+  - espaço para observações escritas à mão;
+  - tudo numa página só.
+
+Itens recusados:
+- **Tema claro:** o Modo TV não fica sempre escuro. Ele segue o tema como as outras telas.
+
+Itens sem resposta, mantidos como a prévia mostrou (o responsável confirma ou recusa):
+- **Placar:**
+  - horas dentro do normal além da porcentagem;
+  - do pior para o melhor, ou seja, quem ficou menos tempo dentro do normal aparece primeiro.
+
+Decisões derivadas das escolhas (o responsável confirma ou recusa):
+- **Placar:** os problemas têm a vez no lado Agora da TV. Quando não sobra espaço embaixo deles, o placar sai de vista e volta quando couber.
+- **Placar:** a porcentagem nunca arredonda para 0% ou 100% quando não é exatamente isso. Por exemplo, 99,6% aparece como 99%, e menos de 1% aparece como "<1%".
+- **Tema:** o Windows vem no claro de fábrica, então quem nunca mexeu no tema do Windows passa a abrir o Forja no claro. A impressão continua sempre clara.
 
 **Medida nova: tempo dentro do normal, fora do normal e sem dados**, por dosador e por período.
 - **Sem dados:** trecho sem leitura válida (buraco, falha de comunicação, coleta pausada ou não iniciada). Nunca conta como normal nem como fora do normal.
