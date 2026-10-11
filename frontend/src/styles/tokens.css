@@ -92,6 +92,12 @@
   --dur-draw: 500ms; --dur-scenario: 600ms; --pulse-cycle: 2.4s; --stagger: 40ms;
   --ease-out: cubic-bezier(.2,0,0,1); --ease-in: cubic-bezier(.4,0,1,1);
   --ease-std: cubic-bezier(.4,0,.2,1);
+  /* mola com ~4% de passagem (indicador de aba, seletor deslizante) */
+  --ease-spring: linear(0, 0.0018, 0.0069 1.15%, 0.026 2.3%, 0.0637, 0.1135 5.18%, 0.2229 7.78%,
+    0.5977 15.84%, 0.7014, 0.7904, 0.8641, 0.9228, 0.9676 28.8%, 1.0032 31.68%, 1.0225,
+    1.0352 36.29%, 1.0431 38.88%, 1.046 42.05%, 1.0448 44.35%, 1.0407 47.23%, 1.0118 61.63%,
+    1.0025 69.07%, 0.9981 80.31%, 0.9992 99.99%);
+  --dur-spring: 650ms;
 
   color-scheme: dark;
 }
@@ -125,7 +131,7 @@
 /* ---- reduced motion ---- */
 @media (prefers-reduced-motion: reduce) {
   :root { --dur-micro: 0ms; --dur-base: 80ms; --dur-screen: 80ms; --dur-num: 0ms;
-    --dur-draw: 0ms; --dur-scenario: 0ms; --stagger: 0ms; }
+    --dur-draw: 0ms; --dur-scenario: 0ms; --stagger: 0ms; --dur-spring: 0ms; }
   .pulse, .belt, .particles, .draw { animation: none !important; }
 }
 

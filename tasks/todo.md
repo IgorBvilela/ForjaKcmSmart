@@ -15,13 +15,15 @@ Plano: `tasks/plan.md`. Especificação: `docs/produto/especificacao_interface_e
 ## Fase 2 · Navegação enxuta
 - [x] T4 · Títulos independentes do menu
 - [ ] T5 · Menu com 4 entradas e engrenagem; rota inicial `/app/now`
-- [ ] T6 · Abas do Dashboard
+  - Defeitos antigos do cabeçalho, achados na conferência visual: letra do seletor de equipamento com 14 px no celular (mínimo 16); botões de dica com 20 a 22 px de altura (mínimo 24 com mouse)
+- [x] T6 · Abas do Dashboard (feito antes de T5, para nenhuma tela ficar sem caminho)
 - [ ] Checkpoint B · Todas as telas a até 2 cliques; bateria completa verde
 
 ## Fase 3 · Planta e Comunicação
 - [ ] T7 · Planta em grade quase quadrada (4 = 2 × 2) e cartão enxuto
 - [ ] T8 · Comunicação direta
 - [ ] T9 · Texto enxuto: telas de dados
+  - Defeitos antigos achados na conferência visual: link "Ver todos" do Dashboard com 20 px de altura; textos dos quadros do Dashboard cortados com reticências; caixas de marcar das variáveis do Histórico com 20 px
 - [ ] T10 · Texto enxuto: telas de sistema
 - [ ] T11 · Texto enxuto: telas do dosador e de inteligência
 - [ ] Checkpoint C · Uma frase de apoio por tela principal; bateria verde; conferência visual

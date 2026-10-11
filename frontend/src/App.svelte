@@ -2,7 +2,9 @@
   /** Shell + roteador. Cada rota do contrato tem página real ou estado vazio honesto. */
   import { onMount } from 'svelte'
   import AppShell from './components/shell/AppShell.svelte'
+  import EquipmentTabs from './components/shell/EquipmentTabs.svelte'
   import EmptyState from './components/ui/EmptyState.svelte'
+  import { hasEqTabs } from './lib/eqtabs'
   import { live } from './lib/live.svelte'
   import { knowledgeItem, navItemForEqScreen, systemItem, toolsItem } from './lib/nav'
   import { href, installLinkInterceptor, routeSlug } from './lib/router'
@@ -80,6 +82,9 @@
 </script>
 
 <AppShell>
+  {#if route.name === 'eq' && hasEqTabs(route.screen)}
+    <EquipmentTabs equipmentId={route.id} screen={route.screen} />
+  {/if}
   {#key app.path}
     <div class="page" data-testid={TID.page} data-route={routeSlug(route)}>
       {#if route.name === 'now'}
