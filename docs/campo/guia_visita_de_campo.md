@@ -56,4 +56,5 @@ Só depois da conferência rastreável a variável deixa de ser "não validada" 
 - Tempo Real mostrando as variáveis com qualidade validada.
 - Saúde e logs sem erro de comunicação.
 - Backup feito depois da configuração.
+- Horários dos turnos da planta, com o responsável: nome, início e fim de cada turno. Eles vão em `config/forja.yaml`, seção `plant.shifts`, e o serviço precisa ser reiniciado depois. Sem eles, o Resumo do turno pede o período.
 - Fotos e anotações guardadas fora do repositório (dado da planta não entra no git).

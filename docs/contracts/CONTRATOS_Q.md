@@ -61,6 +61,17 @@ Classificação FORJA_RULE (`src/forja/reports/time_split.py`, `src/forja/api/ro
 - **Alarme do KCM ativo:** a mesma regra da leitura ao vivo (`forja.events.kcm_alarm`): `alarm_active` = 1 ou `alarm_code` ≠ 0. Leitura sem valor ou sem qualidade encerra o trecho.
 - **Resposta:** `from_utc`, `to_utc`, `definition_pt`, `evidence_level` e, por dosador, `id`, `name`, `reference_tag`, `span_s`, `normal_s`, `out_s`, `no_data_s` e as três porcentagens. As três partes somam o período.
 
+## API: turnos e resumo do turno (`GET /api/v1/shifts` e `GET /api/v1/shift-summary`)
+
+Somente leitura (`src/forja/api/routers/shifts.py`, `src/forja/reports/shifts.py`).
+
+- **Turnos:** vêm da configuração da planta, `config/forja.yaml`, seção `plant.shifts`: nome, início e fim (HH:MM) no fuso da planta (`edge.timezone`). Fim antes do início quer dizer que o turno termina no dia seguinte. A semente vem sem turnos: os horários reais são preenchidos no comissionamento, nunca no código. Até 12 turnos, com nomes diferentes.
+- **`GET /shifts`:** `timezone`, `today` (o dia no relógio da planta), `shifts` (`index`, `name`, `start`, `end`, `crosses_midnight`) e `current` (`index` e `date` do turno em andamento, ou nulo). O início pertence ao turno e o fim, ao seguinte. Depois da meia-noite, o turno da noite pertence ao dia em que começou.
+- **`GET /shift-summary`:** um turno (`shift` e `date`, a data em que ele começa) ou um período livre (`from` e `to`, com os mesmos limites do histórico). Turno em andamento vai até agora e volta com `in_progress`.
+  - Resposta: o envelope da medida de tempo (`from_utc`, `to_utc`, `definition_pt`, `evidence_level`), mais `timezone`, `generated_at_utc`, `shift`, `date` e `data_source` (`SIMULATED`, `EQUIPMENT`, `MIXED` ou nulo sem dosador).
+  - Por dosador: a medida de tempo, `data_source`, os eventos da Forja (até 50, `events_total` com o total), `early_warnings` (o aviso antecipado só é contado, à parte) e `kcm_alarms` (os códigos que o KCM informou, com o título do catálogo da chave).
+  - Recusas: turno fora da configuração dá 404 `SHIFT_NOT_FOUND`. Turno sem data, pedido sem turno nem período, período que ainda não começou e janela inválida dão 422.
+
 ## Interface (`frontend/`)
 
 ### Rotas
@@ -73,6 +84,7 @@ Classificação FORJA_RULE (`src/forja/reports/time_split.py`, `src/forja/api/ro
 | `/app/eq/{id}/kcm/communication` | Comunicação. |
 | `/app/more` | Mais: atalhos em grupos (do dosador, dados, sistema, demonstração, conhecimento). |
 | `/app/tv` | Modo TV. `?troca=N` muda a troca de páginas da Planta (5 a 120 s; padrão 20). |
+| `/app/tools/shift-summary` | Resumo do turno (Mais › Dados). |
 
 Documentos e Manuais (fase P) ficam fora da navegação até existirem; as rotas continuam com o estado vazio honesto.
 
@@ -140,6 +152,13 @@ Cada tela: rótulo, título de até 3 palavras, no máximo uma frase de apoio (a
   - a porcentagem nunca arredonda para 0 ou 100 quando não é exatamente isso ("<1%", "99%");
   - os problemas têm a vez: quando o placar não cabe embaixo deles, sai de vista (`data-visible="false"`, `aria-hidden`) e volta quando couber. Abaixo de 900 px sempre aparece.
 
+### Resumo do turno (`src/routes/ShiftSummaryPage.svelte`)
+
+- Com turnos configurados: data e turnos da configuração, com o turno em andamento já escolhido. Sem turnos: aviso, início e fim (padrão: as últimas 8 h), e o fim antes do início é recusado na tela, sem consultar o Edge.
+- A folha é sempre clara (`.surface-light`, os mesmos tokens do tema claro), como no papel. Ela traz o cabeçalho (planta, período, "em andamento, até HH:MM", emissão e origem do dado) e um cartão por dosador: barra de três partes, porcentagem e horas de cada parte, eventos e alarmes do KCM na ordem do tempo, e os avisos antecipados contados à parte. O que já estava aberto antes do período aparece com "desde" e a data. Depois vêm observações à mão, assinatura e definição da medida.
+- Uma página só: a impressão usa a página A4 própria `resumo-turno` (`src/styles/print.css`), duas colunas até 4 dosadores e três acima disso. Cada cartão mostra 6 linhas até 4 dosadores, 4 linhas até 8 e 3 acima disso, com "e mais N".
+- Turno em andamento: a folha se atualiza a cada minuto.
+
 ### Escolha (`src/styles/base.css`)
 
 Radio e caixa de marcar usam a classe `.choice`: o alvo é a linha inteira (44 px), o `input` fica para o teclado e o leitor de tela, e a marca visível é desenho.
@@ -161,5 +180,7 @@ Radio e caixa de marcar usam a classe `.choice`: o alvo é a linha inteira (44 p
 | `tests/e2e/test_plant.py`, `test_plant_grid.py`, `test_plant_collection.py` | Planta: cartão, desvio, motivo, 2 × 2 com 4 dosadores, coleta pausada nunca como normal e animação da mudança de estado. |
 | `tests/e2e/test_communication.py` | Fluxo de campo contra o Modbus de bancada com o botão único, recusa honesta da ativação e "Testar" à vista em 1440 × 900. |
 | `tests/e2e/test_shortcuts.py` | Atalhos 1 a 4, nada enquanto se digita, desligar na página Mais e a escolha guardada. |
+| `tests/unit/test_shifts.py`, `tests/integration/test_api_shifts.py` | Turnos: janela no fuso da planta, turno da noite até o dia seguinte, turno em andamento, validação da configuração, resumo com eventos, alarmes do KCM e aviso antecipado à parte, recusas e somente leitura. |
+| `tests/e2e/test_shift_summary.py` | Resumo do turno: sem turnos pede o período, período invertido recusado na tela, PDF em uma página A4 sem os controles, 375 px sem rolagem lateral, turnos da configuração com o turno em andamento escolhido. |
 | `tests/e2e/test_tv.py` | Modo TV: sem controles, relógio e selo, tela Agora à vista com problema, troca de páginas, Edge derrubado em destaque e placar do dia (todos os dosadores, do pior para o melhor, sem dados na barra, sai de vista numa tela baixa). |
 | `tests/e2e/test_dashboard.py` | Sem recarga por segundo com evento aberto; ponto vivo só com movimento permitido. |

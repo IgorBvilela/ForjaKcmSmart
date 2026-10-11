@@ -7,6 +7,13 @@ edge:
   bind_port: 8765
   data_dir: var
   timezone: America/Sao_Paulo
+plant:
+  # Turnos da planta, no fuso da planta (edge.timezone). Lista vazia: o Resumo do turno pede o
+  # periodo. Preencher no comissionamento com os horarios reais da planta, neste formato:
+  #   - name: "[nome do turno]"
+  #     start: "[HH:MM]"
+  #     end: "[HH:MM]"       # fim antes do inicio = o turno termina no dia seguinte
+  shifts: []
 historian:
   raw_retention_days: 30
   raw_simulated_retention_days: 7

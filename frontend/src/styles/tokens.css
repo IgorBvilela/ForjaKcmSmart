@@ -102,8 +102,9 @@
   color-scheme: dark;
 }
 
-/* ---- tema claro: preferência do usuário ---- */
-:root[data-theme="light"] {
+/* ---- tema claro: preferência do usuário; .surface-light é um pedaço sempre claro (folha) ---- */
+:root[data-theme="light"],
+.surface-light {
   --bg-0: #F3F3F2; --surf-1: #FFFFFF; --surf-2: #F7F7F6; --surf-3: #FFFFFF;
   --border-1: #E4E4E3; --border-2: #D9D9D9; /* Cinza Técnico (marca) */ --border-input: #8A8F96;
   --chumbo: #4B4F56;
@@ -116,6 +117,11 @@
   --q-sim: #6446B8; --q-sim-hatch: repeating-linear-gradient(135deg, transparent 0 6px, rgba(100,70,184,.16) 6px 8px);
   --s1: #1F1F1F; --s2: #9E5220; --s3: #3A6A8F; --s4: #6B7078; --s-ref: #8A8F96;
   --elev-2: 0 8px 24px rgba(31,31,31,.12); --elev-3: 0 24px 64px rgba(31,31,31,.18); --scrim: rgba(31,31,31,.40);
+  /* derivados: no :root se resolvem sozinhos; num pedaço da página precisam ser repetidos */
+  --text-disabled: var(--chumbo); --q-good: var(--text-2); --q-uncertain: var(--st-warn);
+  --q-stale: var(--text-3); --q-comm: var(--st-info); --q-bad: var(--st-crit);
+  --chart-grid: var(--border-1); --chart-gap: var(--st-info-bg);
+  --focus: 0 0 0 2px var(--bg-0), 0 0 0 4px var(--accent);
   color-scheme: light;
 }
 

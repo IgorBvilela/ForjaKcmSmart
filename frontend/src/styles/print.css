@@ -34,6 +34,12 @@
   }
 }
 
+/* Folha do Resumo do turno: página A4 própria (as outras impressões ficam como estão). */
+@page resumo-turno {
+  size: A4 portrait;
+  margin: 10mm;
+}
+
 /* Só aparece no papel (assinaturas, rodapé do relatório). */
 .print-only {
   display: none;

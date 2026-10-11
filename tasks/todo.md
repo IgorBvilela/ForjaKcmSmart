@@ -38,13 +38,15 @@ Plano: `tasks/plan.md`. Especificação: `docs/produto/especificacao_interface_e
 
 ## Fase 6 · Extras aprovados na prévia
 - [x] T15 · Medida de tempo: dentro do normal, fora do normal e sem dados (`GET /api/v1/time-split`, por dosador e período)
-- [ ] T16 · Resumo do turno para imprimir (turnos vêm da configuração da planta)
+- [x] T16 · Resumo do turno para imprimir (opção B: cartão por dosador, observações, assinatura, uma página A4; turnos de `config/forja.yaml`, seção `plant.shifts`; sem turnos, pede o período)
 - [x] T17 · Placar do dia na TV (opção C: bloco "Hoje" embaixo do lado Agora, do pior para o melhor, com as horas; sai de vista quando os problemas precisam do espaço)
 - [x] T18 · Atalhos de teclado de 1 a 4, com opção de desligar (página Mais, seção Teclado)
 - [ ] T19 · Tema claro opcional, conferido nos dois temas
 - Etapa de rede e login (fora desta fase): QR code na TV
 
 ## Achados para decidir depois
+- As telas de Histórico e Tendências declaram `.controls` como global (coluna). Esse estilo vaza para qualquer `.controls` do app. O Resumo do turno usa outro nome (`sh-controls`). Proposta: trocar o `:global(.controls)` pelo nome do componente que ele mira.
+- Evento aberto antes de uma parada do Edge pode continuar aberto depois da volta: o Resumo do turno o mostra com "desde" e a data. Confirmar se a volta do Edge deveria encerrar ou expirar o que ficou aberto.
 - No Windows, quando um navegador fecha de repente a conexão ao vivo (SSE), o `asyncio` registra "Exception in callback _ProactorBasePipeTransport._call_connection_lost()" e "socket.send() raised exception" nos registros do serviço. É ruído, mas aparece como ERROR em Saúde e logs. Proposta: tratar a desconexão do cliente no fluxo SSE e silenciar esse caso.
 - Resolvido no T9: com evento aberto o servidor manda uma atualização por segundo; o cliente agora só reconsulta quando estado, gravidade, qualidade ou reconhecimento mudam (o detalhe do próprio evento continua acompanhando).
 - Regra "Pouco material sobre a correia": o evento se encerra cerca de 50 s depois de abrir, embora a carga continue baixa, porque a regra olha a queda dentro de 60 s e não o nível. O alarme do KCM e o evento "Esforço do acionamento alto" seguem ativos. Decisão de domínio para o usuário.

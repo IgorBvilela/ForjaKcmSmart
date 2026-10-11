@@ -24,6 +24,7 @@ import Library from '@lucide/svelte/icons/library'
 import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal'
 import FileChartColumn from '@lucide/svelte/icons/file-chart-column'
 import Download from '@lucide/svelte/icons/download'
+import Printer from '@lucide/svelte/icons/printer'
 import Settings from '@lucide/svelte/icons/settings'
 import DatabaseBackup from '@lucide/svelte/icons/database-backup'
 import ScrollText from '@lucide/svelte/icons/scroll-text'
@@ -129,6 +130,13 @@ export const ROUTE_ITEMS = {
     to: () => href.knowledge('cases'),
   },
   simulator: eq('simulator', 'simulator', 'Simulador', SlidersHorizontal),
+  toolsShiftSummary: {
+    slug: 'tools-shift-summary',
+    label: 'Resumo do turno',
+    icon: Printer,
+    kind: 'tools',
+    to: () => href.tools('shift-summary'),
+  },
   toolsReports: {
     slug: 'tools-reports',
     label: 'Relatórios',
@@ -189,7 +197,7 @@ export const GEAR_GROUPS: readonly NavGroup[] = [
     label: 'Do dosador',
     items: [R.kcmDatasheet, R.kcmComponents, R.kcmAlarms, R.kcmCommissioning],
   },
-  { id: 'dados', label: 'Dados', items: [R.toolsReports, R.toolsExports] },
+  { id: 'dados', label: 'Dados', items: [R.toolsShiftSummary, R.toolsReports, R.toolsExports] },
   {
     id: 'sistema',
     label: 'Sistema',

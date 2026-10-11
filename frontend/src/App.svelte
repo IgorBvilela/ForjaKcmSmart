@@ -36,6 +36,7 @@
   import TvPage from './routes/TvPage.svelte'
   import RealtimePage from './routes/RealtimePage.svelte'
   import ReportsPage from './routes/ReportsPage.svelte'
+  import ShiftSummaryPage from './routes/ShiftSummaryPage.svelte'
   import SettingsPage from './routes/SettingsPage.svelte'
   import SimulatorPage from './routes/SimulatorPage.svelte'
   import SystemLogsPage from './routes/SystemLogsPage.svelte'
@@ -168,6 +169,8 @@
           <ReportsPage />
         {:else if route.sub === 'exports'}
           <ExportsPage />
+        {:else if route.sub === 'shift-summary'}
+          <ShiftSummaryPage />
         {:else}
           <ComingSoonPage item={toolsItem(route.sub)} />
         {/if}

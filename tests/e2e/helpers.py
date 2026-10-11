@@ -102,6 +102,7 @@ READY_BY_SLUG: dict[str, str] = {
     "kcm-alarms": "[data-testid='alarm-key']",
     "tools-reports": "[data-testid='reports-form']",
     "tools-exports": "[data-testid='exports-form']",
+    "tools-shift-summary": "[data-testid='shift-controls']",
     "system-backup": "[data-testid='backup-schedule']",
     "system-settings": "[data-testid='settings-edge']",
 }

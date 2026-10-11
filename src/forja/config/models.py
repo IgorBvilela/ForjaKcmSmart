@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class EdgeConfig(BaseModel):
@@ -74,11 +74,49 @@ class EventsConfig(BaseModel):
     buffer_s: int = 180
 
 
+HHMM = r"^([01]\d|2[0-3]):[0-5]\d$"
+"""Hora do relógio da planta, sempre com dois dígitos: "06:00", "22:30"."""
+
+
+class ShiftConfig(BaseModel):
+    """Turno da planta no fuso da planta (`edge.timezone`). Fim antes do início: o turno
+    termina no dia seguinte (turno da noite)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, str_strip_whitespace=True)
+
+    name: str = Field(min_length=1, max_length=40)
+    start: str = Field(pattern=HHMM)
+    end: str = Field(pattern=HHMM)
+
+    @model_validator(mode="after")
+    def _start_differs_from_end(self) -> ShiftConfig:
+        if self.start == self.end:
+            raise ValueError(f"turno {self.name!r}: início e fim iguais")
+        return self
+
+
+class PlantConfig(BaseModel):
+    """Dados da planta que não são de equipamento. Sem turnos, o resumo pede o período."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    shifts: list[ShiftConfig] = Field(default_factory=list, max_length=12)
+
+    @field_validator("shifts")
+    @classmethod
+    def _unique_names(cls, shifts: list[ShiftConfig]) -> list[ShiftConfig]:
+        names = [s.name.casefold() for s in shifts]
+        if len(names) != len(set(names)):
+            raise ValueError("nomes de turno repetidos")
+        return shifts
+
+
 class ForjaConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     schema_version: int = 1
     edge: EdgeConfig = Field(default_factory=EdgeConfig)
+    plant: PlantConfig = Field(default_factory=PlantConfig)
     historian: HistorianConfig = Field(default_factory=HistorianConfig)
     events: EventsConfig = Field(default_factory=EventsConfig)
     backup: BackupConfig = Field(default_factory=BackupConfig)

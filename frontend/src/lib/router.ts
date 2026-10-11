@@ -22,7 +22,7 @@ export const EQ_SCREENS = [
 export type EqScreen = (typeof EQ_SCREENS)[number]
 
 export type KnowledgeSub = 'documents' | 'manuals' | 'cases'
-export type ToolsSub = 'reports' | 'exports'
+export type ToolsSub = 'reports' | 'exports' | 'shift-summary'
 export type SystemSub = 'equipments' | 'settings' | 'backup' | 'logs' | 'about'
 
 export type Route =
@@ -95,7 +95,7 @@ export function parseRoute(pathname: string): Route {
       return sub && segs.length === 2 ? { name: 'knowledge', sub } : notFound
     }
     case 'tools': {
-      const sub = oneOf(segs[1], ['reports', 'exports'] as const)
+      const sub = oneOf(segs[1], ['reports', 'exports', 'shift-summary'] as const)
       return sub && segs.length === 2 ? { name: 'tools', sub } : notFound
     }
     case 'system': {
