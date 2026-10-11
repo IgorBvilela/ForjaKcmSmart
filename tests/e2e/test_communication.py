@@ -1,4 +1,4 @@
-"""KCM › Comunicação no navegador, contra um servidor Modbus de bancada (127.0.0.1).
+"""Comunicação no navegador, contra um servidor Modbus de bancada (127.0.0.1).
 
 Fluxo de campo completo, numa coluna: escolher protocolo, endereço e variável; conferir sem
 conectar; testar somente leitura; comparar com o "valor na tela do KCM"; salvar e ativar com um

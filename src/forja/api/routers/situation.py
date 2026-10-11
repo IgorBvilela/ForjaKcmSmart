@@ -45,7 +45,7 @@ GROUP_ORDER = {GROUP_PROBLEM: 0, GROUP_NO_DATA: 1, GROUP_STOPPED: 2, GROUP_NORMA
 SEVERITY_RANK = {Severity.CRITICAL: 0, Severity.ATTENTION: 1, Severity.INFO: 2}
 
 NO_DATA_STATES = frozenset({STATE_NO_COMM_PT, STATE_PAUSED_PT, STATE_BLOCKED_PT, STATE_UNKNOWN_PT})
-PAUSED_REASON_PT = "Coleta pausada (KCM › Comunicação)."
+PAUSED_REASON_PT = "Coleta pausada (em Comunicação)."
 ALL_NORMAL_PT = "Tudo dentro do normal"
 NO_EQUIPMENT_PT = "Nenhum dosador configurado"
 

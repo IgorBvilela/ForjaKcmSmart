@@ -10,7 +10,7 @@ Produto da **Forja Lógica** (automação e otimização de processos). Primeiro
 
 ---
 
-## Estado atual (10/10/2026)
+## Estado atual (11/10/2026)
 
 | Fase | Conteúdo | Situação |
 |---|---|---|
@@ -30,11 +30,12 @@ Produto da **Forja Lógica** (automação e otimização de processos). Primeiro
 | M | Relatório por período (qualidade do dado no tempo, eventos, alarmes do KCM), exportações CSV, backup com configuração e rotina diária, configuração em uso | concluída |
 | N | Instalação no Windows: executável, serviço, instalador e atualizador com backup, pacote `.zip` | concluída (registro do serviço ainda não executado em PC da planta) |
 | O | Comissionamento: sessão com cabeçalho, conferência Forja × tela do KCM, relatório para impressão | ferramenta concluída; validação em campo pendente |
+| Q | **Interface enxuta:** a tela **Agora** como primeira tela ("está tudo bem? o que verifico primeiro?"), menu com 4 entradas e a engrenagem Mais, abas do dosador, Planta em grade quase quadrada, Comunicação numa coluna com botão único, texto curto em todas as telas e **Modo TV** (`/app/tv`) | concluída (extras aprovados na prévia em andamento) |
 | P | Biblioteca de documentos e manuais (pós-campo) | próxima etapa |
 
 Telas ainda não construídas aparecem na interface como **"Em desenvolvimento · próxima etapa: …"**. Nenhum botão falso.
 
-**Verificação:** 796 testes do núcleo e 76 testes de interface em navegador real (vários tamanhos de tela, zero requisição externa). Lint e verificação de tipos sem erro.
+**Verificação:** 806 testes do núcleo e 131 testes de interface em navegador real (vários tamanhos de tela, zero requisição externa). Lint e verificação de tipos sem erro.
 
 ---
 

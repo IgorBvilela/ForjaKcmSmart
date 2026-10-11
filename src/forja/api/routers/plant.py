@@ -43,7 +43,7 @@ STATE_STOPPED_PT = "Parado"
 STATE_UNKNOWN_PT = "Desconhecido"
 STATE_PAUSED_PT = "Coleta pausada"
 STATE_BLOCKED_PT = "Coleta não iniciada"
-BLOCKED_ANOMALY_PT = "Falta o teste somente leitura desta configuração (KCM › Comunicação)."
+BLOCKED_ANOMALY_PT = "Falta o teste somente leitura desta configuração (em Comunicação)."
 
 _NO_COMM_STATES = frozenset(
     {

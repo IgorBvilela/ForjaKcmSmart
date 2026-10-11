@@ -1,5 +1,5 @@
 <script lang="ts">
-  /** Ferramentas › Exportações: CSV das variáveis, dos eventos e dos registros do sistema.
+  /** Mais › Dados › Exportações: CSV das variáveis, dos eventos e dos registros do sistema.
    *  Toda linha leva a qualidade ao lado do valor; leitura sem valor sai vazia, nunca zero. */
   import Download from '@lucide/svelte/icons/download'
   import { api } from '../lib/api'

@@ -195,7 +195,7 @@
             </div>
           </dl>
         </Card>
-        <Card title="Comunicação" kicker="configurada em KCM › Comunicação" testid="datasheet-comm">
+        <Card title="Comunicação" kicker="configurada em Comunicação" testid="datasheet-comm">
           <dl class="dl">
             <div><dt>Driver</dt><dd>{@render value(view.profile.communication.driver)}</dd></div>
             <div><dt>Protocolo</dt><dd>{@render value(view.profile.communication.protocol)}</dd></div>

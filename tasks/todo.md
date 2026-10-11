@@ -34,7 +34,7 @@ Plano: `tasks/plan.md`. Especificação: `docs/produto/especificacao_interface_e
 
 ## Fase 5 · Acabamento
 - [x] T13 · Animações (genjutsu cast): ponto vivo no minigráfico, "pop" do selo e anel que acende na mudança de estado, entrada escalonada dos cartões da tela Agora; nada com movimento reduzido
-- [ ] T14 · ADR 0033, CONTRATOS_Q, README, especificação atualizada
+- [x] T14 · ADR 0033 e 0034, CONTRATOS_Q, README e CLAUDE.md atualizados; textos com o caminho antigo "KCM › Comunicação" apontam para Comunicação
 
 ## Fase 6 · Extras aprovados na prévia
 - [ ] T15 · Medida de tempo: dentro do normal, fora do normal e sem dados

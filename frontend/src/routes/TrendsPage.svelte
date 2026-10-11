@@ -199,7 +199,7 @@
   {:else if !loading && readable.length === 0}
     <EmptyState
       title="Nenhuma variável mapeada para este equipamento"
-      text="As tendências aparecem quando o mapping tiver endereços legíveis. Configure em KCM › Comunicação."
+      text="As tendências aparecem quando o mapping tiver endereços legíveis. Configure em Comunicação."
     />
   {:else}
     <div class="grid">

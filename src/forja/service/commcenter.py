@@ -375,7 +375,7 @@ COLLECTION_BLOCKED_PREFIX_PT: Final = "Coleta não iniciada"
 """Início de todo motivo de bloqueio da porteira (ver forja.acquisition.manager)."""
 READ_TEST_PENDING_PT: Final = (
     "Coleta não iniciada: falta um teste somente leitura bem-sucedido desta configuração "
-    "(KCM › Comunicação)"
+    "(em Comunicação)"
 )
 
 

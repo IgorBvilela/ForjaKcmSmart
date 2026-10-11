@@ -12,6 +12,7 @@ from __future__ import annotations
 import csv
 import io
 import re
+import time
 
 import pytest
 from playwright.sync_api import Page, expect
@@ -60,7 +61,9 @@ def test_trends_tag_selection_lives_in_the_url(desktop_1366: Page) -> None:
 
 def test_trends_drag_zooms_and_reset_returns_to_period(desktop_1920: Page) -> None:
     page = desktop_1920
-    open_route(page, f"/app/eq/{EQ_MAIN}/trends?p=15m", "trends")
+    # janela fixa: um período ao vivo redesenha o gráfico a cada 15 s e pode cortar o gesto
+    now_ms = int(time.time() * 1000)
+    open_route(page, f"/app/eq/{EQ_MAIN}/trends?from={now_ms - 600_000}&to={now_ms}", "trends")
     over = page.get_by_test_id("trend-chart-mass_flow").locator(".u-over")
     expect(over).to_be_visible()
     box = over.bounding_box()
@@ -75,7 +78,7 @@ def test_trends_drag_zooms_and_reset_returns_to_period(desktop_1920: Page) -> No
     expect(page.get_by_test_id("trends-window")).to_contain_text("Zoom")
     reset.click()
     expect(reset).to_have_count(0)
-    expect(page.get_by_test_id("trends-window")).to_contain_text("Últimos 15 min")
+    expect(page.get_by_test_id("trends-window")).to_contain_text("Intervalo escolhido")
 
 
 def test_realtime_lists_every_tag_with_quality(tablet_768: Page) -> None:

@@ -1,5 +1,5 @@
 <script lang="ts">
-  /** Ferramentas › Relatórios: relatório por período de um equipamento, para ler ou imprimir.
+  /** Mais › Dados › Relatórios: relatório por período de um equipamento, para ler ou imprimir.
    *  Mostra só o que foi gravado: qualidade do dado no tempo, eventos e avisos, alarmes do KCM. */
   import FileText from '@lucide/svelte/icons/file-text'
   import Printer from '@lucide/svelte/icons/printer'

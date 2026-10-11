@@ -1,5 +1,5 @@
 <script lang="ts">
-  /** KCM › Comunicação, numa coluna: protocolo, endereço, teste somente leitura e salvar e ativar.
+  /** Comunicação, numa coluna: protocolo, endereço, teste somente leitura e salvar e ativar.
    *  Tempos, variáveis (mapping) e o detalhe do teste ficam fechados. Tudo aqui configura a FORJA
    *  e LÊ o KCM: nada envia comando ao equipamento. Protocolo nunca é escolhido sozinho. */
   import { untrack } from 'svelte'
