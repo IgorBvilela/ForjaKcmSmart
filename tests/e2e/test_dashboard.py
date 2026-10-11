@@ -6,8 +6,9 @@ from __future__ import annotations
 import re
 
 import pytest
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Browser, Page, expect
 
+from tests.e2e.conftest import Edge
 from tests.e2e.helpers import (
     EQ_BARRILHA,
     EQ_KCM03,
@@ -127,3 +128,33 @@ def test_open_event_does_not_reload_the_screen_every_second(desktop_1366: Page) 
     page.wait_for_timeout(10_000)
     # em 10 s, no máximo a reconciliação da planta (a cada 15 s); nunca uma por segundo
     assert len(calls) <= 2, calls
+
+
+PING_RUNNING = (
+    "() => document.getAnimations().filter("
+    "a => (a.animationName || '').endsWith('ping') && a.playState === 'running').length"
+)
+
+
+def test_live_dot_breathes_only_when_motion_is_allowed(
+    browser: Browser, edge: Edge, desktop_1920: Page
+) -> None:
+    """O último ponto do minigráfico ao vivo emite uma onda; com movimento reduzido, nenhuma."""
+    ctx = browser.new_context(
+        viewport={"width": 1440, "height": 900},
+        base_url=edge.base_url,
+        locale="pt-BR",
+        reduced_motion="no-preference",
+    )
+    try:
+        page = ctx.new_page()
+        page.goto(f"/app/eq/{EQ_MAIN}/dashboard", wait_until="load")
+        expect(page.get_by_test_id("kpi-grid")).to_be_visible()
+        page.wait_for_function(f"({PING_RUNNING})() > 0", timeout=15_000)
+    finally:
+        ctx.close()
+
+    reduced = desktop_1920
+    open_route(reduced, f"/app/eq/{EQ_MAIN}/dashboard", "dashboard")
+    reduced.wait_for_timeout(1_500)
+    assert reduced.evaluate(PING_RUNNING) == 0

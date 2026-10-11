@@ -11,10 +11,11 @@
   import { severityTone, type EventStatus, type EventView } from '../../lib/api'
   import { copyText } from '../../lib/clipboard'
   import { ageSince, fmtAge } from '../../lib/format'
+  import { flashOnChange, popOnChange } from '../../lib/motion'
   import { href } from '../../lib/router'
   import { readyPhrase, sinceText, type SituationEntry } from '../../lib/situation'
 
-  let { entry, now }: { entry: SituationEntry; now: number } = $props()
+  let { entry, now, index = 0 }: { entry: SituationEntry; now: number; index?: number } = $props()
 
   let acked = $state<{ status: EventStatus; acked_by: string | null } | null>(null)
   let copied = $state(false)
@@ -48,9 +49,11 @@
   }
 </script>
 
-<article class="card" data-tone={tone} data-testid={`now-card-${entry.id}`}>
+<article class="card" data-tone={tone} data-testid={`now-card-${entry.id}`} style:--i={index}>
+  <!-- mudança de gravidade: o anel acende uma vez e o selo dá um "pop" (nada com movimento reduzido) -->
+  <span class="ring" aria-hidden="true" use:flashOnChange={tone}></span>
   <header class="head">
-    <Badge {tone} size="md">{focus ? entry.state_pt : 'Alarme do KCM'}</Badge>
+    <span class="badge" use:popOnChange={tone}><Badge {tone} size="md">{focus ? entry.state_pt : 'Alarme do KCM'}</Badge></span>
     <h3 class="name">{entry.name}</h3>
     {#if since}<span class="since">{age ? `${since} · ${age}` : since}</span>{/if}
   </header>
@@ -128,6 +131,7 @@
 
 <style>
   .card {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
@@ -136,13 +140,25 @@
     border-left: 3px solid var(--st-warn);
     border-radius: var(--r-3);
     background: var(--surf-1);
+    /* entrada: sobe 10 px, um cartão depois do outro (60 ms) */
     animation: rise var(--dur-screen) var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * 60ms);
   }
   .card[data-tone='crit'] { border-left-color: var(--st-crit); }
   @keyframes rise {
-    from { opacity: 0; transform: translateY(6px); }
+    from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: none; }
   }
+  .ring {
+    position: absolute;
+    inset: -1px;
+    border-radius: var(--r-3);
+    box-shadow: 0 0 0 2px var(--ring, var(--st-warn)), 0 0 22px var(--ring, var(--st-warn));
+    opacity: 0;
+    pointer-events: none;
+  }
+  .card[data-tone='crit'] .ring { --ring: var(--st-crit-fill); }
+  .badge { display: inline-flex; }
   .head { display: flex; align-items: center; gap: var(--sp-2) var(--sp-3); flex-wrap: wrap; }
   .name { margin: 0; color: var(--text-1); font: 600 var(--fs-h2) / var(--lh-h2) var(--font-ui); }
   .since { color: var(--text-2); font: var(--fs-body) / var(--lh-body) var(--font-ui); }

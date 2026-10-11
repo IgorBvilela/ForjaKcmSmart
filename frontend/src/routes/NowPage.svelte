@@ -69,8 +69,8 @@
 
     <div class="maintenance">
       <h2 class="label">Para a manutenção</h2>
-      {#each problems as entry (entry.id)}
-        <NowCard {entry} now={app.now} />
+      {#each problems as entry, i (entry.id)}
+        <NowCard {entry} now={app.now} index={i} />
       {:else}
         <p class="calm" data-testid="now-nothing"><Check size={20} aria-hidden="true" /> Nada para verificar agora.</p>
       {/each}

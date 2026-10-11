@@ -174,7 +174,7 @@
                   <td class="num age">{fmtAge(age)}</td>
                   {#if g.id === 'processo'}
                     <td class="spark-col">
-                      <Sparkline points={live.seriesFor(equipmentId, tag)} faded={!t.is_usable} height={28} showWindow={false} label={`Mini-tendência de ${t.label_pt}`} />
+                      <Sparkline points={live.seriesFor(equipmentId, tag)} faded={!t.is_usable} height={28} showWindow={false} label={`Mini-tendência de ${t.label_pt}`} live />
                     </td>
                   {/if}
                 </tr>

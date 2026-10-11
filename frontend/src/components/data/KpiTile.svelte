@@ -166,7 +166,7 @@
   </p>
 
   {#if sparkline}
-    <Sparkline {points} {refValue} faded={!usable} {color} height={compact ? 32 : 36} label={`Mini-tendência de ${label}`} />
+    <Sparkline {points} {refValue} faded={!usable} {color} height={compact ? 32 : 36} label={`Mini-tendência de ${label}`} live />
   {/if}
 
   {#if explanation && !compact}

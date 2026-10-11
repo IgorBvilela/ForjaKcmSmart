@@ -4,10 +4,12 @@ setpoint só com a máquina em operação, motivo e desde quando fora do normal,
 from __future__ import annotations
 
 import re
+from typing import Literal
 
 import pytest
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Browser, Page, Route, expect
 
+from tests.e2e.conftest import Edge
 from tests.e2e.helpers import (
     EQ_BARRILHA,
     EQ_KCM03,
@@ -100,3 +102,51 @@ def test_plant_card_click_opens_dashboard(mobile_375: Page) -> None:
     expect(page.get_by_test_id("header-equipment-select")).to_have_attribute(
         "data-selected", EQ_MAIN
     )
+
+
+ANIMATIONS_ON_CARD = (
+    "el => el.querySelector('[data-testid=plant-ring]').getAnimations().length"
+    " + el.querySelector('[data-testid=plant-state]').getAnimations().length"
+)
+
+
+def _state_flip_animations(
+    browser: Browser, edge: Edge, reduced_motion: Literal["reduce", "no-preference"]
+) -> int:
+    """Abre a Planta, troca o estado do Dosador Pó Base para Atenção na resposta de /plant e
+    devolve quantas animações rodam no cartão logo depois da troca."""
+    ctx = browser.new_context(
+        viewport={"width": 1440, "height": 900},
+        base_url=edge.base_url,
+        locale="pt-BR",
+        reduced_motion=reduced_motion,
+    )
+    flip = {"on": False}
+
+    def plant(route: Route) -> None:
+        response = route.fetch()
+        data = response.json()
+        if flip["on"]:
+            for card in data["cards"]:
+                if card["id"] == EQ_MAIN:
+                    card["state_pt"] = "Atenção"
+        route.fulfill(response=response, json=data)
+
+    try:
+        page = ctx.new_page()
+        page.route("**/api/v1/plant", plant)
+        page.goto("/app/plant", wait_until="load")
+        card = page.get_by_test_id(f"plant-card-{EQ_MAIN}")
+        expect(card).to_have_attribute("data-state", "Normal")
+        flip["on"] = True
+        expect(card).to_have_attribute("data-state", "Atenção", timeout=20_000)
+        return int(card.evaluate(ANIMATIONS_ON_CARD))
+    finally:
+        ctx.close()
+
+
+def test_state_change_lights_the_card_once(browser: Browser, edge: Edge) -> None:
+    """Mudança de estado: o anel acende uma vez e o selo dá um "pop"; com movimento reduzido,
+    o estado novo aparece direto, sem animação."""
+    assert _state_flip_animations(browser, edge, "no-preference") >= 1
+    assert _state_flip_animations(browser, edge, "reduce") == 0

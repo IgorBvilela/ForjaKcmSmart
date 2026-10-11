@@ -11,6 +11,7 @@
     faded = false,
     label = 'Mini-tendência dos últimos pontos',
     showWindow = true,
+    live = false,
   }: {
     points?: SeriesPoint[]
     height?: number
@@ -19,6 +20,8 @@
     faded?: boolean
     label?: string
     showWindow?: boolean
+    /** Dado ao vivo: o último ponto emite uma onda a cada 1,6 s (nunca em dado velho). */
+    live?: boolean
   } = $props()
 
   let width = $state(0)
@@ -124,6 +127,9 @@
           pathLength="1"
           vector-effect="non-scaling-stroke"
         />
+        {#if live && !faded}
+          <circle class="ping" cx={geo.lastX} cy={geo.lastY} r="2" fill={color} aria-hidden="true" />
+        {/if}
         <circle cx={geo.lastX} cy={geo.lastY} r="2" fill={color} />
       </svg>
     {:else}
@@ -143,15 +149,18 @@
     width: 100%;
     min-width: 0;
   }
+  /* o último ponto e a onda dele podem passar até 6 px da borda (o raio máximo da onda) */
   .spark-wrap {
     width: 100%;
     min-width: 0;
-    overflow: hidden;
+    overflow: clip;
+    overflow-clip-margin: 6px;
   }
   .spark {
     display: block;
     width: 100%;
     height: 100%;
+    overflow: visible;
     transition: opacity var(--dur-base) var(--ease-std);
   }
   .spark.faded { opacity: 0.35; filter: saturate(0); }
@@ -183,5 +192,18 @@
     font: var(--fs-caption) / var(--lh-caption) var(--font-ui);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+  }
+  /* gráfico que respira: a onda sai do último ponto e some (só transform e opacity) */
+  .ping {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: ping 1.6s cubic-bezier(0.2, 0, 0, 1) infinite;
+  }
+  @keyframes ping {
+    from { transform: scale(1); opacity: 0.55; }
+    to { transform: scale(2.6); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ping { display: none; }
   }
 </style>

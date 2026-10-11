@@ -33,7 +33,7 @@ Plano: `tasks/plan.md`. Especificação: `docs/produto/especificacao_interface_e
 - [x] T12 · Modo TV (`/app/tv`): Agora e Planta juntas (opção B), sem controles; páginas da Planta trocam a cada 20 s (`?troca=N`); brilho para quem entra em atenção; Edge sem resposta em destaque; deslocamento contra marca; atalho na página Mais
 
 ## Fase 5 · Acabamento
-- [ ] T13 · Animações (genjutsu cast)
+- [x] T13 · Animações (genjutsu cast): ponto vivo no minigráfico, "pop" do selo e anel que acende na mudança de estado, entrada escalonada dos cartões da tela Agora; nada com movimento reduzido
 - [ ] T14 · ADR 0033, CONTRATOS_Q, README, especificação atualizada
 
 ## Fase 6 · Extras aprovados na prévia

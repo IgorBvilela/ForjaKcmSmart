@@ -7,6 +7,7 @@
   import { isUsable, stateTone, type PlantCard } from '../../lib/api'
   import { ageSince, fmtNumber } from '../../lib/format'
   import { live } from '../../lib/live.svelte'
+  import { flashOnChange, popOnChange } from '../../lib/motion'
   import { href } from '../../lib/router'
   import { sinceText, type SituationEntry } from '../../lib/situation'
   import { app } from '../../lib/state.svelte'
@@ -84,8 +85,10 @@
   style:--i={index}
 >
   <a class="go" href={href.eq(card.id)} aria-label={`${card.name}: ${card.state_pt}. Abrir dashboard`}></a>
+  <!-- mudança de estado: o anel acende uma vez e o selo dá um "pop" (nada com movimento reduzido) -->
+  <span class="ring" aria-hidden="true" data-testid="plant-ring" use:flashOnChange={card.state_pt}></span>
   <span class="head">
-    <span class="state" data-tone={tone}>
+    <span class="state" data-tone={tone} data-testid="plant-state" use:popOnChange={card.state_pt}>
       <StatusDot state={tone} hollow={tone === 'info'} size={9} />
       <span>{card.state_pt}</span>
     </span>
@@ -166,6 +169,18 @@
     to { opacity: 1; transform: none; }
   }
 
+  .ring {
+    position: absolute;
+    inset: -1px;
+    border-radius: var(--r-4);
+    box-shadow: 0 0 0 2px var(--ring, var(--st-ok)), 0 0 22px var(--ring, var(--st-ok));
+    opacity: 0;
+    pointer-events: none;
+  }
+  .pcard[data-tone='warn'] .ring { --ring: var(--st-warn); }
+  .pcard[data-tone='crit'] .ring { --ring: var(--st-crit-fill); }
+  .pcard[data-tone='info'] .ring { --ring: var(--st-info); }
+  .pcard[data-tone='neutral'] .ring { --ring: var(--text-3); }
   .head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); flex-wrap: wrap; }
   .state {
     display: inline-flex;
