@@ -7,7 +7,7 @@ Plano: `tasks/plan.md`. Especificação: `docs/produto/especificacao_interface_e
 - [x] Checkpoint 0 · Escolhas registradas no §15 da especificação; prévia apagada
 
 ## Fase 1 · Agora
-- [ ] T1 · Junção dos dados e `GET /api/v1/situation`
+- [x] T1 · Junção dos dados e `GET /api/v1/situation`
 - [ ] T2 · Início do alarme do KCM pelo historiador ("início não determinado" quando não houver)
 - [ ] T3 · Tela Agora (`/app/now`)
 - [ ] Checkpoint A · Núcleo e navegador verdes; conferência visual da tela Agora

@@ -192,7 +192,7 @@ def _spark(cells: tuple[float | None, ...]) -> list[float | None]:
     return out
 
 
-def _rule_state(rt: RuleRuntime | None, evaluation: Any) -> str:
+def rule_state(rt: RuleRuntime | None, evaluation: Any) -> str:
     if rt is not None and rt.open_event is not None:
         return "ACTIVE"
     if evaluation is None:
@@ -207,7 +207,7 @@ def _rule_state(rt: RuleRuntime | None, evaluation: Any) -> str:
 def rule_view(
     rule: EarlyWarningRule, rt: RuleRuntime | None, evaluation: Any, *, preview: bool
 ) -> dict[str, Any]:
-    state = _rule_state(rt, evaluation)
+    state = rule_state(rt, evaluation)
     state_pt = STATE_PT[state]
     if state == "CONFIRMING":
         state_pt = (
