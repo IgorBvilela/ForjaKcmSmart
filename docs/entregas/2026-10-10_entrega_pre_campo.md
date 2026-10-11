@@ -34,7 +34,7 @@ Correções de segurança operacional feitas no caminho: a coleta de driver real
 - Configuração: `config/early_warning/EW-*.yaml`.
 - Interface: `frontend/src/routes/*Page.svelte` (Comunicação, Comissionamento, Alertas, Aviso antecipado, Casos, Equipamentos, Ficha técnica, Componentes, Alarmes, Backup, Relatórios, Exportações, Configuração, Saúde e logs, Tendências, Histórico, Tempo Real).
 - Distribuição: `packaging/` e `scripts/build_windows.ps1`.
-- Documentação: `docs/contracts/CONTRATOS_{E,F,G,H,J_K,L,M,N,O}.md`, ADR 0020 a 0031, `docs/campo/guia_visita_de_campo.md`.
+- Documentação: `docs/contracts/CONTRATOS_{E,F,G,H,J_K,L,M,N,O}.md`, ADR 0020 a 0032, `docs/campo/guia_visita_de_campo.md`.
 
 ## 4. Testes executados e resultados reais
 
