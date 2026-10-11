@@ -662,6 +662,7 @@
     display: inline-flex;
     align-items: center;
     gap: var(--sp-1);
+    min-height: 24px;
     margin-top: var(--sp-3);
     color: var(--accent-text);
     font: 500 var(--fs-body) / var(--lh-body) var(--font-ui);
@@ -717,15 +718,11 @@
     font: 600 var(--fs-h2) / var(--lh-h2) var(--font-ui);
     color: var(--text-1);
   }
+  /* o resumo aparece inteiro: cortado com reticências, escondia parte da leitura */
   .diag-text {
     margin: 0;
     color: var(--text-2);
     font: var(--fs-body) / var(--lh-body) var(--font-ui);
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
   }
   .diag-pending { margin: 0; color: var(--text-3); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
   .diag-actions { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin-top: var(--sp-1); }

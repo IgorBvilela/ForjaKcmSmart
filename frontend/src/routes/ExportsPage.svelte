@@ -9,6 +9,7 @@
   import { app } from '../lib/state.svelte'
   import PeriodPicker from '../components/data/PeriodPicker.svelte'
   import Card from '../components/ui/Card.svelte'
+  import PageHeader from '../components/ui/PageHeader.svelte'
 
   const cards = $derived(live.plant)
   let equipmentId = $state(app.equipmentId ?? '')
@@ -42,14 +43,12 @@
 </script>
 
 <section class="exp" data-testid="exports">
-  <header class="head">
-    <p class="label">Ferramentas</p>
-    <h1 class="title">Exportações</h1>
-    <p class="sub">
-      Arquivos CSV para planilha ou análise. Toda linha leva o instante (UTC e horário da planta) e a
-      qualidade ao lado do valor; leitura sem valor sai vazia, nunca como zero.
-    </p>
-  </header>
+  <PageHeader kicker="Dados" title="Exportações" lead="Arquivos CSV para planilha, com o instante e a qualidade de cada valor.">
+    {#snippet more()}
+      <p>Toda linha leva o instante (UTC e horário da planta) e a qualidade ao lado do valor.</p>
+      <p>Leitura sem valor sai vazia, nunca como zero.</p>
+    {/snippet}
+  </PageHeader>
 
   <Card title="O que exportar" testid="exports-form">
     <div class="form">
@@ -65,8 +64,8 @@
       </div>
       <fieldset class="field">
         <legend class="label">Formato</legend>
-        <label class="radio"><input type="radio" bind:group={dialect} value="br" /> Excel em português (; e vírgula)</label>
-        <label class="radio"><input type="radio" bind:group={dialect} value="std" /> Padrão (, e ponto)</label>
+        <label class="choice"><input type="radio" bind:group={dialect} value="br" /><span class="choice-mark" data-kind="radio" aria-hidden="true"></span> Excel em português (; e vírgula)</label>
+        <label class="choice"><input type="radio" bind:group={dialect} value="std" /><span class="choice-mark" data-kind="radio" aria-hidden="true"></span> Padrão (, e ponto)</label>
       </fieldset>
     </div>
   </Card>
@@ -93,12 +92,6 @@
 
 <style>
   .exp { display: flex; flex-direction: column; gap: var(--sp-5); }
-  .head .label { margin: 0 0 var(--sp-1); }
-  .title { margin: 0; color: var(--text-1); font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui); }
-  @media (min-width: 1024px) {
-    .title { font-size: var(--fs-display); line-height: var(--lh-display); }
-  }
-  .sub { margin: var(--sp-1) 0 0; max-width: 72ch; color: var(--text-2); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
   .form { display: grid; gap: var(--sp-3); grid-template-columns: 1fr; }
   @media (min-width: 1024px) {
     .form { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
@@ -116,8 +109,6 @@
     font: 16px / 1.3 var(--font-ui);
   }
   select:focus-visible { outline: none; box-shadow: var(--focus); }
-  .radio { display: inline-flex; align-items: center; gap: var(--sp-2); min-height: var(--touch); color: var(--text-1); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
-  .radio input { width: 24px; height: 24px; accent-color: var(--accent); }
   .files { display: grid; gap: var(--sp-4); grid-template-columns: 1fr; }
   @media (min-width: 768px) { .files { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .muted { margin: 0 0 var(--sp-3); color: var(--text-2); font: var(--fs-caption) / var(--lh-caption) var(--font-ui); }

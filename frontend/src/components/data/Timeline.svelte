@@ -99,6 +99,8 @@
     text-decoration: none;
     border-radius: var(--r-1);
   }
+  /* mouse: alvo de 24 px; a margem negativa devolve a altura à linha */
+  a.tl-title { display: inline-block; padding: 2px 0; margin: -2px 0; }
   a.tl-title:hover { color: var(--accent-text); }
   .tl-text,
   .tl-meta {

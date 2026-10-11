@@ -232,7 +232,13 @@
           size: 60,
           grid: { stroke: grid, width: 1 },
           ticks: { show: false },
-          values: (_u, splits) => splits.map((s) => fmtNumber(s, dec)),
+          values: (_u, splits) => {
+            // casas que o passo entre as marcas pede: faixa estreita não repete o mesmo número
+            const step = splits.length > 1 ? Math.abs(splits[1] - splits[0]) : 0
+            const need = step > 0 ? Math.max(0, Math.ceil(-Math.log10(step) - 1e-9)) : 0
+            const places = Math.min(Math.max(dec, need), 3)
+            return splits.map((s) => fmtNumber(s, places))
+          },
         },
       ],
       hooks: {

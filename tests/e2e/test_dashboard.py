@@ -9,6 +9,7 @@ import pytest
 from playwright.sync_api import Page, expect
 
 from tests.e2e.helpers import (
+    EQ_BARRILHA,
     EQ_KCM03,
     EQ_MAIN,
     PT_NUMBER,
@@ -16,6 +17,7 @@ from tests.e2e.helpers import (
     TILE_TAGS,
     css_ms,
     open_route,
+    wait_for_event,
 )
 
 pytestmark = pytest.mark.e2e
@@ -106,3 +108,22 @@ def test_dashboard_respects_reduced_motion(desktop_1920: Page) -> None:
     expect(wbf).to_have_attribute("data-reduced", "true")
     expect(wbf).to_have_attribute("data-state", "run")
     expect(wbf).to_contain_text("Correia em movimento")
+
+
+def test_open_event_does_not_reload_the_screen_every_second(desktop_1366: Page) -> None:
+    """Com evento aberto o motor manda uma atualização por segundo (só amostras guardadas e
+    qualidade). O Dashboard recarrega a lista de eventos e a planta só quando algo visível muda."""
+    page = desktop_1366
+    wait_for_event(page, EQ_BARRILHA)
+    open_route(page, f"/app/eq/{EQ_BARRILHA}/dashboard", "dashboard")
+    page.wait_for_timeout(2_000)
+    calls: list[str] = []
+
+    def count(request_url: str) -> None:
+        if "/events?" in request_url or request_url.endswith("/api/v1/plant"):
+            calls.append(request_url)
+
+    page.on("request", lambda r: count(r.url))
+    page.wait_for_timeout(10_000)
+    # em 10 s, no máximo a reconciliação da planta (a cada 15 s); nunca uma por segundo
+    assert len(calls) <= 2, calls

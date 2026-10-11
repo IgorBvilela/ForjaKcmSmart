@@ -23,8 +23,8 @@ Plano: `tasks/plan.md`. Especificação: `docs/produto/especificacao_interface_e
 - [x] T7 · Planta em grade quase quadrada (4 = 2 × 2) e cartão enxuto
   - A linha "Último evento", cortada com reticências a 375 e 768 px, saiu do cartão
 - [x] T8 · Comunicação direta
-- [ ] T9 · Texto enxuto: telas de dados
-  - Defeitos antigos achados na conferência visual: textos dos quadros do Dashboard cortados com reticências; caixas de marcar das variáveis do Histórico com 20 px (o link "Ver todos" com 20 px foi corrigido no T5)
+- [x] T9 · Texto enxuto: telas de dados (cabeçalho padrão com uma frase de apoio e "Saiba mais")
+  - Corrigidos na conferência visual: resumo do diagnóstico cortado com reticências; opções de formato do CSV com 20 e 24 px (agora a linha inteira é o alvo); "Abrir diagnóstico" e títulos da linha do tempo com 20 px; eixo do gráfico repetindo "62, 62, 62"; coluna "Sem leitura" escondida atrás da rolagem no quadro estreito
 - [ ] T10 · Texto enxuto: telas de sistema
 - [ ] T11 · Texto enxuto: telas do dosador e de inteligência
 - [ ] Checkpoint C · Uma frase de apoio por tela principal; bateria verde; conferência visual
@@ -45,5 +45,5 @@ Plano: `tasks/plan.md`. Especificação: `docs/produto/especificacao_interface_e
 - Etapa de rede e login (fora desta fase): QR code na TV
 
 ## Achados para decidir depois
-- Com um evento aberto, o servidor manda uma atualização por segundo pelo SSE. O Dashboard recarrega a lista de eventos e a planta a cada uma delas (comportamento anterior a esta fase). Proposta: o cliente ignorar a atualização sem mudança de estado e calcular a duração sozinho.
+- Resolvido no T9: com evento aberto o servidor manda uma atualização por segundo; o cliente agora só reconsulta quando estado, gravidade, qualidade ou reconhecimento mudam (o detalhe do próprio evento continua acompanhando).
 - Regra "Pouco material sobre a correia": o evento se encerra cerca de 50 s depois de abrir, embora a carga continue baixa, porque a regra olha a queda dentro de 60 s e não o nível. O alarme do KCM e o evento "Esforço do acionamento alto" seguem ativos. Decisão de domínio para o usuário.

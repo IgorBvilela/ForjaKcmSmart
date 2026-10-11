@@ -130,6 +130,9 @@ class LiveStore {
   /** Incrementa quando um diagnóstico é publicado. */
   diagnosisVersion = $state(0)
   lastEventChange = $state<{ kind: string; event: EventBrief; equipment_id: string } | null>(null)
+  /** Última atualização de evento aberto (uma por segundo enquanto a condição dura). Só o
+   *  detalhe do próprio evento escuta: as listas e a planta ignoram o que não muda na tela. */
+  lastEventUpdate = $state<{ id: string; at: number } | null>(null)
   plantError = $state<string | null>(null)
   /** A lista da planta já chegou (snapshot ou consulta), mesmo que vazia. */
   plantLoaded = $state(false)
@@ -271,15 +274,29 @@ class LiveStore {
     this.queuePlantRefresh()
   }
 
+  /** O que as listas mostram de cada evento: estado, gravidade, qualidade e reconhecimento. */
+  #eventLook = new Map<string, string>()
+
   #onEvent(p: EventPayload): void {
     if (p.kind === 'DIAGNOSIS') {
       this.diagnosisVersion += 1
-    } else {
-      this.eventsVersion += 1
-      if (p.event) {
-        this.lastEventChange = { kind: p.kind, event: p.event, equipment_id: p.event.equipment_id }
-      }
+      this.queuePlantRefresh()
+      return
     }
+    if (p.event) {
+      const ev = p.event
+      const look = `${ev.status}|${ev.severity}|${ev.quality}|${ev.acked_by ?? ''}`
+      const before = this.#eventLook.get(ev.id)
+      this.#eventLook.set(ev.id, look)
+      if (p.kind === 'UPDATE') {
+        this.lastEventUpdate = { id: ev.id, at: Date.now() }
+        // atualização que não muda nada na tela não reconsulta. A primeira de cada evento só
+        // registra: a atualização não muda estado nem gravidade, e a tela acabou de consultar.
+        if (before === undefined || before === look) return
+      }
+      this.lastEventChange = { kind: p.kind, event: ev, equipment_id: ev.equipment_id }
+    }
+    this.eventsVersion += 1
     this.queuePlantRefresh()
   }
 

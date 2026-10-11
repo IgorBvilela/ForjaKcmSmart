@@ -11,6 +11,7 @@
   import { sortTags, tagCatalog } from '../lib/tagmeta.svelte'
   import Sparkline from '../components/data/Sparkline.svelte'
   import Card from '../components/ui/Card.svelte'
+  import PageHeader from '../components/ui/PageHeader.svelte'
   import Disclosure from '../components/ui/Disclosure.svelte'
   import EmptyState from '../components/ui/EmptyState.svelte'
   import QualityBadge from '../components/ui/QualityBadge.svelte'
@@ -91,16 +92,11 @@
 </script>
 
 <section class="rt" data-testid="realtime">
-  <header class="head">
-    <div>
-      <p class="label">{name}</p>
-      <h1 class="title">Tempo Real</h1>
-      <p class="sub">
-        Todas as variáveis mapeadas, com a qualidade e a idade de cada leitura. Valor antigo nunca
-        aparece como atual.
-      </p>
-    </div>
-  </header>
+  <PageHeader kicker={name} title="Tempo Real" lead="Cada variável com a qualidade e a idade da leitura.">
+    {#snippet more()}
+      <p>Aparecem todas as variáveis mapeadas. Valor antigo nunca aparece como atual: ele leva a idade ao lado.</p>
+    {/snippet}
+  </PageHeader>
 
   <Card padded testid="realtime-status">
     <dl class="status">
@@ -215,12 +211,6 @@
 
 <style>
   .rt { display: flex; flex-direction: column; gap: var(--sp-5); min-width: 0; }
-  .head .label { margin: 0 0 var(--sp-1); }
-  .title { margin: 0; font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui); color: var(--text-1); }
-  @media (min-width: 1024px) {
-    .title { font-size: var(--fs-display); line-height: var(--lh-display); }
-  }
-  .sub { margin: var(--sp-1) 0 0; max-width: 72ch; color: var(--text-2); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
   .status {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));

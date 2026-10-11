@@ -181,3 +181,49 @@ def test_drawer_lists_the_same_entries_and_keeps_focus_inside(mobile_375: Page) 
     for _ in range(4):
         page.keyboard.press("Shift+Tab")
         expect(dialog.locator(":focus")).to_have_count(1)
+
+
+# Telas com o cabeçalho padrão (regra de texto da especificação, §5): título de até 3 palavras e
+# no máximo uma frase de apoio visível ao abrir, com até ~100 caracteres. O resto vai em
+# "Saiba mais", fechado. A lista cresce a cada grupo de telas revisto.
+LEAN_SCREENS = [
+    (f"/app/eq/{EQ_MAIN}/realtime", "realtime"),
+    (f"/app/eq/{EQ_MAIN}/trends", "trends"),
+    (f"/app/eq/{EQ_MAIN}/history", "history"),
+    ("/app/tools/exports", "tools-exports"),
+    ("/app/tools/reports", "tools-reports"),
+]
+
+
+@pytest.mark.parametrize(("path", "slug"), LEAN_SCREENS)
+def test_screen_opens_with_short_title_and_one_support_sentence(
+    desktop_1366: Page, path: str, slug: str
+) -> None:
+    page = desktop_1366
+    open_route(page, path, slug)
+    head = page.get_by_test_id("page-head")
+    expect(head).to_be_visible()
+    title = head.get_by_role("heading", level=1).inner_text().strip()
+    assert len(title.split()) <= 3, title
+
+    leads = head.get_by_test_id("page-lead")
+    assert leads.count() <= 1
+    if leads.count():
+        lead = leads.inner_text().strip()
+        assert len(lead) <= 100, lead
+        assert lead.endswith("."), lead
+        assert ". " not in lead, f"mais de uma frase: {lead}"
+    # no cabeçalho, ao abrir: só o rótulo, o título e a frase de apoio
+    assert head.locator("p:visible").count() <= 2
+    more = head.get_by_test_id("page-more")
+    if more.count():
+        expect(more).to_have_attribute("aria-expanded", "false")
+
+
+def test_long_explanation_waits_in_learn_more(desktop_1366: Page) -> None:
+    page = desktop_1366
+    open_route(page, f"/app/eq/{EQ_MAIN}/trends", "trends")
+    head = page.get_by_test_id("page-head")
+    expect(head).not_to_contain_text("Arraste sobre um gráfico")
+    head.get_by_test_id("page-more").click()
+    expect(head).to_contain_text("Arraste sobre um gráfico para ampliar um trecho.")

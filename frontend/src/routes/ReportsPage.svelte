@@ -13,6 +13,7 @@
   import PeriodPicker from '../components/data/PeriodPicker.svelte'
   import Badge from '../components/ui/Badge.svelte'
   import Card from '../components/ui/Card.svelte'
+  import PageHeader from '../components/ui/PageHeader.svelte'
   import EmptyState from '../components/ui/EmptyState.svelte'
 
   const cards = $derived(live.plant)
@@ -47,14 +48,11 @@
 </script>
 
 <section class="rep" data-testid="reports">
-  <header class="head no-print">
-    <p class="label">Ferramentas</p>
-    <h1 class="title">Relatórios</h1>
-    <p class="sub">
-      Relatório por período de um equipamento: qualidade do dado no tempo, eventos e avisos da Forja e
-      alarmes que o KCM informou. Pode ser impresso ou salvo em PDF pelo navegador.
-    </p>
-  </header>
+  <PageHeader kicker="Dados" title="Relatórios" lead="Relatório de um período, para imprimir ou salvar em PDF." noPrint>
+    {#snippet more()}
+      <p>O relatório traz a qualidade do dado no tempo, os eventos e avisos da Forja e os alarmes que o KCM informou.</p>
+    {/snippet}
+  </PageHeader>
 
   <Card title="Período e equipamento" class="no-print" testid="reports-form">
     <div class="form">
@@ -196,12 +194,6 @@
 
 <style>
   .rep { display: flex; flex-direction: column; gap: var(--sp-5); }
-  .head .label { margin: 0 0 var(--sp-1); }
-  .title { margin: 0; color: var(--text-1); font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui); }
-  @media (min-width: 1024px) {
-    .title { font-size: var(--fs-display); line-height: var(--lh-display); }
-  }
-  .sub { margin: var(--sp-1) 0 0; max-width: 72ch; color: var(--text-2); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
   .form { display: grid; gap: var(--sp-3); grid-template-columns: 1fr; }
   @media (min-width: 1024px) { .form { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); } }
   .field { display: flex; flex-direction: column; gap: var(--sp-1); min-width: 0; }

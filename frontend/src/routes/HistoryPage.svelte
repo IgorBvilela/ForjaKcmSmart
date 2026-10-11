@@ -24,6 +24,7 @@
   import PeriodPicker from '../components/data/PeriodPicker.svelte'
   import TagPicker from '../components/data/TagPicker.svelte'
   import Card from '../components/ui/Card.svelte'
+  import PageHeader from '../components/ui/PageHeader.svelte'
   import EmptyState from '../components/ui/EmptyState.svelte'
   import QualityBadge from '../components/ui/QualityBadge.svelte'
 
@@ -129,16 +130,11 @@
 </script>
 
 <section class="hist" data-testid="history">
-  <header class="head">
-    <div>
-      <p class="label">{name}</p>
-      <h1 class="title">Histórico</h1>
-      <p class="sub">
-        Consulta ao historiador por período: resumo por variável, eventos do período e os pontos
-        gravados, sempre com a qualidade ao lado do valor.
-      </p>
-    </div>
-  </header>
+  <PageHeader kicker={name} title="Histórico" lead="Os pontos gravados de um período, com a qualidade de cada valor.">
+    {#snippet more()}
+      <p>A consulta traz o resumo por variável, os eventos do período e os pontos gravados.</p>
+    {/snippet}
+  </PageHeader>
 
   <Card padded class="controls">
     <PeriodPicker {period} now={app.now} onchange={(p) => (period = p)} testid="history-period" />
@@ -160,8 +156,8 @@
       <Card title="Exportar" testid="history-export">
         <fieldset class="dialect">
           <legend>Formato</legend>
-          <label><input type="radio" name="dialect" value="br" bind:group={dialect} /> Excel em português (ponto e vírgula, vírgula decimal)</label>
-          <label><input type="radio" name="dialect" value="std" bind:group={dialect} /> Padrão (vírgula, ponto decimal)</label>
+          <label class="choice"><input type="radio" name="dialect" value="br" bind:group={dialect} /><span class="choice-mark" data-kind="radio" aria-hidden="true"></span> Excel em português (ponto e vírgula, vírgula decimal)</label>
+          <label class="choice"><input type="radio" name="dialect" value="std" bind:group={dialect} /><span class="choice-mark" data-kind="radio" aria-hidden="true"></span> Padrão (vírgula, ponto decimal)</label>
         </fieldset>
         <div class="dl">
           <a class="dl-btn primary" href={csvRaw} download data-testid="history-export-raw">
@@ -290,12 +286,6 @@
 
 <style>
   .hist { display: flex; flex-direction: column; gap: var(--sp-5); min-width: 0; }
-  .head .label { margin: 0 0 var(--sp-1); }
-  .title { margin: 0; font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui); color: var(--text-1); }
-  @media (min-width: 1024px) {
-    .title { font-size: var(--fs-display); line-height: var(--lh-display); }
-  }
-  .sub { margin: var(--sp-1) 0 0; max-width: 72ch; color: var(--text-2); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
   :global(.controls) { display: flex; flex-direction: column; gap: var(--sp-3); }
   .window { margin: 0; color: var(--text-2); font-size: var(--fs-mono-sm); }
   .grid { display: grid; gap: var(--sp-4); grid-template-columns: minmax(0, 1fr); }
@@ -306,8 +296,6 @@
   .pad { padding: var(--sp-4); }
   .dialect { margin: 0 0 var(--sp-3); padding: 0; border: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
   .dialect legend { margin-bottom: var(--sp-2); color: var(--text-3); font: 500 var(--fs-caption) / var(--lh-caption) var(--font-ui); }
-  .dialect label { display: flex; align-items: center; gap: var(--sp-2); min-height: var(--touch); color: var(--text-1); font: var(--fs-body) / var(--lh-body) var(--font-ui); cursor: pointer; }
-  .dialect input { width: 20px; height: 20px; accent-color: var(--accent); }
   .dl { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-bottom: var(--sp-3); }
   .dl-btn {
     display: inline-flex;

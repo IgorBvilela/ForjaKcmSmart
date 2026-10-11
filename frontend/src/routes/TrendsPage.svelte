@@ -29,6 +29,7 @@
   import PeriodPicker from '../components/data/PeriodPicker.svelte'
   import TagPicker from '../components/data/TagPicker.svelte'
   import Card from '../components/ui/Card.svelte'
+  import PageHeader from '../components/ui/PageHeader.svelte'
   import EmptyState from '../components/ui/EmptyState.svelte'
 
   let { equipmentId }: { equipmentId: string } = $props()
@@ -153,19 +154,17 @@
 </script>
 
 <section class="trends" data-testid="trends">
-  <header class="head">
-    <div>
-      <p class="label">{name}</p>
-      <h1 class="title">Tendências</h1>
-      <p class="sub">
-        O que mudou, quando começou e qual variável mudou primeiro. Cada ponto vale até a próxima
-        leitura gravada; trecho sem leitura aparece sombreado e nunca é preenchido.
-      </p>
-    </div>
-    <a class="export" href={csvHref} download data-testid="trends-export">
-      <Download size={16} aria-hidden="true" /> Exportar este trecho (CSV)
-    </a>
-  </header>
+  <PageHeader kicker={name} title="Tendências" lead="O que mudou, quando começou e qual variável mudou primeiro.">
+    {#snippet more()}
+      <p>Cada ponto vale até a próxima leitura gravada. Trecho sem leitura aparece sombreado e nunca é preenchido.</p>
+      <p>Arraste sobre um gráfico para ampliar um trecho.</p>
+    {/snippet}
+    {#snippet actions()}
+      <a class="export" href={csvHref} download data-testid="trends-export">
+        <Download size={16} aria-hidden="true" /> Exportar este trecho (CSV)
+      </a>
+    {/snippet}
+  </PageHeader>
 
   <Card padded class="controls">
     <PeriodPicker
@@ -193,7 +192,6 @@
         {#if isLive(period)}<span class="auto">· atualiza a cada 15 s</span>{/if}
       {/if}
     </p>
-    <p class="hint">Arraste sobre um gráfico para ampliar um trecho.</p>
   </Card>
 
   {#if error}
@@ -330,19 +328,6 @@
 
 <style>
   .trends { display: flex; flex-direction: column; gap: var(--sp-5); min-width: 0; }
-  .head {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: var(--sp-4);
-    flex-wrap: wrap;
-  }
-  .head .label { margin: 0 0 var(--sp-1); }
-  .title { margin: 0; font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui); color: var(--text-1); }
-  @media (min-width: 1024px) {
-    .title { font-size: var(--fs-display); line-height: var(--lh-display); }
-  }
-  .sub { margin: var(--sp-1) 0 0; max-width: 76ch; color: var(--text-2); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
   .export {
     display: inline-flex;
     align-items: center;
@@ -360,7 +345,6 @@
   :global(.controls) { display: flex; flex-direction: column; gap: var(--sp-3); }
   .window { margin: 0; color: var(--text-2); font-size: var(--fs-mono-sm); }
   .auto { color: var(--text-3); }
-  .hint { margin: 0; color: var(--text-3); font: var(--fs-caption) / var(--lh-caption) var(--font-ui); }
   .zoom-chip { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
   .zoom-reset {
     display: inline-flex;

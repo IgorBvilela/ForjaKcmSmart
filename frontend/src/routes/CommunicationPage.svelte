@@ -523,9 +523,9 @@
                 <input type="number" min="1" step="1" inputmode="decimal" bind:value={comm.stale_after_s} />
               </label>
               {#if driver === 'modbus_tcp'}
-                <label class="check">
-                  <input type="checkbox" class="sr" checked={comm.options['block_reads'] !== false} onchange={(e) => comm && (comm.options = { ...comm.options, block_reads: e.currentTarget.checked })} />
-                  <span class="box" aria-hidden="true"><Check size={14} strokeWidth={3} /></span>
+                <label class="choice wide-row">
+                  <input type="checkbox" checked={comm.options['block_reads'] !== false} onchange={(e) => comm && (comm.options = { ...comm.options, block_reads: e.currentTarget.checked })} />
+                  <span class="choice-mark" data-kind="check" aria-hidden="true"></span>
                   Ler registradores vizinhos em bloco (menos requisições)
                 </label>
               {/if}
@@ -724,11 +724,8 @@
   .fields .wide { grid-column: span 2; }
   .fields.advanced { margin-top: var(--sp-2); }
   label { display: flex; flex-direction: column; gap: 4px; min-width: 0; color: var(--text-3); font: 500 var(--fs-caption) / var(--lh-caption) var(--font-ui); }
-  /* caixa de marcar: o alvo é a linha inteira (44 px); a caixa visível é desenho */
-  label.check { position: relative; flex-direction: row; align-items: center; gap: var(--sp-2); grid-column: 1 / -1; min-height: var(--touch); color: var(--text-1); font: var(--fs-body) / var(--lh-body) var(--font-ui); cursor: pointer; }
-  .box { display: grid; place-items: center; flex: none; width: 22px; height: 22px; border: 1px solid var(--border-input); border-radius: var(--r-1); background: var(--surf-2); color: transparent; transition: background-color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out); }
-  label.check input:checked + .box { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
-  label.check input:focus-visible + .box { box-shadow: var(--focus); }
+  /* a escolha global (.choice) com o rótulo genérico desta tela por cima: devolve linha, cor e fonte */
+  label.wide-row { grid-column: 1 / -1; flex-direction: row; gap: var(--sp-2); color: var(--text-1); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
   input { width: 100%; min-height: var(--touch); padding: 0 var(--sp-2); border: 1px solid var(--border-input); border-radius: var(--r-2); background: var(--surf-2); color: var(--text-1); font: 16px / 1.2 var(--font-ui); }
   input[type='number'] { font-family: var(--font-mono); }
   .link { min-height: 24px; padding: 0; border: 0; background: none; color: var(--accent-text); font: 500 var(--fs-caption) / var(--lh-caption) var(--font-ui); text-decoration: underline; cursor: pointer; }

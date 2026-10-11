@@ -84,6 +84,13 @@
       void load(id)
     })
   })
+
+  // evento aberto: as amostras guardadas crescem a cada atualização dele (uma por segundo)
+  $effect(() => {
+    const update = live.lastEventUpdate
+    if (!update || update.id !== eventId) return
+    untrack(() => void load(eventId))
+  })
 </script>
 
 <section class="detail" data-testid={TID.events.detail} data-event={eventId}>

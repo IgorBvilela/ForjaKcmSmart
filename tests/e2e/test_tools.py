@@ -49,6 +49,14 @@ def test_exportacoes_baixam_csv_com_qualidade(desktop_1366: Page) -> None:
     assert resp.ok
     header = resp.text().lstrip("﻿").splitlines()[0]
     assert header.startswith("inicio_utc;inicio_planta;fim_utc")
+    # o formato é uma escolha de linha inteira: clicar no texto troca para vírgula e ponto
+    page.get_by_text("Padrão (, e ponto)").click()
+    expect(page.get_by_role("radio", name="Padrão (, e ponto)")).to_be_checked()
+    std_href = link.get_attribute("href")
+    assert std_href
+    assert std_href != href
+    std = page.request.get(std_href).text().lstrip("﻿").splitlines()[0]
+    assert std.startswith("inicio_utc,inicio_planta,fim_utc")
     agg = page.get_by_test_id("exports-agg-link").get_attribute("href")
     assert agg
     assert "resolution=auto" in agg
