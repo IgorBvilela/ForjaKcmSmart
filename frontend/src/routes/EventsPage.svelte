@@ -8,6 +8,7 @@
   import EventRow from '../components/data/EventRow.svelte'
   import Button from '../components/ui/Button.svelte'
   import EmptyState from '../components/ui/EmptyState.svelte'
+  import PageHeader from '../components/ui/PageHeader.svelte'
 
   let { equipmentId, mode = 'events' }: { equipmentId: string; mode?: 'events' | 'diagnostics' } =
     $props()
@@ -73,27 +74,31 @@
 </script>
 
 <section class="events" data-mode={mode}>
-  <header class="events-head">
-    <div>
-      <p class="label">{name}</p>
-      <h1 class="events-title">{mode === 'diagnostics' ? 'Diagnósticos' : 'Eventos'}</h1>
-      <p class="events-sub">
-        {#if mode === 'diagnostics'}
-          Eventos que já têm diagnóstico Forja (contrato v1.0, 7 seções). Hipótese é "comportamento compatível com", nunca causa.
-        {:else}
-          Transições detectadas pelas regras determinísticas, com a janela anterior guardada para responder "o que mudou primeiro?".
-        {/if}
-      </p>
-    </div>
-    <div class="events-filters" role="group" aria-label="Filtro de eventos">
-      <Button variant="ghost" size="sm" pressed={filter === 'all'} onclick={() => (filter = 'all')}>
-        Todos <span class="count num">{events.length}</span>
-      </Button>
-      <Button variant="ghost" size="sm" pressed={filter === 'open'} onclick={() => (filter = 'open')}>
-        Em aberto <span class="count num">{openCount}</span>
-      </Button>
-    </div>
-  </header>
+  <PageHeader
+    kicker={name}
+    title={mode === 'diagnostics' ? 'Diagnósticos' : 'Eventos'}
+    lead={mode === 'diagnostics'
+      ? 'Eventos que já têm o diagnóstico da Forja.'
+      : 'O que as regras da Forja detectaram, com o que mudou primeiro.'}
+  >
+    {#snippet more()}
+      {#if mode === 'diagnostics'}
+        <p>Cada diagnóstico tem sete seções, do resumo às ressalvas. Hipótese é "comportamento compatível com", nunca causa.</p>
+      {:else}
+        <p>Cada evento guarda a janela anterior à detecção, para responder o que mudou primeiro.</p>
+      {/if}
+    {/snippet}
+    {#snippet actions()}
+      <div class="events-filters" role="group" aria-label="Filtro de eventos">
+        <Button variant="ghost" size="sm" pressed={filter === 'all'} onclick={() => (filter = 'all')}>
+          Todos <span class="count num">{events.length}</span>
+        </Button>
+        <Button variant="ghost" size="sm" pressed={filter === 'open'} onclick={() => (filter = 'open')}>
+          Em aberto <span class="count num">{openCount}</span>
+        </Button>
+      </div>
+    {/snippet}
+  </PageHeader>
 
   {#if error}
     <EmptyState title="Não foi possível carregar os eventos" text={error} />
@@ -119,28 +124,6 @@
 
 <style>
   .events { display: flex; flex-direction: column; gap: var(--sp-5); }
-  .events-head {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: var(--sp-4);
-    flex-wrap: wrap;
-  }
-  .events-head .label { margin: 0 0 var(--sp-1); }
-  .events-title {
-    margin: 0;
-    font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui);
-    color: var(--text-1);
-  }
-  @media (min-width: 1024px) {
-    .events-title { font-size: var(--fs-display); line-height: var(--lh-display); }
-  }
-  .events-sub {
-    margin: var(--sp-1) 0 0;
-    max-width: 72ch;
-    color: var(--text-2);
-    font: var(--fs-body) / var(--lh-body) var(--font-ui);
-  }
   .events-filters { display: flex; gap: var(--sp-2); }
   .count { color: var(--text-3); font-size: var(--fs-mono-sm); }
 

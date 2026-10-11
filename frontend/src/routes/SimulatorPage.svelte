@@ -8,6 +8,7 @@
   import KpiTile from '../components/data/KpiTile.svelte'
   import Button from '../components/ui/Button.svelte'
   import EmptyState from '../components/ui/EmptyState.svelte'
+  import PageHeader from '../components/ui/PageHeader.svelte'
   import { app } from '../lib/state.svelte'
   import {
     ApiFailure,
@@ -197,15 +198,7 @@
 </script>
 
 <section class="page" data-testid="simulator-page" aria-labelledby="sim-title">
-  <header class="head">
-    <h1 id="sim-title">Simulador</h1>
-    {#if live}
-      <p class="sub">{live.name} · <span class="num">{id}</span></p>
-    {:else if id}
-      <p class="sub"><span class="num">{id}</span></p>
-    {/if}
-    <p class="note">{sim?.note_pt ?? 'Controles afetam apenas o simulador. Nenhum comando chega ao KCM.'}</p>
-  </header>
+  <PageHeader kicker={live?.name ?? id} title="Simulador" titleId="sim-title" lead="Os controles mudam só o simulador: nenhum comando chega ao KCM." />
 
   {#if !id}
     <EmptyState
@@ -332,8 +325,9 @@
               {@const s = sliders[d.key]}
               {#if s}
                 <div class="slider" class:on={s.on}>
-                  <label class="slider-fix">
+                  <label class="slider-fix choice">
                     <input type="checkbox" bind:checked={s.on} disabled={busy != null} />
+                    <span class="choice-mark" data-kind="check" aria-hidden="true"></span>
                     <span>Fixar</span>
                   </label>
                   <label class="slider-name" for="sl-{d.key}">{d.label}</label>
@@ -370,13 +364,6 @@
     color: var(--text-1);
   }
 
-  .head { display: grid; gap: var(--sp-1); }
-  h1 { margin: 0; font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui); }
-  @media (min-width: 1024px) {
-    h1 { font-size: var(--fs-display); line-height: var(--lh-display); }
-  }
-  .sub { margin: 0; color: var(--text-3); font: 400 var(--fs-body) / var(--lh-body) var(--font-ui); }
-  .note { margin: var(--sp-1) 0 0; max-width: 80ch; color: var(--text-2); font: var(--fs-caption) / var(--lh-caption) var(--font-ui); }
   .muted { color: var(--text-3); font: 400 var(--fs-caption) / var(--lh-caption) var(--font-ui); margin: 0; }
 
   /* ---- grid 12 colunas no desktop; 1 coluna no celular ---- */
@@ -449,9 +436,8 @@
     transition: border-color var(--dur-base) var(--ease-std);
   }
   .slider.on { border-color: var(--accent); }
-  /* "Fixar": alvo de 44 px com caixa de 24 px */
+  /* "Fixar": a linha inteira é o alvo de 44 px (escolha global); a caixa é desenho */
   .slider-fix { grid-area: fix; display: inline-flex; align-items: center; gap: var(--sp-2); min-height: var(--touch); padding-right: var(--sp-1); font: 500 var(--fs-caption) / var(--lh-caption) var(--font-ui); color: var(--text-2); cursor: pointer; }
-  .slider-fix input { width: 24px; height: 24px; accent-color: var(--accent); margin: 0; cursor: pointer; }
   .slider-name { grid-area: name; font: 500 var(--fs-body) / var(--lh-body) var(--font-ui); color: var(--text-1); }
   .slider-val { grid-area: val; font: 500 var(--fs-mono) / var(--lh-mono) var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-1); }
   .slider:not(.on) .slider-val, .slider:not(.on) .slider-name { color: var(--text-3); }

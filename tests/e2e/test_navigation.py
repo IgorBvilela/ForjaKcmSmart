@@ -197,6 +197,17 @@ LEAN_SCREENS = [
     ("/app/system/logs", "system-logs"),
     ("/app/system/settings", "system-settings"),
     ("/app/system/about", "system-about"),
+    (f"/app/eq/{EQ_MAIN}/kcm/datasheet", "kcm-datasheet"),
+    (f"/app/eq/{EQ_MAIN}/kcm/components", "kcm-components"),
+    (f"/app/eq/{EQ_MAIN}/kcm/alarms", "kcm-alarms"),
+    (f"/app/eq/{EQ_MAIN}/kcm/commissioning", "kcm-commissioning"),
+    (f"/app/eq/{EQ_MAIN}/simulator", "simulator"),
+    (f"/app/eq/{EQ_MAIN}/alerts", "alerts"),
+    (f"/app/eq/{EQ_MAIN}/events", "events"),
+    (f"/app/eq/{EQ_MAIN}/diagnostics", "diagnostics"),
+    (f"/app/eq/{EQ_MAIN}/early-warning", "early-warning"),
+    (f"/app/eq/{EQ_MAIN}/cases", "cases"),
+    ("/app/knowledge/cases", "knowledge-cases"),
 ]
 
 
@@ -216,8 +227,8 @@ def test_screen_opens_with_short_title_and_one_support_sentence(
     if leads.count():
         lead = leads.inner_text().strip()
         assert len(lead) <= 100, lead
-        assert lead.endswith("."), lead
-        assert ". " not in lead, f"mais de uma frase: {lead}"
+        assert lead[-1] in ".?!", lead
+        assert not any(f"{end} " in lead for end in ".?!"), f"mais de uma frase: {lead}"
     # no cabeçalho, ao abrir: só o rótulo, o título e a frase de apoio
     assert head.locator("p:visible").count() <= 2
     more = head.get_by_test_id("page-more")

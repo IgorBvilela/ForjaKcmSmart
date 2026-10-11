@@ -15,6 +15,7 @@
   import Badge from '../components/ui/Badge.svelte'
   import Card from '../components/ui/Card.svelte'
   import EmptyState from '../components/ui/EmptyState.svelte'
+  import PageHeader from '../components/ui/PageHeader.svelte'
   import QualityBadge from '../components/ui/QualityBadge.svelte'
   import StatusDot from '../components/ui/StatusDot.svelte'
 
@@ -75,14 +76,11 @@
 </script>
 
 <section class="alerts" data-testid="alerts">
-  <header class="head">
-    <p class="label">{name}</p>
-    <h1 class="title">Alertas</h1>
-    <p class="sub">
-      Condições abertas agora, separadas por quem as informou. O alarme é do KCM; eventos e avisos
-      antecipados são detectados pela Forja.
-    </p>
-  </header>
+  <PageHeader kicker={name} title="Alertas" lead="Condições abertas agora, separadas por quem as informou.">
+    {#snippet more()}
+      <p>O alarme é do KCM. Eventos e avisos antecipados são detectados pela Forja.</p>
+    {/snippet}
+  </PageHeader>
 
   {#if error && !data}
     <EmptyState title="Não foi possível carregar os alertas" text={error} />
@@ -205,12 +203,6 @@
 
 <style>
   .alerts { display: flex; flex-direction: column; gap: var(--sp-5); }
-  .head .label { margin: 0 0 var(--sp-1); }
-  .title { margin: 0; color: var(--text-1); font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui); }
-  @media (min-width: 1024px) {
-    .title { font-size: var(--fs-display); line-height: var(--lh-display); }
-  }
-  .sub { margin: var(--sp-1) 0 0; max-width: 72ch; color: var(--text-2); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
 
   .tiles { display: grid; gap: var(--sp-3); grid-template-columns: 1fr; }
   @media (min-width: 768px) { .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

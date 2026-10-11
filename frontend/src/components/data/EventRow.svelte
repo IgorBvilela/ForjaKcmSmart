@@ -72,20 +72,20 @@
     from { opacity: 0; transform: translateY(4px); }
     to { opacity: 1; transform: none; }
   }
-  .row:first-child { border-top: 0; }
+  .row:first-child { border-top: 0; border-radius: var(--r-4) var(--r-4) 0 0; }
+  .row:last-child { border-radius: 0 0 var(--r-4) var(--r-4); }
+  .row:only-child { border-radius: var(--r-4); }
   .row:hover { background: var(--surf-2); }
+  /* a lista recorta o que passa da borda: o contorno de foco vai por dentro da linha */
+  .row:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent); }
   .mark { display: grid; place-items: center; height: var(--lh-body); }
   .body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .title-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
   .title { color: var(--text-1); font: 600 var(--fs-body) / var(--lh-body) var(--font-ui); }
+  /* o resumo aparece inteiro: cortado com reticências, escondia parte da leitura */
   .summary {
     color: var(--text-2);
     font: var(--fs-body) / var(--lh-body) var(--font-ui);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
   }
   .meta {
     display: flex;

@@ -23,6 +23,7 @@
   import { live } from '../lib/live.svelte'
   import { sortTags, tagCatalog } from '../lib/tagmeta.svelte'
   import Card from '../components/ui/Card.svelte'
+  import PageHeader from '../components/ui/PageHeader.svelte'
   import EmptyState from '../components/ui/EmptyState.svelte'
   import QualityBadge from '../components/ui/QualityBadge.svelte'
 
@@ -284,26 +285,23 @@
 </script>
 
 <section class="cm" data-testid="commissioning">
-  <header class="head">
-    <div>
-      <p class="label">{name}</p>
-      <h1 class="title">Comissionamento</h1>
-      <p class="sub">
-        Registro da visita de campo: o que foi encontrado no equipamento e cada valor conferido na
-        tela do KCM. A validação só existe depois de feita e registrada aqui.
-      </p>
-    </div>
-    {#if detail}
-      <div class="actions no-print">
-        <a class="btn ghost" href={commissioningApi.csvUrl(detail.session.id)} download data-testid="cm-export">
-          <Download size={16} aria-hidden="true" /> Exportar CSV
-        </a>
-        <button type="button" class="btn ghost" onclick={() => window.print()} data-testid="cm-print">
-          <Printer size={16} aria-hidden="true" /> Imprimir relatório
-        </button>
-      </div>
-    {/if}
-  </header>
+  <PageHeader kicker={name} title="Comissionamento" lead="Registro da visita de campo, com cada valor conferido na tela do KCM.">
+    {#snippet more()}
+      <p>O registro guarda o que foi encontrado no equipamento. A validação só existe depois de feita e registrada aqui.</p>
+    {/snippet}
+    {#snippet actions()}
+      {#if detail}
+        <div class="actions no-print">
+          <a class="btn ghost" href={commissioningApi.csvUrl(detail.session.id)} download data-testid="cm-export">
+            <Download size={16} aria-hidden="true" /> Exportar CSV
+          </a>
+          <button type="button" class="btn ghost" onclick={() => window.print()} data-testid="cm-print">
+            <Printer size={16} aria-hidden="true" /> Imprimir relatório
+          </button>
+        </div>
+      {/if}
+    {/snippet}
+  </PageHeader>
 
   {#if notice}<p class="notice no-print" data-tone={notice.tone} role="status" data-testid="cm-notice">{notice.text}</p>{/if}
 
@@ -485,11 +483,6 @@
 
 <style>
   .cm { display: flex; flex-direction: column; gap: var(--sp-5); min-width: 0; }
-  .head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-4); flex-wrap: wrap; }
-  .head .label { margin: 0 0 var(--sp-1); }
-  .title { margin: 0; font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui); color: var(--text-1); }
-  @media (min-width: 1024px) { .title { font-size: var(--fs-display); line-height: var(--lh-display); } }
-  .sub { margin: var(--sp-1) 0 0; max-width: 72ch; color: var(--text-2); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
   .actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
   .notice { margin: 0; padding: var(--sp-3) var(--sp-4); border-radius: var(--r-3); font: 500 var(--fs-body) / var(--lh-body) var(--font-ui); }
   .notice[data-tone='ok'] { background: var(--st-ok-bg); color: var(--st-ok); }

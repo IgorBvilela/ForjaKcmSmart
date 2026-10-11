@@ -26,8 +26,8 @@ Plano: `tasks/plan.md`. Especificação: `docs/produto/especificacao_interface_e
 - [x] T9 · Texto enxuto: telas de dados (cabeçalho padrão com uma frase de apoio e "Saiba mais")
   - Corrigidos na conferência visual: resumo do diagnóstico cortado com reticências; opções de formato do CSV com 20 e 24 px (agora a linha inteira é o alvo); "Abrir diagnóstico" e títulos da linha do tempo com 20 px; eixo do gráfico repetindo "62, 62, 62"; coluna "Sem leitura" escondida atrás da rolagem no quadro estreito
 - [x] T10 · Texto enxuto: telas de sistema (o título de Saúde passa a ser "Saúde e logs", igual ao menu)
-- [ ] T11 · Texto enxuto: telas do dosador e de inteligência
-- [ ] Checkpoint C · Uma frase de apoio por tela principal; bateria verde; conferência visual
+- [x] T11 · Texto enxuto: telas do dosador e de inteligência (corrigidos na conferência: contorno de foco cortado nas linhas de Eventos e Diagnósticos; resumo dos eventos cortado com reticências; "Fixar" do Simulador com 24 px)
+- [x] Checkpoint C · Uma frase de apoio por tela principal (21 telas no teste); bateria verde (806 núcleo + 124 navegador); conferência visual sem achados
 
 ## Fase 4 · Modo TV
 - [ ] T12 · Modo TV (`/app/tv`)

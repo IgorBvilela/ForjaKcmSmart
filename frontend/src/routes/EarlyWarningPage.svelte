@@ -21,6 +21,7 @@
   import Badge from '../components/ui/Badge.svelte'
   import Card from '../components/ui/Card.svelte'
   import EmptyState from '../components/ui/EmptyState.svelte'
+  import PageHeader from '../components/ui/PageHeader.svelte'
   import StatusDot from '../components/ui/StatusDot.svelte'
 
   let { equipmentId }: { equipmentId: string } = $props()
@@ -83,14 +84,11 @@
 </script>
 
 <section class="ew" data-testid="early-warning">
-  <header class="head">
-    <p class="label">{name}</p>
-    <h1 class="title">Aviso antecipado</h1>
-    <p class="sub">
-      Sinais fracos antes do alarme: tendência, desvio do padrão do próprio equipamento e combinação
-      de variáveis, com limites configurados e a evidência de cada um.
-    </p>
-  </header>
+  <PageHeader kicker={name} title="Aviso antecipado" lead="Sinais fracos antes do alarme, com a evidência de cada um.">
+    {#snippet more()}
+      <p>Tendência, desvio do padrão do próprio equipamento e combinação de variáveis, com limites configurados.</p>
+    {/snippet}
+  </PageHeader>
 
   {#if error && !data}
     <EmptyState title="Não foi possível carregar o aviso antecipado" text={error} />
@@ -187,12 +185,6 @@
 
 <style>
   .ew { display: flex; flex-direction: column; gap: var(--sp-5); }
-  .head .label { margin: 0 0 var(--sp-1); }
-  .title { margin: 0; color: var(--text-1); font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui); }
-  @media (min-width: 1024px) {
-    .title { font-size: var(--fs-display); line-height: var(--lh-display); }
-  }
-  .sub { margin: var(--sp-1) 0 0; max-width: 72ch; color: var(--text-2); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
 
   .disclaimer {
     display: flex;

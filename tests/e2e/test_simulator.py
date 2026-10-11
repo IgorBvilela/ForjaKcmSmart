@@ -70,7 +70,7 @@ def test_simulator_offers_exactly_the_nine_scenarios(desktop_1366: Page) -> None
     banner = page.get_by_test_id("banner-data-source")
     expect(banner).to_have_attribute("data-source", "SIMULATED")
     expect(banner).to_contain_text("DADOS SIMULADOS")
-    expect(page.get_by_test_id("simulator-page")).to_contain_text("Nenhum comando chega ao KCM")
+    expect(page.get_by_test_id("simulator-page")).to_contain_text("nenhum comando chega ao KCM")
 
 
 def test_simulator_page_has_only_scenarios_and_sliders(tablet_768: Page) -> None:

@@ -8,6 +8,7 @@
   let {
     kicker,
     title,
+    titleId,
     lead,
     more,
     actions,
@@ -15,6 +16,8 @@
   }: {
     kicker?: string
     title: string
+    /** id do título, para `aria-labelledby` da seção da tela. */
+    titleId?: string
     lead?: string
     more?: Snippet
     actions?: Snippet
@@ -25,7 +28,7 @@
 <header class="ph" class:no-print={noPrint} data-testid="page-head">
   <div class="ph-text">
     {#if kicker}<p class="label">{kicker}</p>{/if}
-    <h1 class="ph-title">{title}</h1>
+    <h1 class="ph-title" id={titleId}>{title}</h1>
     {#if lead}<p class="ph-lead" data-testid="page-lead">{lead}</p>{/if}
     {#if more}
       <div class="ph-more">
