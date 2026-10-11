@@ -1,9 +1,10 @@
 """KCM › Comunicação no navegador, contra um servidor Modbus de bancada (127.0.0.1).
 
-Fluxo de campo completo: escolher protocolo, endereço e variável; conferir sem conectar; testar
-somente leitura; comparar com o "valor na tela do KCM"; salvar (auditado, com histórico); testar
-de novo; ativar a coleta; ver a variável validada em Tempo Real. O servidor de bancada prova que
-só funções de leitura chegaram ao fio.
+Fluxo de campo completo, numa coluna: escolher protocolo, endereço e variável; conferir sem
+conectar; testar somente leitura; comparar com o "valor na tela do KCM"; salvar e ativar com um
+botão só (auditado, com histórico); ver a variável validada em Tempo Real. O servidor de bancada
+prova que só funções de leitura chegaram ao fio. Os testes seguem a ordem do arquivo: o fluxo de
+campo deixa o Modbus de bancada salvo e a coleta ativa para os seguintes.
 
 Usa um Edge próprio (configuração em cópia temporária): os outros testes de tela continuam
 vendo os equipamentos da semente intactos.
@@ -12,6 +13,7 @@ vendo os equipamentos da semente intactos.
 from __future__ import annotations
 
 import asyncio
+import re
 import threading
 from collections.abc import Iterator
 from pathlib import Path
@@ -119,6 +121,10 @@ def test_fluxo_de_campo_completo_contra_modbus_de_bancada(
     page.get_by_test_id("comm-ip").fill("127.0.0.1")
     page.get_by_test_id("comm-port").fill(str(bench.port))
     page.get_by_test_id("comm-unit").fill("1")
+    # variáveis (mapping) ficam fechadas, com a contagem no título
+    mapping = page.get_by_test_id("comm-mapping")
+    expect(mapping).to_contain_text("sem endereço")
+    mapping.click()
     page.get_by_test_id("mapping-entry-mass_flow").get_by_role("button").first.click()
     page.get_by_test_id("map-mass_flow-area").select_option("holding")
     page.get_by_test_id("map-mass_flow-address").fill("0")
@@ -132,6 +138,11 @@ def test_fluxo_de_campo_completo_contra_modbus_de_bancada(
 
     page.get_by_test_id("comm-user").fill("tecnico de teste")
     page.get_by_test_id("comm-test").click()
+    # o resultado vem numa frase; o detalhe (bruto, decodificado, comparação) fica fechado
+    expect(page.get_by_test_id("comm-test-summary")).to_contain_text(
+        re.compile(r"Leu \d+ de \d+ variáve")
+    )
+    page.get_by_test_id("comm-test-detail").click()
     result = page.get_by_test_id("read-test-result")
     expect(result).to_have_attribute("data-success", "true")
     row = page.get_by_test_id("read-test-row-mass_flow")
@@ -139,10 +150,17 @@ def test_fluxo_de_campo_completo_contra_modbus_de_bancada(
     expect(row).to_contain_text("1250 kg/h")
     page.get_by_test_id("kcm-value-mass_flow").fill("1250")
     page.get_by_test_id("register-match-mass_flow").click()
+    expect(page.get_by_test_id("comm-next-commissioning")).to_be_visible()
 
+    # testado com o que está na tela: o botão único salva e ativa
     page.get_by_test_id("comm-reason").fill("conferência de bancada")
-    page.get_by_test_id("comm-save").click()
-    expect(page.get_by_test_id("comm-notice")).to_contain_text("salva")
+    save = page.get_by_test_id("comm-save")
+    expect(save).to_have_text("Salvar e ativar a coleta")
+    save.click()
+    expect(page.get_by_test_id("comm-notice")).to_have_text(
+        "Configuração salva e coleta ativada: a Forja passa a ler o KCM."
+    )
+    expect(page.get_by_test_id("comm-collection")).to_contain_text("ativa")
     # gravado na cópia da configuração, com a versão anterior no histórico
     saved = yaml.safe_load(
         (Path(comm_edge.home) / "config" / "equipment" / "gtex_pha_po_base.yaml").read_text(
@@ -150,19 +168,14 @@ def test_fluxo_de_campo_completo_contra_modbus_de_bancada(
         )
     )
     assert saved["communication"]["driver"] == "modbus_tcp"
-    assert saved["communication"]["collection_enabled"] is False
+    assert saved["communication"]["collection_enabled"] is True
     assert list((Path(comm_edge.home) / "config" / "_history" / "equipment").glob("*.yaml"))
 
-    # o teste foi feito exatamente com a configuração salva: a coleta já pode ser ativada
-    expect(page.get_by_test_id("comm-collection-on")).to_be_enabled()
-
-    # mudar o que afeta a leitura (porta) exige novo teste antes de ativar
+    # mudar o que afeta a leitura (porta) pede novo teste: o botão passa a salvar sem ativar
     page.get_by_test_id("comm-port").fill("1")
-    expect(page.get_by_test_id("comm-collection-on")).to_be_disabled()
+    expect(save).to_have_text("Salvar sem ativar")
     page.get_by_test_id("comm-port").fill(str(bench.port))
-    expect(page.get_by_test_id("comm-collection-on")).to_be_enabled()
-    page.get_by_test_id("comm-collection-on").click()
-    expect(page.get_by_test_id("comm-collection")).to_contain_text("ativa")
+    expect(save).to_be_disabled()
 
     page.goto(f"/app/eq/{EQ}/realtime", wait_until="load")
     live_row = page.get_by_test_id("realtime-row-mass_flow")
@@ -170,6 +183,56 @@ def test_fluxo_de_campo_completo_contra_modbus_de_bancada(
     expect(live_row).to_contain_text("1.250")
     assert bench.requests, "a coleta não leu o servidor de bancada"
     assert bench.functions <= READ_FCS, f"função que não lê no fio: {bench.functions}"
+
+
+def test_salvar_e_ativar_diz_quando_a_ativacao_e_recusada(
+    page: Page, bench: FakeModbusServer
+) -> None:
+    """Salvar deu certo e a ativação foi recusada: a tela diz exatamente isso."""
+    _open(page)
+    page.get_by_test_id("comm-user").fill("tecnico de teste")
+    page.get_by_test_id("comm-collection-off").click()
+    expect(page.get_by_test_id("comm-collection")).not_to_contain_text("Coleta ativa")
+
+    page.get_by_test_id("comm-advanced").click()
+    page.get_by_test_id("comm-poll").fill("2")
+    page.get_by_test_id("comm-test").click()
+    expect(page.get_by_test_id("comm-test-summary")).to_contain_text("Leu")
+
+    refusal = {"error": {"code": "READ_TEST_REQUIRED", "message_pt": "Recusada.", "details": None}}
+    page.route(
+        "**/api/v1/communication/*/collection",
+        lambda route: route.fulfill(status=409, json=refusal),
+    )
+    save = page.get_by_test_id("comm-save")
+    expect(save).to_have_text("Salvar e ativar a coleta")
+    save.click()
+    expect(page.get_by_test_id("comm-notice")).to_have_text(
+        "Configuração salva. A coleta não foi ativada: Recusada."
+    )
+
+
+def test_testar_aparece_sem_rolar_em_1440x900(browser: Browser, comm_edge: Edge) -> None:
+    ctx = browser.new_context(
+        viewport={"width": 1440, "height": 900},
+        base_url=comm_edge.base_url,
+        locale="pt-BR",
+        reduced_motion="reduce",
+    )
+    try:
+        pg = ctx.new_page()
+        pg.goto(f"/app/eq/{EQ}/kcm/communication", wait_until="load")
+        expect(pg.get_by_test_id("comm-state")).to_be_visible()
+        # o aviso de segurança é uma frase só
+        expect(pg.get_by_test_id("comm-safety")).to_have_text(
+            "Somente leitura: a Forja só lê o KCM, no endereço que você informar."
+        )
+        pg.get_by_test_id("protocol-modbus_tcp").click()
+        box = pg.get_by_test_id("comm-test").bounding_box()
+        assert box is not None
+        assert box["y"] + box["height"] <= 900, box
+    finally:
+        ctx.close()
 
 
 def test_tela_cabe_no_celular(browser: Browser, comm_edge: Edge) -> None:
@@ -185,6 +248,7 @@ def test_tela_cabe_no_celular(browser: Browser, comm_edge: Edge) -> None:
         pg = ctx.new_page()
         pg.goto(f"/app/eq/{EQ}/kcm/communication", wait_until="load")
         expect(pg.get_by_test_id("comm-state")).to_be_visible()
+        pg.get_by_test_id("comm-mapping").click()
         pg.get_by_test_id("mapping-entry-mass_flow").get_by_role("button").first.click()
         info = overflow_info(pg)
         assert not info["overflow"], info

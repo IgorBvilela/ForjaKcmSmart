@@ -1,15 +1,15 @@
 <script lang="ts">
-  /** KCM › Comunicação. Passos: protocolo, endereço, variáveis (mapping), teste somente leitura
-   *  com comparação na tela do KCM, salvar e coleta. Tudo aqui configura a FORJA e LÊ o KCM:
-   *  nada envia comando ao equipamento. Protocolo nunca é escolhido sozinho. */
+  /** KCM › Comunicação, numa coluna: protocolo, endereço, teste somente leitura e salvar e ativar.
+   *  Tempos, variáveis (mapping) e o detalhe do teste ficam fechados. Tudo aqui configura a FORJA
+   *  e LÊ o KCM: nada envia comando ao equipamento. Protocolo nunca é escolhido sozinho. */
   import { untrack } from 'svelte'
-  import ShieldCheck from '@lucide/svelte/icons/shield-check'
-  import Plug from '@lucide/svelte/icons/plug'
-  import FlaskConical from '@lucide/svelte/icons/flask-conical'
-  import Save from '@lucide/svelte/icons/save'
-  import Radio from '@lucide/svelte/icons/radio'
+  import Check from '@lucide/svelte/icons/check'
   import CircleHelp from '@lucide/svelte/icons/circle-help'
-  import { errorMessage, type EquipmentProfile } from '../lib/api'
+  import FlaskConical from '@lucide/svelte/icons/flask-conical'
+  import Radio from '@lucide/svelte/icons/radio'
+  import RefreshCw from '@lucide/svelte/icons/refresh-cw'
+  import ShieldCheck from '@lucide/svelte/icons/shield-check'
+  import { errorMessage, isUsable, type EquipmentProfile } from '../lib/api'
   import {
     clone,
     commApi,
@@ -24,10 +24,10 @@
   } from '../lib/comm'
   import { fmtDateTime, fmtNumber } from '../lib/format'
   import { live } from '../lib/live.svelte'
+  import { href } from '../lib/router'
   import { tagCatalog } from '../lib/tagmeta.svelte'
   import MappingEditor from '../components/comm/MappingEditor.svelte'
   import ReadTestPanel from '../components/comm/ReadTestPanel.svelte'
-  import Card from '../components/ui/Card.svelte'
   import Disclosure from '../components/ui/Disclosure.svelte'
   import EmptyState from '../components/ui/EmptyState.svelte'
 
@@ -47,6 +47,8 @@
   let mapping = $state<MappingDto | null>(null)
   let validation = $state<ValidationResult | null>(null)
   let test = $state<ReadTestResult | null>(null)
+  /** Chave de leitura da configuração testada nesta tela (ver `readingKeyOf`). */
+  let testedKey = $state<string | null>(null)
   let kcm = $state<Record<string, string>>({})
   let user = $state(readUser())
   let reason = $state('')
@@ -77,11 +79,95 @@
       (!view.editable_mapping_exists ||
         JSON.stringify({ ...mapping, driver }) !== JSON.stringify(view.editable_mapping)),
   )
+  const dirty = $derived(dirtyComm || dirtyMapping)
   const userOk = $derived(/^[\w .@-]{1,64}$/.test(user.trim()))
+  const collectionOn = $derived(!!view && view.collection.enabled && !view.collection.blocked)
   const canActivate = $derived(
-    !!view && (!view.collection.enabled || view.collection.blocked) && !dirtyComm && !dirtyMapping &&
+    !!view && !collectionOn && !dirty &&
       (driver === 'simulator' || (view.last_test_matches && view.last_test?.success === true)),
   )
+
+  /** O que muda a leitura: a comunicação (sem o liga e desliga da coleta) e o mapping (sem as
+   *  conferências registradas). Diz se o teste feito nesta tela ainda vale para o que está nela.
+   *  Conservador: qualquer outra mudança pede teste de novo; quem decide no fim é o servidor. */
+  function readingKeyOf(c: EquipmentProfile['communication'] | null, m: MappingDto | null): string {
+    if (!c || !m) return ''
+    const commPart: Record<string, unknown> = { ...c }
+    delete commPart.collection_enabled
+    const entries = m.entries.map((e) => {
+      const rest: Record<string, unknown> = { ...e }
+      delete rest.validation
+      delete rest.confirmed
+      return rest
+    })
+    return JSON.stringify({ comm: commPart, mapping: { ...m, entries } })
+  }
+  const readingKey = $derived(readingKeyOf(comm, readingMapping))
+  const testedOk = $derived(!!test && test.success && testedKey === readingKey)
+
+  /** Botão único do passo 4. */
+  type Action = 'save-activate' | 'save' | 'activate' | 'none'
+  const action = $derived.by<Action>(() => {
+    if (!view) return 'none'
+    if (dirty) {
+      if (driver === 'UNKNOWN') return 'save'
+      return driver === 'simulator' || testedOk ? 'save-activate' : 'save'
+    }
+    return canActivate ? 'activate' : 'none'
+  })
+  const actionLabel = $derived(
+    action === 'save-activate'
+      ? 'Salvar e ativar a coleta'
+      : action === 'save'
+        ? 'Salvar sem ativar'
+        : action === 'activate'
+          ? 'Ativar a coleta'
+          : collectionOn
+            ? 'Coleta ativa'
+            : 'Nada a salvar',
+  )
+  const actionHint = $derived.by<string | null>(() => {
+    if (action !== 'none' && !userOk) return 'Informe o responsável: ele vai para a auditoria.'
+    switch (action) {
+      case 'save-activate':
+      case 'activate':
+        return 'Liga a leitura periódica da Forja. Nada é enviado ao KCM.'
+      case 'save':
+        return driver === 'UNKNOWN'
+          ? 'Sem protocolo, a coleta fica pausada.'
+          : 'Sem um teste bem-sucedido desta configuração, a coleta fica pausada.'
+      default:
+        return !collectionOn && real ? 'Teste a leitura (passo 3) para poder ativar.' : null
+    }
+  })
+
+  const addressOk = $derived(
+    !!comm && comm.ip !== 'UNKNOWN' && comm.port !== 'UNKNOWN' &&
+      (driver !== 'modbus_tcp' || comm.unit_id !== 'UNKNOWN'),
+  )
+  const testDone = $derived(
+    testedOk || (!dirty && !!view?.last_test_matches && view?.last_test?.success === true),
+  )
+
+  /** "Variáveis (mapping) · 12 variáveis · 3 sem endereço". */
+  const mappingSummary = $derived.by(() => {
+    if (!mapping) return 'Variáveis (mapping)'
+    const total = mapping.entries.length
+    const missing = mapping.entries.filter((e) => e.protocol_address === 'UNKNOWN').length
+    const parts = [`Variáveis (mapping) · ${total} ${total === 1 ? 'variável' : 'variáveis'}`]
+    if (missing) parts.push(`${missing} sem endereço`)
+    return parts.join(' · ')
+  })
+
+  /** Resultado do teste numa frase. Conta só as variáveis com leitura utilizável. */
+  function testSentence(r: ReadTestResult): string {
+    if (!r.success) return `${r.final_pt ?? 'O teste falhou'}${r.error_pt ? `: ${r.error_pt}` : ''}.`
+    const total = r.detail.tags.length
+    const read = r.detail.tags.filter((t) => t.value != null && t.quality != null && isUsable(t.quality)).length
+    const time = r.latency_ms != null ? ` em ${fmtNumber(r.latency_ms, 0)} ms` : ''
+    if (total === 0) return `Leitura obtida${time}.`
+    return `Leu ${read} de ${total} ${total === 1 ? 'variável' : 'variáveis'}${time}.`
+  }
 
   function adopt(next: CommView, keepTest = false): void {
     view = next
@@ -90,6 +176,7 @@
     validation = null
     if (!keepTest) {
       test = null
+      testedKey = null
       kcm = {}
     }
   }
@@ -166,6 +253,7 @@
     }
     validation = null
     test = null
+    testedKey = null
   }
 
   function textOrUnknown(value: string): string {
@@ -197,13 +285,16 @@
     if (!candidate || !readingMapping) return
     busy = 'test'
     notice = null
+    const key = readingKey
     rememberUser()
     try {
       test = await commApi.testRead(candidate, readingMapping, user.trim())
+      testedKey = test.success ? key : null
       kcm = {}
       if (view) view = await commApi.view(equipmentId).then((v) => ({ ...v })).catch(() => view)
     } catch (err) {
       test = null
+      testedKey = null
       notice = { tone: 'crit', text: errorMessage(err) }
     } finally {
       busy = ''
@@ -241,61 +332,90 @@
     }
   }
 
-  async function save(): Promise<void> {
-    if (!view || !comm || !readingMapping || !userOk) return
+  /** Grava o mapping e a comunicação que mudaram. Cada gravação vai para a auditoria. */
+  async function persist(start: CommView): Promise<CommView> {
+    let current = start
+    if (!comm || !readingMapping) return current
+    if (dirtyMapping && mapping) {
+      current = await commApi.saveMapping(
+        equipmentId,
+        { ...mapping, driver },
+        start.editable_mapping_exists ? start.editable_mapping.version : null,
+        user.trim(),
+        reason.trim(),
+      )
+    }
+    const needConfig =
+      JSON.stringify(comm) !== JSON.stringify(current.profile.communication) ||
+      readingMapping.mapping_id !== current.profile.mapping_profile
+    if (needConfig) {
+      current = await commApi.saveConfig(equipmentId, {
+        communication: { ...comm, collection_enabled: current.profile.communication.collection_enabled },
+        mapping_profile: readingMapping.mapping_id,
+        base_hash: current.config_hash,
+        user: user.trim(),
+        reason_pt: reason.trim(),
+      })
+    }
+    return current
+  }
+
+  /** O botão único: salva o que mudou e, quando pode, ativa a coleta. Se salvar der certo e a
+   *  ativação for recusada, a tela diz exatamente isso. */
+  async function apply(): Promise<void> {
+    if (!view || !userOk || action === 'none') return
+    const activate = action === 'save-activate' || action === 'activate'
+    const willSave = dirty
     busy = 'save'
     notice = null
     rememberUser()
+    let current = view
     try {
-      let current = view
-      if (dirtyMapping && mapping) {
-        current = await commApi.saveMapping(
-          equipmentId,
-          { ...mapping, driver },
-          view.editable_mapping_exists ? view.editable_mapping.version : null,
-          user.trim(),
-          reason.trim(),
-        )
+      if (willSave) {
+        current = await persist(current)
+        adopt(current, true)
       }
-      const needConfig =
-        JSON.stringify(comm) !== JSON.stringify(current.profile.communication) ||
-        readingMapping.mapping_id !== current.profile.mapping_profile
-      if (needConfig) {
-        current = await commApi.saveConfig(equipmentId, {
-          communication: { ...comm, collection_enabled: current.profile.communication.collection_enabled },
-          mapping_profile: readingMapping.mapping_id,
-          base_hash: current.config_hash,
-          user: user.trim(),
-          reason_pt: reason.trim(),
-        })
+    } catch (err) {
+      notice = { tone: 'crit', text: `Não foi salvo: ${errorMessage(err)}` }
+      busy = ''
+      return
+    }
+    try {
+      if (activate && (!current.collection.enabled || current.collection.blocked)) {
+        busy = 'collection'
+        current = await commApi.setCollection(equipmentId, true, user.trim(), reason.trim())
+        adopt(current, true)
       }
-      adopt(current, true)
       notice = {
         tone: 'ok',
-        text: current.collection_paused_by_change
-          ? 'Configuração salva. A coleta foi pausada porque o que muda a leitura mudou: teste e ative de novo.'
-          : 'Configuração salva e registrada na auditoria.',
+        text: activate
+          ? willSave
+            ? 'Configuração salva e coleta ativada: a Forja passa a ler o KCM.'
+            : 'Coleta ativada: a Forja passa a ler o KCM.'
+          : current.collection_paused_by_change
+            ? 'Configuração salva. A coleta foi pausada porque a leitura mudou: teste e ative de novo.'
+            : 'Configuração salva. A coleta continua pausada.',
       }
       reason = ''
-      void loadLog(equipmentId)
     } catch (err) {
-      notice = { tone: 'crit', text: errorMessage(err) }
+      notice = {
+        tone: 'warn',
+        text: `${willSave ? 'Configuração salva. ' : ''}A coleta não foi ativada: ${errorMessage(err)}`,
+      }
     } finally {
       busy = ''
+      void loadLog(equipmentId)
     }
   }
 
-  async function setCollection(active: boolean): Promise<void> {
+  async function pause(): Promise<void> {
     if (!userOk) return
     busy = 'collection'
     notice = null
     rememberUser()
     try {
-      adopt(await commApi.setCollection(equipmentId, active, user.trim(), reason.trim()), true)
-      notice = {
-        tone: 'ok',
-        text: active ? 'Coleta ativada: a Forja passa a LER o KCM periodicamente.' : 'Coleta pausada: a Forja parou de ler este equipamento.',
-      }
+      adopt(await commApi.setCollection(equipmentId, false, user.trim(), reason.trim()), true)
+      notice = { tone: 'ok', text: 'Coleta pausada: a Forja parou de ler este equipamento.' }
       void loadLog(equipmentId)
     } catch (err) {
       notice = { tone: 'crit', text: errorMessage(err) }
@@ -304,22 +424,25 @@
     }
   }
 
-  const PROTOCOLS: Array<{ id: DriverName; title: string; text: string }> = [
-    { id: 'UNKNOWN', title: 'Ainda não identificado', text: 'Use até confirmar no KCM qual protocolo a interface Host/Anybus usa.' },
-    { id: 'modbus_tcp', title: 'Modbus TCP', text: 'Leitura de registradores (funções 01 a 04).' },
-    { id: 'ethernet_ip', title: 'EtherNet/IP', text: 'Leitura de atributos CIP por mensagem explícita, sem conexão de I/O.' },
-    { id: 'simulator', title: 'Simulador', text: 'Dados simulados para demonstração e treinamento.' },
+  const PROTOCOLS: Array<{ id: DriverName; title: string }> = [
+    { id: 'modbus_tcp', title: 'Modbus TCP' },
+    { id: 'ethernet_ip', title: 'EtherNet/IP' },
+    { id: 'simulator', title: 'Simulador' },
+    { id: 'UNKNOWN', title: 'Ainda não sei' },
   ]
 </script>
+
+{#snippet ball(done: boolean, n: number)}
+  <span class="ball num" class:done aria-hidden="true">
+    {#if done}<span class="pop"><Check size={16} strokeWidth={3} /></span>{:else}{n}{/if}
+  </span>
+{/snippet}
 
 <section class="comm" data-testid="communication">
   <header class="head">
     <div>
       <p class="label">{name}</p>
       <h1 class="title">Comunicação com o KCM</h1>
-      <p class="sub">
-        Configure como a Forja lê este KCM, teste a leitura e compare com a tela do equipamento.
-      </p>
     </div>
     {#if view}
       <div class="state" data-testid="comm-state" data-code={view.state.code} data-tone={view.state.tone}>
@@ -329,14 +452,10 @@
     {/if}
   </header>
 
-  <aside class="safety" aria-label="O que esta tela faz">
-    <ShieldCheck size={20} aria-hidden="true" />
-    <p>
-      <b>Somente leitura.</b> Esta tela grava a configuração da Forja e lê o KCM. Nenhum botão envia
-      comando ao equipamento: não altera parâmetro, não mexe em alarme, não calibra. Nenhuma varredura
-      de rede é feita; a Forja só conecta no endereço informado, quando você testa ou ativa a coleta.
-    </p>
-  </aside>
+  <p class="safety" data-testid="comm-safety">
+    <ShieldCheck size={18} aria-hidden="true" />
+    Somente leitura: a Forja só lê o KCM, no endereço que você informar.
+  </p>
 
   {#if loadError}
     <EmptyState title="Não foi possível carregar a comunicação" text={loadError} />
@@ -347,187 +466,172 @@
       <p class="notice" data-tone={notice.tone} role="status" data-testid="comm-notice">{notice.text}</p>
     {/if}
 
-    <div class="layout">
-      <div class="steps">
-        <Card title="1 · Protocolo" testid="comm-step-protocol">
-          <div class="protocols" role="radiogroup" aria-label="Protocolo">
-            {#each PROTOCOLS as p (p.id)}
-              {@const info = p.id === 'UNKNOWN' ? null : view.drivers[p.id]}
-              <label class="proto" class:on={driver === p.id} data-testid={`protocol-${p.id}`}>
-                <input type="radio" name="protocol" class="sr" checked={driver === p.id} onchange={() => choose(p.id)} />
-                <span class="proto-title">
-                  {p.title}
-                  {#if info}<span class="pill" data-state={info.state}>{info.state_pt}</span>{/if}
-                </span>
-                <span class="proto-text">{p.text}</span>
-                {#if info?.reason_pt && p.id !== 'simulator'}<span class="proto-note">{info.reason_pt}</span>{/if}
-              </label>
-            {/each}
-          </div>
-          {#if driver === 'UNKNOWN'}
-            <div class="unknown" data-testid="protocol-unknown">
-              <CircleHelp size={20} aria-hidden="true" />
-              <div>
-                <b>Protocolo ainda não identificado.</b>
-                <p>
-                  Cabo de rede e módulo Anybus não dizem qual protocolo está ativo. Confirme no KCM
-                  (menu de versões, placa Host) e na etiqueta do módulo; fotografe os dois. Enquanto
-                  isso, nada é lido deste equipamento.
-                </p>
-              </div>
-            </div>
-          {/if}
-        </Card>
+    <ol class="steps">
+      <li class="step" class:done={driver !== 'UNKNOWN'} data-testid="comm-step-protocol">
+        <h2 class="step-title" id="comm-h-protocol">{@render ball(driver !== 'UNKNOWN', 1)} Protocolo</h2>
+        <div class="protocols" role="radiogroup" aria-labelledby="comm-h-protocol">
+          {#each PROTOCOLS as p (p.id)}
+            {@const info = p.id === 'UNKNOWN' ? null : view.drivers[p.id]}
+            <label class="proto" class:on={driver === p.id} data-testid={`protocol-${p.id}`}>
+              <input type="radio" name="protocol" class="sr" checked={driver === p.id} onchange={() => choose(p.id)} />
+              <span class="proto-name">{p.title}</span>
+              <span class="proto-state" data-state={info?.state ?? 'UNKNOWN'}>{info ? info.state_pt : 'Fica desconhecido'}</span>
+            </label>
+          {/each}
+        </div>
+        {#if driver === 'UNKNOWN'}
+          <p class="unknown" data-testid="protocol-unknown">
+            <CircleHelp size={18} aria-hidden="true" />
+            <span>
+              <b>Protocolo ainda não identificado.</b> Sem protocolo, nada é lido. Confirme no KCM
+              (menu de versões, placa Host) e na etiqueta do módulo Anybus.
+            </span>
+          </p>
+        {/if}
+      </li>
 
-        {#if real}
-          <Card title="2 · Endereço" testid="comm-step-address">
-            <div class="grid">
-              <label>Endereço IP
-                <input type="text" inputmode="decimal" autocomplete="off" placeholder="ex.: [IP do módulo Host]" value={comm.ip === 'UNKNOWN' ? '' : comm.ip} oninput={(e) => comm && (comm.ip = textOrUnknown(e.currentTarget.value))} data-testid="comm-ip" />
+      {#if real}
+        <li class="step" class:done={addressOk} data-testid="comm-step-address">
+          <h2 class="step-title">{@render ball(addressOk, 2)} Endereço</h2>
+          <div class="fields">
+            <label class="wide">IP do KCM
+              <input type="text" inputmode="decimal" autocomplete="off" placeholder="ex.: [IP do módulo Host]" value={comm.ip === 'UNKNOWN' ? '' : comm.ip} oninput={(e) => comm && (comm.ip = textOrUnknown(e.currentTarget.value))} data-testid="comm-ip" />
+            </label>
+            <label>Porta
+              <input type="number" min="1" max="65535" inputmode="numeric" value={comm.port === 'UNKNOWN' ? '' : comm.port} oninput={(e) => comm && (comm.port = intOrUnknown(e.currentTarget.value))} data-testid="comm-port" />
+            </label>
+            {#if driver === 'modbus_tcp'}
+              <label>Unit ID
+                <input type="number" min="0" max="255" inputmode="numeric" value={comm.unit_id === 'UNKNOWN' ? '' : comm.unit_id} oninput={(e) => comm && (comm.unit_id = intOrUnknown(e.currentTarget.value))} data-testid="comm-unit" />
               </label>
-              <label>Porta
-                <input type="number" min="1" max="65535" inputmode="numeric" value={comm.port === 'UNKNOWN' ? '' : comm.port} oninput={(e) => comm && (comm.port = intOrUnknown(e.currentTarget.value))} data-testid="comm-port" />
-                {#if PROTOCOL_DEFAULT_PORT[driver]}
-                  <button type="button" class="link" onclick={() => comm && (comm.port = PROTOCOL_DEFAULT_PORT[driver] ?? comm.port)}>
-                    Usar a porta padrão do protocolo ({PROTOCOL_DEFAULT_PORT[driver]})
-                  </button>
-                {/if}
-              </label>
-              {#if driver === 'modbus_tcp'}
-                <label>Unit ID (endereço do escravo)
-                  <input type="number" min="0" max="255" inputmode="numeric" value={comm.unit_id === 'UNKNOWN' ? '' : comm.unit_id} oninput={(e) => comm && (comm.unit_id = intOrUnknown(e.currentTarget.value))} data-testid="comm-unit" />
-                </label>
-              {/if}
+            {/if}
+          </div>
+          {#if PROTOCOL_DEFAULT_PORT[driver]}
+            <button type="button" class="link" onclick={() => comm && (comm.port = PROTOCOL_DEFAULT_PORT[driver] ?? comm.port)} data-testid="comm-default-port">
+              Usar a porta padrão do protocolo ({PROTOCOL_DEFAULT_PORT[driver]})
+            </button>
+          {/if}
+          <Disclosure summary="Avançado: tempos e leitura em bloco" testid="comm-advanced">
+            <div class="fields advanced">
               <label>Tempo de espera (s)
-                <input type="number" min="0.1" max="60" step="0.1" inputmode="decimal" bind:value={comm.timeout_s} />
+                <input type="number" min="0.1" max="60" step="0.1" inputmode="decimal" bind:value={comm.timeout_s} data-testid="comm-timeout" />
               </label>
               <label>Intervalo entre leituras (s)
-                <input type="number" min="0.25" max="3600" step="0.25" inputmode="decimal" bind:value={comm.poll_interval_s} />
+                <input type="number" min="0.25" max="3600" step="0.25" inputmode="decimal" bind:value={comm.poll_interval_s} data-testid="comm-poll" />
               </label>
               <label>Valor antigo depois de (s)
                 <input type="number" min="1" step="1" inputmode="decimal" bind:value={comm.stale_after_s} />
               </label>
               {#if driver === 'modbus_tcp'}
                 <label class="check">
-                  <input type="checkbox" checked={comm.options['block_reads'] !== false} onchange={(e) => comm && (comm.options = { ...comm.options, block_reads: e.currentTarget.checked })} />
+                  <input type="checkbox" class="sr" checked={comm.options['block_reads'] !== false} onchange={(e) => comm && (comm.options = { ...comm.options, block_reads: e.currentTarget.checked })} />
+                  <span class="box" aria-hidden="true"><Check size={14} strokeWidth={3} /></span>
                   Ler registradores vizinhos em bloco (menos requisições)
                 </label>
               {/if}
             </div>
-          </Card>
+          </Disclosure>
+        </li>
 
-          <Card title="3 · Variáveis (mapping)" testid="comm-step-mapping">
-            {#if view.mapping_shared}
-              <p class="hint">
-                Este equipamento ainda usa o mapping do simulador. Para {driver === 'modbus_tcp' ? 'Modbus TCP' : 'EtherNet/IP'}
-                a Forja usa o mapping próprio dele, <b class="num">{mapping.mapping_id}</b>{view.editable_mapping_exists ? '' : ' (novo, todo em "não definido")'}.
-              </p>
-            {/if}
-            <MappingEditor bind:mapping={mapping} {driver} />
-            <div class="actions">
-              <button type="button" class="btn ghost" disabled={busy !== ''} onclick={runValidate} data-testid="comm-validate">
-                Conferir configuração (sem conectar)
-              </button>
-            </div>
-            {#if validation}
-              <div class="validation" data-ok={validation.ok} data-testid="comm-validation">
-                {#each validation.errors as e, i (i)}<p class="err">{e}</p>{/each}
-                {#each validation.warnings as w, i (i)}<p class="warnline">{w}</p>{/each}
-                {#if validation.ok}
-                  <p class="okline">
-                    Configuração coerente: {validation.requests_per_cycle} requisição(ões) de leitura por ciclo.
-                  </p>
-                {/if}
+        <li class="step quiet" data-testid="comm-step-mapping">
+          <Disclosure summary={mappingSummary} testid="comm-mapping">
+            <div class="mapping">
+              {#if view.mapping_shared}
+                <p class="hint">
+                  Este equipamento ainda usa o mapping do simulador. Para {driver === 'modbus_tcp' ? 'Modbus TCP' : 'EtherNet/IP'}
+                  a Forja usa o mapping próprio dele, <b class="num">{mapping.mapping_id}</b>{view.editable_mapping_exists ? '' : ' (novo, todo em "não definido")'}.
+                </p>
+              {/if}
+              <MappingEditor bind:mapping={mapping} {driver} />
+              <div class="actions">
+                <button type="button" class="btn ghost" disabled={busy !== ''} onclick={runValidate} data-testid="comm-validate">
+                  Conferir configuração (sem conectar)
+                </button>
               </div>
-            {/if}
-          </Card>
-        {:else if driver === 'simulator'}
-          <Card title="2 · Simulador" testid="comm-step-simulator">
-            <p class="hint">
-              Leitura simulada pelo modelo WBF da Forja. Nenhum valor representa um KCM real. O cenário
-              é escolhido em Ferramentas › Simulador.
-            </p>
-          </Card>
-        {/if}
-      </div>
+              {#if validation}
+                <div class="validation" data-ok={validation.ok} data-testid="comm-validation">
+                  {#each validation.errors as e, i (i)}<p class="err">{e}</p>{/each}
+                  {#each validation.warnings as w, i (i)}<p class="warnline">{w}</p>{/each}
+                  {#if validation.ok}
+                    <p class="okline">
+                      Configuração coerente: {validation.requests_per_cycle} requisição(ões) de leitura por ciclo.
+                    </p>
+                  {/if}
+                </div>
+              {/if}
+            </div>
+          </Disclosure>
+        </li>
+      {:else if driver === 'simulator'}
+        <li class="step done" data-testid="comm-step-simulator">
+          <h2 class="step-title">{@render ball(true, 2)} Endereço</h2>
+          <p class="hint">O simulador não precisa de endereço. Nenhum valor representa um KCM real.</p>
+        </li>
+      {/if}
 
-      <div class="side">
-        <Card title="4 · Teste somente leitura" testid="comm-step-test">
-          <p class="hint">
-            Cria uma conexão descartável, lê uma vez e fecha. Usa o que está nesta tela, mesmo antes de
-            salvar. Nada é escrito no KCM.
-          </p>
-          <label class="user">Responsável
+      <li class="step" class:done={testDone} data-testid="comm-step-test">
+        <h2 class="step-title">{@render ball(testDone, 3)} Testar, só lendo</h2>
+        <button type="button" class="btn primary big" disabled={busy !== '' || driver === 'UNKNOWN'} onclick={runTest} data-testid="comm-test">
+          {#if busy === 'test'}
+            <span class="spin" aria-hidden="true"><RefreshCw size={18} /></span> Lendo…
+          {:else}
+            <FlaskConical size={18} aria-hidden="true" /> Testar (somente leitura)
+          {/if}
+        </button>
+        {#if test}
+          {#key test}
+            <p class="verdict" data-ok={test.success} role="status" data-testid="comm-test-summary">
+              {#if test.success}<span class="pop"><Check size={18} strokeWidth={3} aria-hidden="true" /></span>{/if}
+              {testSentence(test)}
+            </p>
+          {/key}
+          <Disclosure summary="Ver o que foi lido e comparar com a tela do KCM" testid="comm-test-detail">
+            <ReadTestPanel result={test} bind:kcm canRegister={real} onregister={register} />
+          </Disclosure>
+          {#if test.success}
+            <a class="next" href={href.eq(equipmentId, 'kcm/commissioning')} data-testid="comm-next-commissioning">
+              Próximo passo: conferir os valores na tela do KCM (Comissionamento)
+            </a>
+          {/if}
+        {/if}
+      </li>
+
+      <li class="step" class:done={collectionOn && !dirty} data-testid="comm-step-save">
+        <h2 class="step-title">{@render ball(collectionOn && !dirty, 4)} Salvar e ativar a coleta</h2>
+        <p class="collection" data-on={collectionOn} data-blocked={view.collection.blocked} data-testid="comm-collection">
+          <Radio size={18} aria-hidden="true" /> {view.collection.label_pt}
+          <span class="in-use">· em uso: {SAVED_DRIVER_PT[view.profile.communication.driver] ?? view.profile.communication.driver}</span>
+        </p>
+        <div class="fields">
+          <label>Responsável (vai para a auditoria)
             <input type="text" maxlength="64" autocomplete="name" placeholder="nome do técnico" bind:value={user} data-testid="comm-user" />
           </label>
-          <button type="button" class="btn primary" disabled={busy !== '' || driver === 'UNKNOWN'} onclick={runTest} data-testid="comm-test">
-            <FlaskConical size={18} aria-hidden="true" />
-            {busy === 'test' ? 'Lendo…' : 'Testar comunicação — somente leitura'}
-          </button>
-          {#if test}
-            <ReadTestPanel result={test} bind:kcm canRegister={real} onregister={register} />
-          {/if}
-        </Card>
-
-        <Card title="5 · Salvar" testid="comm-step-save">
-          <label class="user">Motivo da alteração
-            <input type="text" maxlength="200" placeholder="ex.: protocolo confirmado na tela do KCM" bind:value={reason} data-testid="comm-reason" />
+          <label class="wide">Motivo da alteração
+            <input type="text" maxlength="200" placeholder="ex.: protocolo confirmado no KCM" bind:value={reason} data-testid="comm-reason" />
           </label>
-          <p class="hint">
-            {#if dirtyComm || dirtyMapping}
-              Há alterações não salvas{dirtyMapping ? ' no mapping' : ''}{dirtyComm ? ' na comunicação' : ''}.
-              Cada gravação fica na auditoria e a versão anterior é guardada.
-            {:else}
-              Nada a salvar.
-            {/if}
-          </p>
-          <button type="button" class="btn primary" disabled={busy !== '' || !(dirtyComm || dirtyMapping) || !userOk} onclick={save} data-testid="comm-save">
-            <Save size={18} aria-hidden="true" /> Salvar configuração
+        </div>
+        <div class="actions">
+          <button type="button" class="btn primary" disabled={busy !== '' || action === 'none' || !userOk} onclick={apply} data-testid="comm-save" data-action={action}>
+            {busy === 'save' ? 'Salvando…' : busy === 'collection' ? 'Ativando…' : actionLabel}
           </button>
-          {#if !userOk && (dirtyComm || dirtyMapping)}<p class="hint">Informe o responsável no passo 4.</p>{/if}
-        </Card>
-
-        <Card title="6 · Coleta" testid="comm-step-collection">
-          <p class="collection" data-on={view.collection.enabled && !view.collection.blocked} data-blocked={view.collection.blocked} data-testid="comm-collection">
-            <Radio size={18} aria-hidden="true" /> {view.collection.label_pt}
-          </p>
-          <p class="hint">
-            Configuração salva em uso: <b>{SAVED_DRIVER_PT[view.profile.communication.driver] ?? view.profile.communication.driver}</b>{dirtyComm || dirtyMapping ? ' (há alterações na tela ainda não salvas)' : ''}.
-          </p>
-          <p class="hint">
-            Ativar a coleta liga a LEITURA periódica da Forja. Não envia nenhum comando ao KCM.
-            {#if real}Para driver real, exige teste de leitura bem-sucedido da configuração salva.{/if}
-          </p>
-          {#if view.collection.enabled && !view.collection.blocked}
-            <button type="button" class="btn ghost" disabled={busy !== '' || !userOk} onclick={() => setCollection(false)} data-testid="comm-collection-off">
+          {#if collectionOn}
+            <button type="button" class="btn ghost" disabled={busy !== '' || !userOk} onclick={pause} data-testid="comm-collection-off">
               Pausar coleta
             </button>
-          {:else}
-            <button type="button" class="btn primary" disabled={busy !== '' || !canActivate || !userOk} onclick={() => setCollection(true)} data-testid="comm-collection-on">
-              <Plug size={18} aria-hidden="true" /> Ativar coleta (somente leitura)
-            </button>
-            {#if real && !canActivate}
-              <p class="hint">
-                {dirtyComm || dirtyMapping
-                  ? 'Salve a configuração antes.'
-                  : 'Faça o teste somente leitura com a configuração salva e obtenha leitura.'}
-              </p>
-            {/if}
           {/if}
-          <dl class="runtime">
-            <div><dt>Conexão</dt><dd>{view.runtime.connection_pt}</dd></div>
-            <div><dt>Latência</dt><dd class="num">{view.runtime.latency_ms != null ? `${fmtNumber(view.runtime.latency_ms, 1)} ms` : '—'}</dd></div>
-            <div><dt>Falhas seguidas</dt><dd class="num">{view.runtime.consecutive_errors}</dd></div>
-            {#if view.last_test}
-              <div><dt>Último teste</dt><dd>{view.last_test.success ? 'leitura obtida' : 'falhou'} · {fmtDateTime(view.last_test.ts_utc)}{view.last_test_matches ? '' : ' (outra configuração)'}</dd></div>
-            {/if}
-          </dl>
-        </Card>
-      </div>
-    </div>
+        </div>
+        {#if actionHint}<p class="hint" data-testid="comm-action-hint">{actionHint}</p>{/if}
+      </li>
+    </ol>
 
     <Disclosure summary="Detalhes técnicos e log de conexão" testid="comm-tech">
       <dl class="tech">
+        <div><dt>Conexão</dt><dd>{view.runtime.connection_pt}</dd></div>
+        <div><dt>Latência</dt><dd class="num">{view.runtime.latency_ms != null ? `${fmtNumber(view.runtime.latency_ms, 1)} ms` : '—'}</dd></div>
+        <div><dt>Falhas seguidas</dt><dd class="num">{view.runtime.consecutive_errors}</dd></div>
+        {#if view.last_test}
+          <div><dt>Último teste</dt><dd>{view.last_test.success ? 'leitura obtida' : 'falhou'} · {fmtDateTime(view.last_test.ts_utc)}{view.last_test_matches ? '' : ' (outra configuração)'}</dd></div>
+        {/if}
         <div><dt>Driver</dt><dd class="num">{view.profile.communication.driver}</dd></div>
         <div><dt>Protocolo salvo</dt><dd class="num">{view.profile.communication.protocol}</dd></div>
         <div><dt>Mapping em uso</dt><dd class="num">{view.profile.mapping_profile} v{view.mapping.version}</dd></div>
@@ -548,79 +652,139 @@
 </section>
 
 <style>
-  .comm { display: flex; flex-direction: column; gap: var(--sp-5); min-width: 0; }
-  .head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-4); flex-wrap: wrap; }
+  .comm { display: flex; flex-direction: column; gap: var(--sp-4); min-width: 0; max-width: 820px; }
+  .head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-3) var(--sp-4); flex-wrap: wrap; }
   .head .label { margin: 0 0 var(--sp-1); }
   .title { margin: 0; font: 600 var(--fs-h1) / var(--lh-h1) var(--font-ui); color: var(--text-1); }
   @media (min-width: 1024px) { .title { font-size: var(--fs-display); line-height: var(--lh-display); } }
-  .sub { margin: var(--sp-1) 0 0; max-width: 72ch; color: var(--text-2); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
   .state { display: inline-flex; align-items: center; gap: var(--sp-2); min-height: var(--touch); padding: 0 var(--sp-4); border: 1px solid var(--border-2); border-radius: var(--r-pill); color: var(--text-1); font: 600 var(--fs-body) / 1 var(--font-ui); }
   .state .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--text-3); }
   .state[data-tone='ok'] { border-color: var(--st-ok); } .state[data-tone='ok'] .dot { background: var(--st-ok); }
   .state[data-tone='warn'] { border-color: var(--st-warn); } .state[data-tone='warn'] .dot { background: var(--st-warn); }
   .state[data-tone='crit'] { border-color: var(--st-crit); } .state[data-tone='crit'] .dot { background: var(--st-crit); }
   .state[data-tone='sim'] { border-color: var(--q-sim); } .state[data-tone='sim'] .dot { background: var(--q-sim); }
-  .safety { display: flex; gap: var(--sp-3); align-items: flex-start; padding: var(--sp-3) var(--sp-4); border: 1px solid var(--border-1); border-left: 3px solid var(--st-ok); border-radius: var(--r-3); background: var(--surf-1); color: var(--st-ok); }
-  .safety p { margin: 0; color: var(--text-2); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
-  .safety b { color: var(--text-1); }
+  .safety { display: flex; align-items: flex-start; gap: var(--sp-2); margin: 0; color: var(--text-2); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
+  .safety :global(svg) { flex: none; margin-top: 1px; color: var(--st-ok); }
   .notice { margin: 0; padding: var(--sp-3) var(--sp-4); border-radius: var(--r-3); font: 500 var(--fs-body) / var(--lh-body) var(--font-ui); animation: rise var(--dur-base) var(--ease-out) both; }
   .notice[data-tone='ok'] { background: var(--st-ok-bg); color: var(--st-ok); }
   .notice[data-tone='warn'] { background: var(--st-warn-bg); color: var(--st-warn); }
   .notice[data-tone='crit'] { background: var(--st-crit-bg); color: var(--st-crit); }
-  @keyframes rise { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
   .sk { height: 360px; border-radius: var(--r-4); background: var(--surf-2); opacity: 0.6; }
-  .layout { display: grid; gap: var(--sp-4); grid-template-columns: minmax(0, 1fr); align-items: start; }
-  @media (min-width: 1280px) { .layout { grid-template-columns: minmax(0, 3fr) minmax(360px, 2fr); } }
-  .steps, .side { display: flex; flex-direction: column; gap: var(--sp-4); min-width: 0; }
-  .protocols { display: grid; gap: var(--sp-2); grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-  .proto { position: relative; display: flex; flex-direction: column; gap: 4px; min-height: var(--touch); padding: var(--sp-3); border: 1px solid var(--border-2); border-radius: var(--r-3); background: var(--surf-1); cursor: pointer; transition: border-color var(--dur-micro) var(--ease-out), background var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out); }
+
+  .steps { display: flex; flex-direction: column; gap: var(--sp-3); margin: 0; padding: 0; list-style: none; }
+  .step {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-3);
+    min-width: 0;
+    padding: var(--sp-4);
+    border: 1px solid var(--border-1);
+    border-radius: var(--r-4);
+    background: var(--surf-1);
+    transition: border-color var(--dur-base) var(--ease-std);
+    animation: rise var(--dur-screen) var(--ease-out) both;
+  }
+  .step > :global(*) { max-width: 100%; }
+  .step.done { border-color: color-mix(in srgb, var(--st-ok) 45%, var(--border-1)); }
+  .step.quiet { padding: var(--sp-2) var(--sp-4); border-style: dashed; border-color: var(--border-2); background: transparent; }
+  .step-title { display: flex; align-items: center; gap: var(--sp-2); margin: 0; color: var(--text-1); font: 600 var(--fs-body-lg) / var(--lh-body-lg) var(--font-ui); }
+  .ball {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border-2);
+    border-radius: var(--r-pill);
+    color: var(--text-2);
+    font: 600 14px / 1 var(--font-mono);
+    transition: background-color var(--dur-base) var(--ease-std), border-color var(--dur-base) var(--ease-std);
+  }
+  .ball.done { border-color: var(--st-ok); background: var(--st-ok); color: var(--on-accent); }
+  .pop { display: inline-grid; place-items: center; animation: pop var(--dur-spring) var(--ease-spring) both; }
+
+  .protocols { display: grid; gap: var(--sp-2); width: 100%; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .proto { position: relative; display: flex; flex-direction: column; gap: 2px; min-height: 56px; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--border-2); border-radius: var(--r-3); background: var(--surf-2); cursor: pointer; transition: border-color var(--dur-micro) var(--ease-out), background-color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out); }
   .proto:hover { border-color: var(--border-input); }
   .proto:active { transform: scale(0.99); }
   .proto.on { border-color: var(--accent); background: var(--accent-soft); }
   .proto:has(input:focus-visible) { box-shadow: var(--focus); }
-  .proto-title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); color: var(--text-1); font: 600 var(--fs-body) / var(--lh-body) var(--font-ui); }
-  .proto-text { color: var(--text-2); font: var(--fs-caption) / var(--lh-caption) var(--font-ui); }
-  .proto-note { color: var(--text-3); font: var(--fs-caption) / var(--lh-caption) var(--font-ui); }
-  .pill { padding: 1px 8px; border-radius: var(--r-pill); border: 1px solid var(--border-2); color: var(--text-2); font: 500 var(--fs-caption) / var(--lh-caption) var(--font-ui); }
-  .pill[data-state='EXPERIMENTAL'] { border-color: var(--st-warn); color: var(--st-warn); }
-  .pill[data-state='AVAILABLE'] { border-color: var(--st-ok); color: var(--st-ok); }
+  .proto-name { color: var(--text-1); font: 600 var(--fs-body) / var(--lh-body) var(--font-ui); }
+  .proto-state { color: var(--text-2); font: var(--fs-caption) / var(--lh-caption) var(--font-ui); }
+  .proto-state[data-state='EXPERIMENTAL'] { color: var(--st-warn); }
+  .proto-state[data-state='AVAILABLE'] { color: var(--st-ok); }
   .sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-  .unknown { display: flex; gap: var(--sp-3); margin-top: var(--sp-3); padding: var(--sp-3); border-radius: var(--r-3); background: var(--surf-2); color: var(--st-info); }
-  .unknown b { color: var(--text-1); font: 600 var(--fs-body) / var(--lh-body) var(--font-ui); }
-  .unknown p { margin: 4px 0 0; color: var(--text-2); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
-  .grid { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  .unknown { display: flex; gap: var(--sp-2); margin: 0; color: var(--st-info); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
+  .unknown :global(svg) { flex: none; margin-top: 1px; }
+  .unknown span { color: var(--text-2); }
+  .unknown b { color: var(--text-1); font-weight: 600; }
+
+  .fields { display: grid; gap: var(--sp-3); width: 100%; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+  .fields .wide { grid-column: span 2; }
+  .fields.advanced { margin-top: var(--sp-2); }
   label { display: flex; flex-direction: column; gap: 4px; min-width: 0; color: var(--text-3); font: 500 var(--fs-caption) / var(--lh-caption) var(--font-ui); }
-  label.check { flex-direction: row; align-items: center; gap: var(--sp-2); grid-column: 1 / -1; min-height: var(--touch); color: var(--text-1); font: var(--fs-body) / var(--lh-body) var(--font-ui); }
-  label.check input { width: 24px; height: 24px; min-height: 0; accent-color: var(--accent); }
+  /* caixa de marcar: o alvo é a linha inteira (44 px); a caixa visível é desenho */
+  label.check { position: relative; flex-direction: row; align-items: center; gap: var(--sp-2); grid-column: 1 / -1; min-height: var(--touch); color: var(--text-1); font: var(--fs-body) / var(--lh-body) var(--font-ui); cursor: pointer; }
+  .box { display: grid; place-items: center; flex: none; width: 22px; height: 22px; border: 1px solid var(--border-input); border-radius: var(--r-1); background: var(--surf-2); color: transparent; transition: background-color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out); }
+  label.check input:checked + .box { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+  label.check input:focus-visible + .box { box-shadow: var(--focus); }
   input { width: 100%; min-height: var(--touch); padding: 0 var(--sp-2); border: 1px solid var(--border-input); border-radius: var(--r-2); background: var(--surf-2); color: var(--text-1); font: 16px / 1.2 var(--font-ui); }
   input[type='number'] { font-family: var(--font-mono); }
-  .link { align-self: flex-start; min-height: var(--touch); padding: 0; border: 0; background: none; color: var(--accent-text); font: 500 var(--fs-caption) / var(--lh-caption) var(--font-ui); text-decoration: underline; cursor: pointer; }
+  .link { min-height: 24px; padding: 0; border: 0; background: none; color: var(--accent-text); font: 500 var(--fs-caption) / var(--lh-caption) var(--font-ui); text-decoration: underline; cursor: pointer; }
   .hint { margin: 0; color: var(--text-2); font: var(--fs-caption) / var(--lh-caption) var(--font-ui); }
   .hint b { color: var(--text-1); }
-  .actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-3); }
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); min-height: var(--touch); padding: 0 var(--sp-4); border-radius: var(--r-3); font: 600 var(--fs-body) / 1.2 var(--font-ui); cursor: pointer; transition: transform var(--dur-micro) var(--ease-out), opacity var(--dur-micro) var(--ease-out); }
+  .mapping { display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-2) 0 var(--sp-3); }
+  .actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); min-height: var(--touch); padding: 0 var(--sp-4); border-radius: var(--r-3); font: 600 var(--fs-body) / 1.2 var(--font-ui); cursor: pointer; transition: transform var(--dur-micro) var(--ease-out), opacity var(--dur-micro) var(--ease-out), filter var(--dur-micro) var(--ease-out); }
+  .btn:hover:not(:disabled) { filter: brightness(1.08); }
   .btn:active:not(:disabled) { transform: scale(0.98); }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn.primary { border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); }
   .btn.ghost { border: 1px solid var(--border-2); background: var(--surf-1); color: var(--text-1); }
-  :global([data-testid='comm-step-test']), :global([data-testid='comm-step-save']), :global([data-testid='comm-step-collection']) { display: flex; flex-direction: column; gap: var(--sp-3); }
-  .user { color: var(--text-3); }
-  .validation { display: flex; flex-direction: column; gap: var(--sp-2); margin-top: var(--sp-3); }
+  .btn.big { min-height: 48px; padding: 0 var(--sp-5); font-size: var(--fs-body-lg); }
+  .spin { display: inline-flex; animation: spin 0.9s linear infinite; }
+  .verdict { display: flex; align-items: center; gap: var(--sp-2); margin: 0; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-2); color: var(--text-1); font: 500 var(--fs-body-lg) / var(--lh-body-lg) var(--font-ui); }
+  .verdict[data-ok='true'] { background: var(--st-ok-bg); }
+  .verdict[data-ok='true'] :global(svg) { color: var(--st-ok); }
+  .verdict[data-ok='false'] { background: var(--st-crit-bg); color: var(--st-crit); animation: shake var(--dur-scenario) var(--ease-out); }
+  .next { display: inline-flex; align-items: center; min-height: 24px; color: var(--accent-text); font: 500 var(--fs-body) / var(--lh-body) var(--font-ui); }
+  .collection { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin: 0; color: var(--text-2); font: 600 var(--fs-body) / var(--lh-body) var(--font-ui); }
+  .collection[data-on='true'] { color: var(--st-ok); }
+  .collection[data-blocked='true'] { color: var(--st-warn); }
+  .in-use { color: var(--text-2); font-weight: 400; }
+  .validation { display: flex; flex-direction: column; gap: var(--sp-2); }
   .err, .warnline, .okline { margin: 0; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-2); font: var(--fs-caption) / var(--lh-caption) var(--font-ui); }
   .err { background: var(--st-crit-bg); color: var(--st-crit); }
   .warnline { background: var(--st-warn-bg); color: var(--text-1); }
   .okline { background: var(--st-ok-bg); color: var(--st-ok); }
-  .collection { display: flex; align-items: center; gap: var(--sp-2); margin: 0; color: var(--text-2); font: 600 var(--fs-body) / var(--lh-body) var(--font-ui); }
-  .collection[data-on='true'] { color: var(--st-ok); }
-  .collection[data-blocked='true'] { color: var(--st-warn); }
-  .runtime, .tech { display: grid; gap: 4px; margin: 0; }
-  .runtime div, .tech div { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: var(--sp-2); }
+  .tech { display: grid; gap: 4px; margin: var(--sp-2) 0 0; }
+  .tech div { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: var(--sp-2); }
   dt { color: var(--text-3); font: 500 var(--fs-caption) / var(--lh-caption) var(--font-ui); }
   dd { margin: 0; color: var(--text-1); font: var(--fs-caption) / var(--lh-caption) var(--font-ui); overflow-wrap: anywhere; }
   dd.num { font-family: var(--font-mono); }
   .log { margin: var(--sp-3) 0 0; padding-left: var(--sp-4); color: var(--text-2); font: var(--fs-caption) / var(--lh-caption) var(--font-ui); }
   .log li[data-level='WARNING'] { color: var(--st-warn); }
-  @media (max-width: 767px) {
-    .runtime div, .tech div { grid-template-columns: minmax(0, 1fr); gap: 0; }
+
+  @keyframes rise { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { 0% { transform: scale(0.4); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes shake {
+    0%, 100% { transform: none; }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(5px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(2px); }
+  }
+
+  @media (max-width: 767px), (pointer: coarse) {
+    .link, .next { min-height: var(--touch); }
+  }
+  @media (max-width: 559px) {
+    .fields .wide { grid-column: auto; }
+    .tech div { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .spin { animation: none; }
   }
 </style>
