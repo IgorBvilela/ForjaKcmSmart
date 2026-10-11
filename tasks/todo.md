@@ -40,7 +40,7 @@ Plano: `tasks/plan.md`. Especificação: `docs/produto/especificacao_interface_e
 - [x] T15 · Medida de tempo: dentro do normal, fora do normal e sem dados (`GET /api/v1/time-split`, por dosador e período)
 - [ ] T16 · Resumo do turno para imprimir (turnos vêm da configuração da planta)
 - [ ] T17 · Placar do dia na TV
-- [ ] T18 · Atalhos de teclado de 1 a 4, com opção de desligar
+- [x] T18 · Atalhos de teclado de 1 a 4, com opção de desligar (página Mais, seção Teclado)
 - [ ] T19 · Tema claro opcional, conferido nos dois temas
 - Etapa de rede e login (fora desta fase): QR code na TV
 

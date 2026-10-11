@@ -6,6 +6,7 @@
   import { MAIN_MENU, MORE_ITEM, menuSlugFor, type NavItem } from '../../lib/nav'
   import { live } from '../../lib/live.svelte'
   import { href } from '../../lib/router'
+  import { shortcuts } from '../../lib/shortcuts.svelte'
   import { situation } from '../../lib/situationStore.svelte'
   import { app } from '../../lib/state.svelte'
   import { TID } from '../../lib/testids'
@@ -31,6 +32,7 @@
 {#snippet entry(item: NavItem)}
   {@const target = item.to(eqId)}
   {@const active = item.slug === activeSlug}
+  {@const key = MAIN_MENU.indexOf(item) + 1}
   <li>
     {#if target}
       <a
@@ -39,6 +41,7 @@
         class:active
         href={target}
         aria-current={active ? 'page' : undefined}
+        aria-keyshortcuts={shortcuts.enabled && key > 0 ? String(key) : undefined}
         data-testid={TID.sidebar.link(item.slug)}
       >
         <span class="item-icon" aria-hidden="true">

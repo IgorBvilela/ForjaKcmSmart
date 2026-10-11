@@ -83,6 +83,13 @@ Documentos e Manuais (fase P) ficam fora da navegação até existirem; as rotas
 - Entrada acesa: as abas do dosador acendem Dashboard; as telas da página Mais acendem a engrenagem.
 - Contador de dosadores em atenção no ícone Agora (no fim da linha, na gaveta).
 
+### Atalhos de teclado (`src/lib/shortcuts.svelte.ts`)
+
+- As teclas 1 a 4 abrem Agora, Planta, Dashboard e Comunicação (no equipamento dos links do menu).
+- Não agem com Alt, Ctrl, Shift ou Meta, nem enquanto se digita (campo de texto, área de texto, lista ou texto editável).
+- Podem ser desligados na página Mais, seção Teclado (WCAG 2.2, critério 2.1.4). A escolha fica no navegador (`forja.atalhos`).
+- Ligados, as entradas do menu anunciam a tecla em `aria-keyshortcuts`.
+
 ### Situação compartilhada (`src/lib/situationStore.svelte.ts`)
 
 A tela Agora, o contador do menu, a Planta (motivo e desde quando) e o Modo TV leem a mesma resposta de `/situation`. A consulta acontece a cada 15 s e logo depois de evento, diagnóstico ou mudança da planta, no máximo uma vez a cada 5 s.
@@ -148,5 +155,6 @@ Radio e caixa de marcar usam a classe `.choice`: o alvo é a linha inteira (44 p
 | `tests/e2e/test_equipment_tabs.py` | Abas do dosador. |
 | `tests/e2e/test_plant.py`, `test_plant_grid.py`, `test_plant_collection.py` | Planta: cartão, desvio, motivo, 2 × 2 com 4 dosadores, coleta pausada nunca como normal e animação da mudança de estado. |
 | `tests/e2e/test_communication.py` | Fluxo de campo contra o Modbus de bancada com o botão único, recusa honesta da ativação e "Testar" à vista em 1440 × 900. |
+| `tests/e2e/test_shortcuts.py` | Atalhos 1 a 4, nada enquanto se digita, desligar na página Mais e a escolha guardada. |
 | `tests/e2e/test_tv.py` | Modo TV: sem controles, relógio e selo, tela Agora à vista com problema, troca de páginas e Edge derrubado em destaque. |
 | `tests/e2e/test_dashboard.py` | Sem recarga por segundo com evento aberto; ponto vivo só com movimento permitido. |

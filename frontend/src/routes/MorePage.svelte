@@ -4,6 +4,7 @@
    *  (enquanto a lista da planta não chega, sem aviso: ainda não se sabe se há equipamento). */
   import { GEAR_GROUPS } from '../lib/nav'
   import { live } from '../lib/live.svelte'
+  import { shortcuts } from '../lib/shortcuts.svelte'
   import { app } from '../lib/state.svelte'
   import { TID } from '../lib/testids'
 
@@ -50,6 +51,15 @@
       </ul>
     </section>
   {/each}
+
+  <section class="group" style:--i={GEAR_GROUPS.length} aria-labelledby="more-group-teclado">
+    <h2 class="label" id="more-group-teclado">Teclado</h2>
+    <label class="choice">
+      <input type="checkbox" checked={shortcuts.enabled} onchange={(e) => shortcuts.set(e.currentTarget.checked)} />
+      <span class="choice-mark" data-kind="check" aria-hidden="true"></span>
+      Atalhos de teclado: 1 Agora, 2 Planta, 3 Dashboard, 4 Comunicação
+    </label>
+  </section>
 
   <p class="foot"><span>Edge local · 127.0.0.1</span><span>Observa. Não comanda.</span></p>
 </section>

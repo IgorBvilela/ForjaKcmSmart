@@ -6,8 +6,9 @@
   import EmptyState from './components/ui/EmptyState.svelte'
   import { hasEqTabs } from './lib/eqtabs'
   import { live } from './lib/live.svelte'
-  import { knowledgeItem, navItemForEqScreen, systemItem, toolsItem } from './lib/nav'
+  import { MAIN_MENU, knowledgeItem, navItemForEqScreen, systemItem, toolsItem } from './lib/nav'
   import { href, installLinkInterceptor, routeSlug } from './lib/router'
+  import { installShortcuts } from './lib/shortcuts.svelte'
   import { situation } from './lib/situationStore.svelte'
   import { app } from './lib/state.svelte'
   import { TID } from './lib/testids'
@@ -47,7 +48,13 @@
     live.start()
     situation.start()
     const off = installLinkInterceptor(document.body)
+    // teclas 1 a 4: as entradas do menu principal, no equipamento dos links do menu
+    const offKeys = installShortcuts((i) => {
+      const target = MAIN_MENU[i]?.to(live.linkEquipmentId(app.equipmentId))
+      if (target) app.go(target)
+    })
     return () => {
+      offKeys()
       off()
       situation.stop()
       live.stop()
