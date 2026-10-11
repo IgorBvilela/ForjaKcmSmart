@@ -32,6 +32,7 @@
   import MorePage from './routes/MorePage.svelte'
   import NowPage from './routes/NowPage.svelte'
   import PlantPage from './routes/PlantPage.svelte'
+  import TvPage from './routes/TvPage.svelte'
   import RealtimePage from './routes/RealtimePage.svelte'
   import ReportsPage from './routes/ReportsPage.svelte'
   import SettingsPage from './routes/SettingsPage.svelte'
@@ -73,6 +74,8 @@
         return `Planta · ${PRODUCT}`
       case 'more':
         return `Mais · ${PRODUCT}`
+      case 'tv':
+        return `Modo TV · ${PRODUCT}`
       case 'eq': {
         const name = live.cardOf(r.id)?.name ?? r.id
         if (r.eventId) return `Evento · ${name} · ${PRODUCT}`
@@ -95,6 +98,10 @@
   })
 </script>
 
+{#if route.name === 'tv'}
+  <!-- Modo TV: tela cheia, sem menu, sem cabeçalho e sem controles -->
+  <div class="page" data-testid={TID.page} data-route="tv"><TvPage /></div>
+{:else}
 <AppShell>
   {#if route.name === 'eq' && hasEqTabs(route.screen)}
     <EquipmentTabs equipmentId={route.id} screen={route.screen} />
@@ -186,6 +193,7 @@
     </div>
   {/key}
 </AppShell>
+{/if}
 
 <style>
   .page {

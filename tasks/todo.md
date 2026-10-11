@@ -30,7 +30,7 @@ Plano: `tasks/plan.md`. Especificação: `docs/produto/especificacao_interface_e
 - [x] Checkpoint C · Uma frase de apoio por tela principal (21 telas no teste); bateria verde (806 núcleo + 124 navegador); conferência visual sem achados
 
 ## Fase 4 · Modo TV
-- [ ] T12 · Modo TV (`/app/tv`)
+- [x] T12 · Modo TV (`/app/tv`): Agora e Planta juntas (opção B), sem controles; páginas da Planta trocam a cada 20 s (`?troca=N`); brilho para quem entra em atenção; Edge sem resposta em destaque; deslocamento contra marca; atalho na página Mais
 
 ## Fase 5 · Acabamento
 - [ ] T13 · Animações (genjutsu cast)

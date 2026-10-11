@@ -28,6 +28,7 @@ export type SystemSub = 'equipments' | 'settings' | 'backup' | 'logs' | 'about'
 export type Route =
   | { name: 'now' }
   | { name: 'more' }
+  | { name: 'tv' }
   | { name: 'plant' }
   | { name: 'eq'; id: string; screen: EqScreen; eventId?: string }
   | { name: 'knowledge'; sub: KnowledgeSub }
@@ -70,6 +71,8 @@ export function parseRoute(pathname: string): Route {
       return segs.length === 1 ? { name: 'now' } : notFound
     case 'more':
       return segs.length === 1 ? { name: 'more' } : notFound
+    case 'tv':
+      return segs.length === 1 ? { name: 'tv' } : notFound
     case 'plant':
       return segs.length === 1 ? { name: 'plant' } : notFound
     case 'eq': {
@@ -109,6 +112,7 @@ export function parseRoute(pathname: string): Route {
 export const href = {
   now: () => `${APP_BASE}/now`,
   more: () => `${APP_BASE}/more`,
+  tv: () => `${APP_BASE}/tv`,
   plant: () => `${APP_BASE}/plant`,
   eq: (id: string, screen: EqScreen = 'dashboard') =>
     `${APP_BASE}/eq/${encodeURIComponent(id)}/${screen}`,
@@ -126,6 +130,8 @@ export function routeSlug(route: Route): string {
       return 'now'
     case 'more':
       return 'more'
+    case 'tv':
+      return 'tv'
     case 'plant':
       return 'plant'
     case 'eq':

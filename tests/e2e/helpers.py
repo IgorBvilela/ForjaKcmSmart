@@ -79,6 +79,7 @@ MATERIAL_DROP_TIMEOUT_MS = 60_000
 READY_BY_SLUG: dict[str, str] = {
     "now": "[data-testid='now-headline']",
     "more": "[data-testid='more']",
+    "tv": "[data-testid='tv-headline']",
     "plant": "[data-testid='plant-grid']",
     "dashboard": "[data-testid='kpi-grid']",
     "events": "[data-testid='events-list'], [data-testid='empty-state']",

@@ -52,6 +52,7 @@ EXPECTED_SCREENS = {
     "system-about",
     "simulator",
     "knowledge-cases",
+    "tv",
 }
 
 MENU_LINKS = "[data-testid^='sidebar-link-'][href]"

@@ -4,6 +4,7 @@
   import { type PlantCard } from '../lib/api'
   import { fmtNumber, plural } from '../lib/format'
   import { live } from '../lib/live.svelte'
+  import { plantTitle } from '../lib/plant'
   import { situation } from '../lib/situationStore.svelte'
   import { TID } from '../lib/testids'
   import PlantCardView from '../components/plant/PlantCard.svelte'
@@ -29,17 +30,7 @@
   })
   const grouped = $derived(groups.length > 1)
 
-  const title = $derived.by(() => {
-    const prefixes = new Set<string>()
-    for (const c of cards) {
-      const suffix = ` — ${c.name}`
-      if (c.display_path.endsWith(suffix)) {
-        const p = c.display_path.slice(0, -suffix.length)
-        if (p) prefixes.add(p)
-      }
-    }
-    return prefixes.size ? [...prefixes].join(' · ') : 'Planta'
-  })
+  const title = $derived(plantTitle(cards))
 
   /** Ordem do resumo. Estado fora da lista entra no fim: nada fora do normal fica sem contagem. */
   const SUMMARY_ORDER = [

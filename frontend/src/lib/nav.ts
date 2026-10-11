@@ -29,6 +29,7 @@ import DatabaseBackup from '@lucide/svelte/icons/database-backup'
 import ScrollText from '@lucide/svelte/icons/scroll-text'
 import Info from '@lucide/svelte/icons/info'
 import Boxes from '@lucide/svelte/icons/boxes'
+import Tv from '@lucide/svelte/icons/tv'
 import { hasEqTabs } from './eqtabs'
 import {
   href,
@@ -62,7 +63,7 @@ export interface NavItem {
   phase?: FuturePhase
   /** Motivo curto para o estado vazio. */
   reason?: string
-  kind: 'now' | 'plant' | 'eq' | 'knowledge' | 'tools' | 'system' | 'more'
+  kind: 'now' | 'plant' | 'eq' | 'knowledge' | 'tools' | 'system' | 'more' | 'tv'
   screen?: EqScreen
 }
 
@@ -171,6 +172,7 @@ export const ROUTE_ITEMS = {
     to: () => href.system('logs'),
   },
   systemAbout: { slug: 'system-about', label: 'Sobre', icon: Info, kind: 'system', to: () => href.system('about') },
+  tv: { slug: 'tv', label: 'Modo TV', icon: Tv, kind: 'tv', to: () => href.tv() },
   more: { slug: 'more', label: 'Mais', icon: Settings, kind: 'more', to: () => href.more() },
 } satisfies Record<string, NavItem>
 
@@ -191,7 +193,7 @@ export const GEAR_GROUPS: readonly NavGroup[] = [
   {
     id: 'sistema',
     label: 'Sistema',
-    items: [R.systemEquipments, R.systemBackup, R.systemLogs, R.systemSettings, R.systemAbout],
+    items: [R.systemEquipments, R.systemBackup, R.systemLogs, R.systemSettings, R.tv, R.systemAbout],
   },
   { id: 'demonstracao', label: 'Demonstração', items: [R.simulator] },
   { id: 'conhecimento', label: 'Conhecimento', items: [R.knowledgeCases] },
