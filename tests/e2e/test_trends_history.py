@@ -17,6 +17,7 @@ import time
 import pytest
 from playwright.sync_api import Page, expect
 
+from tests.e2e.conftest import Edge
 from tests.e2e.helpers import (
     EQ_BARRILHA,
     EQ_KCM03,
@@ -28,11 +29,21 @@ from tests.e2e.helpers import (
 
 pytestmark = pytest.mark.e2e
 
+LIVE_WINDOW_LIMIT_S = 12 * 60
+"""Até aqui depois do boot, a janela ao vivo de 15 min ainda contém o começo do cenário."""
 
-def test_trends_show_charts_and_what_changed_first(desktop_1920: Page) -> None:
+
+def test_trends_show_charts_and_what_changed_first(desktop_1920: Page, edge: Edge) -> None:
     page = desktop_1920
-    # A Barrilha roda BELTLOAD_LOW desde o boot: material cai e o esforço sobe.
-    open_route(page, f"/app/eq/{EQ_BARRILHA}/trends?p=15m", "trends")
+    # A Barrilha roda BELTLOAD_LOW desde o boot: material cai e o esforço sobe. A análise compara
+    # com o começo da janela, então a janela precisa conter o boot: nos primeiros minutos, os
+    # 15 min ao vivo; depois (a bateria inteira leva mais de 20 min), 15 min fixos a partir do boot.
+    if time.time() - edge.started_at < LIVE_WINDOW_LIMIT_S:
+        period = "p=15m"
+    else:
+        start_ms = int((edge.started_at - 60) * 1000)
+        period = f"from={start_ms}&to={start_ms + 15 * 60_000}"
+    open_route(page, f"/app/eq/{EQ_BARRILHA}/trends?{period}", "trends")
     chart = page.get_by_test_id("trend-chart-belt_load")
     expect(chart).to_be_visible()
     expect(chart.locator("canvas").first).to_be_visible()

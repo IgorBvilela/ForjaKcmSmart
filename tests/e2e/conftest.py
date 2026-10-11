@@ -25,7 +25,7 @@ import sys
 import time
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -147,6 +147,8 @@ class Edge:
     data_dir: Path
     log_path: Path
     home: Path = REPO_ROOT
+    started_at: float = 0.0
+    """Hora (time.time) em que o /health respondeu: o simulador roda o cenário desde aí."""
 
     @property
     def base_url(self) -> str:
@@ -207,6 +209,7 @@ def running_edge(home: Path, data_dir: Path) -> Iterator[Edge]:
                     f"forja run terminou cedo (código {proc.returncode}).\n{edge.log_tail()}"
                 )
             if _health_ok(port):
+                edge = replace(edge, started_at=time.time())
                 break
             if time.monotonic() > deadline:
                 pytest.fail(

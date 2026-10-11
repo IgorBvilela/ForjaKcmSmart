@@ -112,7 +112,12 @@ def open_route(page: Page, path: str, slug: str | None = None) -> Locator:
 
     Para as rotas com conteúdo assíncrono, espera também o bloco principal (ou o estado vazio).
     Se o Edge responder JSON (`UI_NOT_BUILT`: o dist está sendo reconstruído por outra mesa neste
-    instante), tenta de novo algumas vezes com espera curta."""
+    instante), tenta de novo algumas vezes com espera curta.
+
+    Documento em branco (o app nem montou: `#app` vazio, sem erro de JavaScript) recarrega uma vez:
+    sob a carga da bateria inteira, um recurso pode ficar parado na fila do navegador. Erro de
+    JavaScript continua falhando no teardown, e página que não monta falha de novo depois da
+    recarga."""
     for attempt in range(4):
         response = page.goto(path, wait_until="load")
         content_type = (response.headers.get("content-type", "") if response else "").lower()
@@ -124,7 +129,13 @@ def open_route(page: Page, path: str, slug: str | None = None) -> Locator:
         if slug
         else page.get_by_test_id("page")
     )
-    expect(page_locator).to_be_visible()
+    try:
+        expect(page_locator).to_be_visible()
+    except AssertionError:
+        if page.evaluate("document.getElementById('app')?.childElementCount ?? 0") != 0:
+            raise
+        page.reload(wait_until="load")
+        expect(page_locator).to_be_visible()
     ready = READY_BY_SLUG.get(slug or "", "[data-testid='empty-state']")
     expect(page.locator(ready).first).to_be_visible()
     return page_locator
