@@ -4,7 +4,7 @@ Com o build em `src/forja/ui/dist` (gerado por `scripts/build_ui.ps1`):
 - `/app/<arquivo existente>` serve o arquivo. Assets com hash (`/app/assets/*`) são imutáveis
   (cache de um ano); o resto (`index.html`, `brand/*`, `licenses/*`) sai com `no-cache`.
 - Qualquer outro caminho sob `/app` cai no `index.html` (roteador do lado do cliente).
-- `/` entrega o mesmo `index.html` (200) e o roteador normaliza a URL para `/app/plant`.
+- `/` entrega o mesmo `index.html` (200) e o roteador normaliza a URL para `/app/now`.
   Não é redirect HTTP de propósito: o contrato de `/` exige `200 text/html` com "Somente leitura"
   no corpo (`tests/integration/test_api_security_headers.py`), e o index do app cumpre isso.
 

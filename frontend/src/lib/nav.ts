@@ -1,5 +1,8 @@
-/** Catálogo das telas e grupos da sidebar. Fase = quando a tela deixa de ser EmptyState. */
+/** Catálogo das telas, menu principal (4 entradas e Mais) e grupos da página Mais.
+ *  Fase = quando a tela deixa de ser EmptyState. */
 import type { Component } from 'svelte'
+import Gauge from '@lucide/svelte/icons/gauge'
+import FileCog from '@lucide/svelte/icons/file-cog'
 import Factory from '@lucide/svelte/icons/factory'
 import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard'
 import Activity from '@lucide/svelte/icons/activity'
@@ -26,7 +29,15 @@ import DatabaseBackup from '@lucide/svelte/icons/database-backup'
 import ScrollText from '@lucide/svelte/icons/scroll-text'
 import Info from '@lucide/svelte/icons/info'
 import Boxes from '@lucide/svelte/icons/boxes'
-import { href, type EqScreen, type KnowledgeSub, type SystemSub, type ToolsSub } from './router'
+import { hasEqTabs } from './eqtabs'
+import {
+  href,
+  type EqScreen,
+  type KnowledgeSub,
+  type Route,
+  type SystemSub,
+  type ToolsSub,
+} from './router'
 
 /** Fases do plano que ainda não têm tela. Para o usuário, cada uma vira o nome da etapa. */
 export type FuturePhase = 'P'
@@ -51,7 +62,7 @@ export interface NavItem {
   phase?: FuturePhase
   /** Motivo curto para o estado vazio. */
   reason?: string
-  kind: 'plant' | 'eq' | 'knowledge' | 'tools' | 'system'
+  kind: 'now' | 'plant' | 'eq' | 'knowledge' | 'tools' | 'system' | 'more'
   screen?: EqScreen
 }
 
@@ -75,6 +86,7 @@ function eq(screen: EqScreen, slug: string, label: string, icon: NavItem['icon']
 
 /** Catálogo de todas as telas com rota. Títulos e estados vazios saem daqui; o menu só aponta. */
 export const ROUTE_ITEMS = {
+  now: { slug: 'now', label: 'Agora', icon: Gauge, kind: 'now', to: () => href.now() },
   plant: { slug: 'plant', label: 'Planta', icon: Factory, kind: 'plant', to: () => href.plant() },
   dashboard: eq('dashboard', 'dashboard', 'Dashboard', LayoutDashboard),
   realtime: eq('realtime', 'realtime', 'Tempo Real', Activity),
@@ -110,7 +122,7 @@ export const ROUTE_ITEMS = {
   },
   knowledgeCases: {
     slug: 'knowledge-cases',
-    label: 'Casos',
+    label: 'Casos de campo',
     icon: Library,
     kind: 'knowledge',
     to: () => href.knowledge('cases'),
@@ -140,7 +152,7 @@ export const ROUTE_ITEMS = {
   systemSettings: {
     slug: 'system-settings',
     label: 'Configuração',
-    icon: Settings,
+    icon: FileCog,
     kind: 'system',
     to: () => href.system('settings'),
   },
@@ -159,35 +171,51 @@ export const ROUTE_ITEMS = {
     to: () => href.system('logs'),
   },
   systemAbout: { slug: 'system-about', label: 'Sobre', icon: Info, kind: 'system', to: () => href.system('about') },
+  more: { slug: 'more', label: 'Mais', icon: Settings, kind: 'more', to: () => href.more() },
 } satisfies Record<string, NavItem>
 
 const R = ROUTE_ITEMS
 
-export const NAV_GROUPS: NavGroup[] = [
-  { id: 'visao', label: 'Visão', items: [R.plant, R.dashboard] },
-  { id: 'processo', label: 'Processo', items: [R.realtime, R.trends, R.history] },
+/** Menu principal: quatro entradas. A engrenagem (Mais) fica no pé do menu. */
+export const MAIN_MENU: readonly NavItem[] = [R.now, R.plant, R.dashboard, R.kcmCommunication]
+export const MORE_ITEM: NavItem = R.more
+
+/** Página Mais: o resto, em grupos. Nada some; só sai da frente. */
+export const GEAR_GROUPS: readonly NavGroup[] = [
   {
-    id: 'inteligencia',
-    label: 'Inteligência',
-    items: [R.alerts, R.events, R.diagnostics, R.earlyWarning, R.cases],
+    id: 'dosador',
+    label: 'Do dosador',
+    items: [R.kcmDatasheet, R.kcmComponents, R.kcmAlarms, R.kcmCommissioning],
   },
-  {
-    id: 'kcm',
-    label: 'KCM',
-    items: [R.kcmAlarms, R.kcmCommunication, R.kcmCommissioning, R.kcmDatasheet, R.kcmComponents],
-  },
-  {
-    id: 'conhecimento',
-    label: 'Conhecimento',
-    items: [R.knowledgeDocuments, R.knowledgeManuals, R.knowledgeCases],
-  },
-  { id: 'ferramentas', label: 'Ferramentas', items: [R.simulator, R.toolsReports, R.toolsExports] },
+  { id: 'dados', label: 'Dados', items: [R.toolsReports, R.toolsExports] },
   {
     id: 'sistema',
     label: 'Sistema',
-    items: [R.systemEquipments, R.systemSettings, R.systemBackup, R.systemLogs, R.systemAbout],
+    items: [R.systemEquipments, R.systemBackup, R.systemLogs, R.systemSettings, R.systemAbout],
   },
+  { id: 'demonstracao', label: 'Demonstração', items: [R.simulator] },
+  { id: 'conhecimento', label: 'Conhecimento', items: [R.knowledgeCases] },
 ]
+
+/** Entrada do menu acesa na rota atual. As telas da página Mais acendem a engrenagem. */
+export function menuSlugFor(route: Route): string {
+  switch (route.name) {
+    case 'now':
+      return R.now.slug
+    case 'plant':
+      return R.plant.slug
+    case 'eq':
+      if (route.screen === 'kcm/communication') return R.kcmCommunication.slug
+      return hasEqTabs(route.screen) ? R.dashboard.slug : R.more.slug
+    case 'more':
+    case 'knowledge':
+    case 'tools':
+    case 'system':
+      return R.more.slug
+    default:
+      return ''
+  }
+}
 
 /** Todas as telas, na ordem do catálogo. Não depende de como o menu está agrupado. */
 export const NAV_ITEMS: NavItem[] = Object.values(ROUTE_ITEMS)

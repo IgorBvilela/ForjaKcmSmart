@@ -3,7 +3,8 @@
    *  ("● Dosador Pó Base · Normal"): leitor de tela não enxerga cor de glifo.
    *  Abaixo de 1280 px o sufixo " (exemplo)" sai do nome; se ainda assim não couber no campo
    *  (medido com a fonte real), o nome é encurtado com "…". O estado nunca é abreviado.
-   *  Alvo de 44 px em toque e < 1024 px. */
+   *  Alvo de 44 px em toque e < 1024 px; letra de 16 px abaixo de 1024 px (o celular não dá zoom
+   *  ao tocar). Abaixo de 1024 px o rótulo "Equipamento" fica só para o leitor de tela. */
   import { onMount } from 'svelte'
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
   import { stateGlyph, stateTone, type PlantCard } from '../../lib/api'
@@ -154,9 +155,11 @@
   @media (max-width: 1023px), (pointer: coarse) {
     /* o <select> é o alvo: 44 px dentro da borda de 1 px do campo */
     .sel-field { height: calc(var(--touch) + 2px); }
+    /* abaixo de 16 px o celular dá zoom ao tocar no campo */
+    .sel-input { font-size: 16px; }
   }
-  @media (max-width: 767px) {
-    .sel { gap: 0; max-width: none; }
+  @media (max-width: 1023px) {
+    .sel { gap: 0; }
     .sel-label {
       position: absolute;
       width: 1px;
@@ -165,7 +168,10 @@
       clip: rect(0 0 0 0);
       white-space: nowrap;
     }
-    /* celular: a seta encosta mais e sobra texto; 10 px à esquerda, 28 à direita */
-    .sel-input { padding: 0 28px 0 10px; }
+  }
+  @media (max-width: 767px) {
+    .sel { max-width: none; }
+    /* celular: a seta encosta mais e sobra texto; 8 px à esquerda, 24 à direita */
+    .sel-input { padding: 0 24px 0 8px; }
   }
 </style>

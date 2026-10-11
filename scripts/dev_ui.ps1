@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Sobe o Vite em modo desenvolvimento com proxy para o Edge local.
 .DESCRIPTION
@@ -29,7 +29,7 @@ if (-not (Test-Path (Join-Path $frontend 'node_modules'))) {
 
 $env:FORJA_API = "http://$ApiHost`:$ApiPort"
 Write-Host "Proxy /api e /health -> $env:FORJA_API" -ForegroundColor Cyan
-Write-Host 'Interface: http://localhost:5173/app/plant' -ForegroundColor Cyan
+Write-Host 'Interface: http://localhost:5173/app' -ForegroundColor Cyan
 
 Push-Location $frontend
 try {

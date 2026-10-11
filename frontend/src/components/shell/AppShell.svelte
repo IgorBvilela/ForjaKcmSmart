@@ -1,5 +1,5 @@
 <script lang="ts">
-  /** Grade do app: sidebar (rail ou drawer) + header fixo + faixa de fonte + conteúdo. */
+  /** Grade do app: menu (trilho fixo ou drawer) + header fixo + faixa de fonte + conteúdo. */
   import type { Snippet } from 'svelte'
   import { app } from '../../lib/state.svelte'
   import { TID } from '../../lib/testids'
@@ -13,10 +13,7 @@
 
 <a class="skip" href="#conteudo" data-testid={TID.skipLink}>Ir para o conteúdo</a>
 
-<div
-  class="shell"
-  data-sidebar={app.isNarrow ? 'drawer' : app.sidebarCollapsed ? 'collapsed' : 'open'}
->
+<div class="shell" data-sidebar={app.isNarrow ? 'drawer' : 'rail'}>
   {#if app.isNarrow}
     <Drawer open={app.drawerOpen} onclose={() => app.closeDrawer()}>
       <Sidebar mode="drawer" />
@@ -58,11 +55,9 @@
 
   .shell {
     display: grid;
-    grid-template-columns: var(--rail-w, var(--sidebar-w)) minmax(0, 1fr);
+    grid-template-columns: var(--rail-w) minmax(0, 1fr);
     min-height: 100%;
-    transition: grid-template-columns var(--dur-screen) var(--ease-std);
   }
-  .shell[data-sidebar='collapsed'] { --rail-w: var(--sidebar-w-collapsed); }
   .shell[data-sidebar='drawer'] { grid-template-columns: minmax(0, 1fr); }
 
   .rail {

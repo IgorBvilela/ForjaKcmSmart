@@ -131,6 +131,8 @@ class LiveStore {
   diagnosisVersion = $state(0)
   lastEventChange = $state<{ kind: string; event: EventBrief; equipment_id: string } | null>(null)
   plantError = $state<string | null>(null)
+  /** A lista da planta já chegou (snapshot ou consulta), mesmo que vazia. */
+  plantLoaded = $state(false)
   #explicitSource = $state<DataSource | null>(null)
   dataSource: DataSource | null = $derived(this.#explicitSource ?? sourceOf(this.plant))
   /** Equipamento para links sem seleção: o primeiro perfil real; só se não houver, um de exemplo. */
@@ -179,6 +181,7 @@ class LiveStore {
   #onSnapshot(s: SnapshotPayload): void {
     const now = Date.now()
     this.plant = s.plant
+    this.plantLoaded = true
     const next: Record<string, LiveEquipment> = {}
     for (const [id, view] of Object.entries(s.live)) {
       next[id] = toLiveEquipment(view, now)
@@ -317,6 +320,7 @@ class LiveStore {
     try {
       const r = await api.plant()
       this.plant = r.cards
+      this.plantLoaded = true
       this.#explicitSource = r.data_source
       this.plantError = null
     } catch (err) {
@@ -367,6 +371,13 @@ class LiveStore {
   cardOf(equipmentId: string | null): PlantCard | undefined {
     if (!equipmentId) return undefined
     return this.plant.find((c) => c.id === equipmentId)
+  }
+
+  /** Equipamento dos links por equipamento (menu e página Mais): o pedido (rota ou último visto)
+   *  enquanto existir na planta; senão o primeiro perfil que não é de exemplo. */
+  linkEquipmentId(wanted: string | null): string | null {
+    if (wanted && (this.plant.length === 0 || this.plant.some((c) => c.id === wanted))) return wanted
+    return this.defaultEquipmentId
   }
 
   /** Idade em segundos no instante `nowMs` (passe `app.now` para ficar reativo). */

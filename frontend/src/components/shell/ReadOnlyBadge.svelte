@@ -49,7 +49,7 @@
   .compact .txt { font-size: var(--fs-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
 
   .ro[data-size='sm'] :global(.tip-btn) {
-    min-height: 22px;
+    min-height: 24px;
     padding: 0 var(--sp-2) 0 6px;
     gap: 5px;
     line-height: var(--lh-label);

@@ -40,4 +40,9 @@ export const TID = {
   emptyState: 'empty-state',
   events: { list: 'events-list', row: (id: string) => `event-row-${id}`, detail: 'event-detail' },
   about: 'about',
+  more: {
+    root: 'more',
+    link: (slug: string) => `more-link-${slug}`,
+    equipment: 'more-equipment',
+  },
 } as const

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Compila a interface (frontend/) para src/forja/ui/dist, que o FastAPI serve em /app.
 .DESCRIPTION
@@ -61,4 +61,4 @@ if ($remote) {
 }
 
 Write-Host "OK: interface compilada em $dist" -ForegroundColor Green
-Write-Host 'Abra http://127.0.0.1:8765/app/plant com o Edge em execução (forja run).'
+Write-Host 'Abra http://127.0.0.1:8765/app com o Edge em execução (forja run).'

@@ -1,61 +1,21 @@
 <script lang="ts">
-  /** Agora: está tudo bem? O que a manutenção verifica primeiro? Gerente à esquerda, manutenção à direita. */
-  import { onMount } from 'svelte'
+  /** Agora: está tudo bem? O que a manutenção verifica primeiro? Gerente à esquerda, manutenção à direita.
+   *  Lê a situação compartilhada: o contador do menu mostra o mesmo número. */
   import Check from '@lucide/svelte/icons/check'
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
   import NowCard from '../components/now/NowCard.svelte'
   import Badge from '../components/ui/Badge.svelte'
   import EmptyState from '../components/ui/EmptyState.svelte'
   import StatusDot from '../components/ui/StatusDot.svelte'
-  import { errorMessage, stateTone } from '../lib/api'
+  import { stateTone } from '../lib/api'
   import { ageSince, fmtAge, fmtNumber } from '../lib/format'
-  import { live } from '../lib/live.svelte'
   import { href } from '../lib/router'
-  import {
-    sinceText,
-    situationApi,
-    type SituationEntry,
-    type SituationResponse,
-  } from '../lib/situation'
+  import { sinceText, type SituationEntry } from '../lib/situation'
+  import { situation } from '../lib/situationStore.svelte'
   import { app } from '../lib/state.svelte'
 
-  const REFRESH_MS = 15_000
-
-  let data = $state<SituationResponse | null>(null)
-  let error = $state<string | null>(null)
-  let timer: number | undefined
-
-  async function load(): Promise<void> {
-    try {
-      data = await situationApi.get()
-      error = null
-    } catch (err) {
-      error = errorMessage(err)
-    }
-  }
-
-  function schedule(delayMs = 300): void {
-    if (timer) clearTimeout(timer)
-    timer = window.setTimeout(() => void load(), delayMs)
-  }
-
-  onMount(() => {
-    void load()
-    const id = window.setInterval(() => void load(), REFRESH_MS)
-    return () => {
-      clearInterval(id)
-      if (timer) clearTimeout(timer)
-    }
-  })
-
-  // Evento, diagnóstico ou estado novo no SSE: a situação é refeita logo em seguida.
-  $effect(() => {
-    void live.eventsVersion
-    void live.diagnosisVersion
-    void live.plant
-    if (data) schedule()
-  })
-
+  const data = $derived(situation.data)
+  const error = $derived(situation.error)
   const summary = $derived(data?.summary)
   const problems = $derived(data?.equipments.filter((e) => e.group === 'problem') ?? [])
   const noData = $derived(data?.equipments.filter((e) => e.group === 'no_data') ?? [])
@@ -76,7 +36,7 @@
 <section class="now" data-testid="now">
   {#if error && !data}
     <EmptyState title="Sem resposta do Edge" text={error}>
-      <button class="retry" type="button" onclick={() => void load()}>Tentar de novo</button>
+      <button class="retry" type="button" onclick={() => void situation.load()}>Tentar de novo</button>
     </EmptyState>
   {:else if !data || !summary}
     <p class="loading" data-testid="now-loading">Lendo a situação da planta…</p>

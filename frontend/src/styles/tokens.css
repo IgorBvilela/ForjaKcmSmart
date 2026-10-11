@@ -82,7 +82,7 @@
   --fs-mono-sm: 13px; --lh-mono-sm: 18px;
 
   /* ---- larguras ---- */
-  --sidebar-w: 264px; --sidebar-w-collapsed: 64px; --drawer-w: 280px;
+  --rail-w: 100px; --drawer-w: 280px;
   --header-h: 56px; --banner-h: 32px;
   --content-max: 1600px; --tile-min: 220px; --card-min: 320px;
   --touch: 44px;

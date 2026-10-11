@@ -525,9 +525,10 @@
   /* o chip de conexão é texto da linha de metadados; o botão do Tooltip não pode parecer botão */
   .conn :global(.tip-btn) {
     gap: var(--sp-2);
-    min-height: 0;
+    /* alvo mínimo de 24 px com mouse; a margem negativa devolve a altura à linha */
+    min-height: 24px;
     padding: 0 var(--sp-1);
-    margin: 0 calc(-1 * var(--sp-1));
+    margin: -2px calc(-1 * var(--sp-1));
     color: inherit;
     font: inherit;
     text-decoration: underline dotted var(--border-2);

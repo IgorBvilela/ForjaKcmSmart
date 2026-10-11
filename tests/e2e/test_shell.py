@@ -1,4 +1,5 @@
-"""Shell: sidebar/drawer nos 4 viewports, sem scroll horizontal, selo e faixa sempre visíveis."""
+"""Shell: trilho no desktop, drawer abaixo de 1024 px, sem scroll horizontal, selo e faixa
+sempre visíveis."""
 
 from __future__ import annotations
 
@@ -13,44 +14,30 @@ from tests.e2e.helpers import open_route, overflow_info
 pytestmark = pytest.mark.e2e
 
 
-def test_sidebar_open_by_default_and_collapses_at_1920(desktop_1920: Page) -> None:
-    page = desktop_1920
+MENU_ORDER = ["now", "plant", "dashboard", "kcm-communication", "more"]
+
+
+@pytest.mark.parametrize("viewport", ["desktop_1920", "desktop_1366"])
+def test_desktop_rail_shows_four_entries_and_gear_without_toggle(
+    request: pytest.FixtureRequest, viewport: str
+) -> None:
+    page: Page = request.getfixturevalue(viewport)
     open_route(page, "/app/plant", "plant")
     sidebar = page.get_by_test_id("sidebar")
     expect(sidebar).to_have_attribute("data-mode", "rail")
-    expect(sidebar).to_have_attribute("data-state", "open")
-    toggle = page.get_by_test_id("header-menu-toggle")
-    expect(toggle).to_have_attribute("aria-expanded", "true")
-    expect(toggle).to_have_attribute("aria-controls", "sidebar")
-    # no desktop não há botão dentro da sidebar: recolher/expandir é só pelo header
+    links = sidebar.locator("[data-testid^='sidebar-link-']")
+    slugs = links.evaluate_all(
+        "els => els.map(e => e.dataset.testid.slice('sidebar-link-'.length))"
+    )
+    assert slugs == MENU_ORDER
+    # o trilho fica sempre à vista: no desktop não há botão de recolher nem de abrir menu
+    expect(page.get_by_test_id("header-menu-toggle")).to_have_count(0)
     expect(page.get_by_test_id("sidebar-toggle")).to_have_count(0)
-
-    toggle.click()
-    expect(sidebar).to_have_attribute("data-state", "collapsed")
-    expect(toggle).to_have_attribute("aria-expanded", "false")
-    expect(toggle).to_have_accessible_name("Expandir menu")
-
-    toggle.click()
-    expect(sidebar).to_have_attribute("data-state", "open")
-    expect(toggle).to_have_attribute("aria-expanded", "true")
-    expect(toggle).to_have_accessible_name("Recolher menu")
-
-
-def test_sidebar_collapsed_by_default_at_1366(desktop_1366: Page) -> None:
-    page = desktop_1366
-    open_route(page, "/app/plant", "plant")
-    sidebar = page.get_by_test_id("sidebar")
-    expect(sidebar).to_have_attribute("data-mode", "rail")
-    expect(sidebar).to_have_attribute("data-state", "collapsed")
-    # recolhida, os rótulos somem mas cada link continua com nome acessível
-    link = page.get_by_test_id("sidebar-link-plant")
-    expect(link).to_be_visible()
-    expect(link).to_have_accessible_name(re.compile(r"Planta"))
-    expect(link).to_have_attribute("aria-current", "page")
-
-    page.get_by_test_id("header-menu-toggle").click()
-    expect(sidebar).to_have_attribute("data-state", "open")
-    expect(page.get_by_test_id("sidebar-link-plant")).to_have_attribute("aria-current", "page")
+    # nome visível embaixo do ícone; a entrada da tela atual é marcada
+    plant = page.get_by_test_id("sidebar-link-plant")
+    expect(plant).to_have_accessible_name(re.compile(r"^Planta"))
+    expect(plant).to_have_attribute("aria-current", "page")
+    expect(page.get_by_test_id("sidebar-link-more")).to_contain_text("Mais")
 
 
 @pytest.mark.parametrize("viewport", ["tablet_768", "mobile_375"])
@@ -96,10 +83,10 @@ def test_drawer_closes_on_scrim_and_on_navigation(mobile_375: Page) -> None:
     expect(page.get_by_role("dialog")).to_have_count(0)
 
     page.get_by_test_id("header-menu-toggle").click()
-    page.get_by_test_id("sidebar-link-system-about").click()
-    expect(page).to_have_url(re.compile(r"/app/system/about$"))
+    page.get_by_test_id("sidebar-link-more").click()
+    expect(page).to_have_url(re.compile(r"/app/more$"))
     expect(page.get_by_role("dialog")).to_have_count(0)
-    expect(page.get_by_test_id("about")).to_be_visible()
+    expect(page.get_by_test_id("more")).to_be_visible()
 
 
 @pytest.mark.parametrize("viewport", VIEWPORT_NAMES)

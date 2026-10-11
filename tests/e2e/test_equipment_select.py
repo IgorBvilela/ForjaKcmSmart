@@ -92,6 +92,21 @@ def test_select_options_on_mobile_keep_name_and_state_word(mobile_375: Page) -> 
     expect(select).to_be_visible()
 
 
+def test_select_options_on_tablet_keep_the_whole_name(tablet_768: Page) -> None:
+    """A 768 px o rótulo "Equipamento" fica só para o leitor de tela e o seletor ganha a largura:
+    com a letra de 16 px, "nome · estado" continua inteiro (sem "…")."""
+    page = tablet_768
+    open_route(page, "/app/plant", "plant")
+    select = page.get_by_test_id("header-equipment-select")
+    kcm03 = select.locator(f"option[value='{EQ_KCM03}']")
+    expect(kcm03).to_contain_text("KCM 03 · Sem comunicação")
+    expect(select.locator(f"option[value='{EQ_MAIN}']")).to_contain_text("Dosador Pó Base · Normal")
+    texts = select.locator("option").evaluate_all("els => els.map(e => e.textContent)")
+    assert not [t for t in texts if "…" in t], texts
+    font = select.evaluate("el => getComputedStyle(el).fontSize")
+    assert font == "16px", font
+
+
 def test_select_touch_target_is_at_least_44px_on_mobile(mobile_375: Page) -> None:
     """Contrato B: toque mínimo 44×44 px. (Falhou com 40 px no build das 10:01; corrigido no
     fonte às 10:22 com `height: var(--touch)`.)"""

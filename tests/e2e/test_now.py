@@ -33,7 +33,11 @@ def test_agora_mostra_a_frase_e_o_cartao_com_o_que_verificar(desktop_1366: Page)
     card = page.get_by_test_id(f"now-card-{EQ_BARRILHA}")
     expect(card).to_be_visible(timeout=EVENT_TIMEOUT_MS)
     expect(page.get_by_test_id("now-headline")).to_contain_text("em atenção")
-    expect(card.get_by_test_id("now-changed-first")).to_contain_text("Material na correia")
+    # BELTLOAD_LOW abre dois eventos da Forja: "Pouco material sobre a correia" (aberto por ~50 s)
+    # e "Esforço do acionamento alto" (segue aberto). O cartão mostra o que estiver em foco.
+    expect(card.get_by_test_id("now-changed-first")).to_contain_text(
+        re.compile(r"Material na correia|Esforço do acionamento")
+    )
     expect(card.get_by_test_id("now-next-check")).to_be_visible(timeout=DIAGNOSIS_TIMEOUT_MS)
     expect(card.get_by_test_id("now-origin-forja").first).to_contain_text("Evento da Forja")
     expect(card.get_by_role("link", name="Ver diagnóstico")).to_have_attribute(

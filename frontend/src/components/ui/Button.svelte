@@ -99,8 +99,10 @@
   .btn[data-variant='subtle'] { color: var(--text-2); }
   .btn[data-variant='subtle']:hover { background: var(--surf-2); color: var(--text-1); }
   .btn[data-variant='link'] {
+    /* alvo mínimo de 24 px com mouse; a margem negativa devolve a altura à linha */
     padding: 0;
-    min-height: 0;
+    min-height: 24px;
+    margin-block: -2px;
     color: var(--accent-text);
     border-radius: var(--r-1);
   }

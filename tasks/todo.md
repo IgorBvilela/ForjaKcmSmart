@@ -14,16 +14,17 @@ Plano: `tasks/plan.md`. Especificação: `docs/produto/especificacao_interface_e
 
 ## Fase 2 · Navegação enxuta
 - [x] T4 · Títulos independentes do menu
-- [ ] T5 · Menu com 4 entradas e engrenagem; rota inicial `/app/now`
-  - Defeitos antigos do cabeçalho, achados na conferência visual: letra do seletor de equipamento com 14 px no celular (mínimo 16); botões de dica com 20 a 22 px de altura (mínimo 24 com mouse)
+- [x] T5 · Menu com 4 entradas e engrenagem; rota inicial `/app/now`
+  - Corrigidos os defeitos antigos do cabeçalho: seletor de equipamento com 16 px abaixo de 1024 px (nome e estado cabem a partir de 360 px); botões de dica e link com alvo mínimo de 24 px
 - [x] T6 · Abas do Dashboard (feito antes de T5, para nenhuma tela ficar sem caminho)
-- [ ] Checkpoint B · Todas as telas a até 2 cliques; bateria completa verde
+- [x] Checkpoint B · Todas as telas a até 2 cliques; bateria completa verde (806 núcleo + 95 navegador); conferência visual do menu e da gaveta sem achados
 
 ## Fase 3 · Planta e Comunicação
 - [ ] T7 · Planta em grade quase quadrada (4 = 2 × 2) e cartão enxuto
+  - Defeito antigo achado na conferência visual: linha "Último evento" do cartão cortada com reticências a 375 e 768 px
 - [ ] T8 · Comunicação direta
 - [ ] T9 · Texto enxuto: telas de dados
-  - Defeitos antigos achados na conferência visual: link "Ver todos" do Dashboard com 20 px de altura; textos dos quadros do Dashboard cortados com reticências; caixas de marcar das variáveis do Histórico com 20 px
+  - Defeitos antigos achados na conferência visual: textos dos quadros do Dashboard cortados com reticências; caixas de marcar das variáveis do Histórico com 20 px (o link "Ver todos" com 20 px foi corrigido no T5)
 - [ ] T10 · Texto enxuto: telas de sistema
 - [ ] T11 · Texto enxuto: telas do dosador e de inteligência
 - [ ] Checkpoint C · Uma frase de apoio por tela principal; bateria verde; conferência visual
@@ -42,3 +43,7 @@ Plano: `tasks/plan.md`. Especificação: `docs/produto/especificacao_interface_e
 - [ ] T18 · Atalhos de teclado de 1 a 4, com opção de desligar
 - [ ] T19 · Tema claro opcional, conferido nos dois temas
 - Etapa de rede e login (fora desta fase): QR code na TV
+
+## Achados para decidir depois
+- Com um evento aberto, o servidor manda uma atualização por segundo pelo SSE. O Dashboard recarrega a lista de eventos e a planta a cada uma delas (comportamento anterior a esta fase). Proposta: o cliente ignorar a atualização sem mudança de estado e calcular a duração sozinho.
+- Regra "Pouco material sobre a correia": o evento se encerra cerca de 50 s depois de abrir, embora a carga continue baixa, porque a regra olha a queda dentro de 60 s e não o nível. O alarme do KCM e o evento "Esforço do acionamento alto" seguem ativos. Decisão de domínio para o usuário.

@@ -263,7 +263,7 @@
   /* pill de qualidade como alvo de toque: visual igual, caixa do botão sem padding extra */
   .tile-q { display: inline-flex; }
   .tile-q :global(.tip-btn) {
-    min-height: 0;
+    min-height: 24px;
     padding: 0;
     border-radius: var(--r-pill);
     background: transparent;

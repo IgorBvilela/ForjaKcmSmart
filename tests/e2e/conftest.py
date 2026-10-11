@@ -355,24 +355,55 @@ def mobile_375(make_page: PageFactory) -> Page:
 class NavRoute:
     slug: str
     href: str
-    phase: str  # '' quando a tela já funciona nesta fase
+
+
+def slug_from_href(href: str) -> str:
+    """Slug da rota (o `data-route` da página) a partir do href do link.
+
+    `/app/eq/<id>/kcm/communication` → `kcm-communication`; `/app/system/about` → `system-about`;
+    `/app/now` → `now`."""
+    parts = [p for p in href.split("?")[0].split("/") if p]
+    if parts[:1] != ["app"] or len(parts) < 2:
+        raise ValueError(f"href fora do app: {href}")
+    if parts[1] == "eq":
+        return "-".join(parts[3:])
+    return "-".join(parts[1:])
+
+
+# Links de navegação: menu principal (com a engrenagem), atalhos da página Mais e abas do dosador.
+NAV_LINKS = (
+    "[data-testid^='sidebar-link-'][href], [data-testid^='more-link-'][href], "
+    "[data-testid^='eq-tab-'][href], [data-testid^='eq-subtab-'][href]"
+)
+
+# Telas onde os links aparecem: menu e abas (dashboard), atalhos (Mais) e as sub-abas, que só
+# aparecem dentro da aba Gráficos (tendências) e da aba Ocorrências (alertas).
+NAV_SOURCES = ("dashboard", "more", "trends", "alerts")
 
 
 @pytest.fixture(scope="package")
 def nav_routes(browser: Browser, edge: Edge) -> list[NavRoute]:
-    """Rotas da sidebar lidas do próprio app (frontend/src/lib/nav.ts) com equipamento escolhido."""
+    """Rotas que a navegação oferece, lidas do próprio app com equipamento escolhido."""
     ctx = browser.new_context(**_context_kwargs("desktop_1920", edge.base_url))
+    hrefs: list[str] = []
     try:
         page = ctx.new_page()
-        page.goto("/app/eq/GTEX_PHA_PO_BASE/dashboard", wait_until="load")
-        links = page.locator("[data-testid^='sidebar-link-']")
-        expect(links.first).to_be_visible()
-        raw = links.evaluate_all(
-            "els => els.map(e => ({slug: e.dataset.testid.slice('sidebar-link-'.length),"
-            " href: e.getAttribute('href'), phase: e.dataset.phase || ''}))"
-        )
+        for source in NAV_SOURCES:
+            path = "/app/more" if source == "more" else f"/app/eq/GTEX_PHA_PO_BASE/{source}"
+            page.goto(path, wait_until="load")
+            expect(page.locator(f"[data-testid='page'][data-route='{source}']")).to_be_visible()
+            if source == "more":
+                # os atalhos do dosador ganham endereço quando a lista da planta chega
+                expect(
+                    page.locator("[data-testid='more-link-kcm-datasheet'][href]")
+                ).to_be_visible()
+            links = page.locator(NAV_LINKS)
+            expect(links.first).to_be_visible()
+            hrefs += links.evaluate_all("els => els.map(e => e.getAttribute('href'))")
     finally:
         ctx.close()
-    routes = [NavRoute(r["slug"], r["href"], r["phase"]) for r in raw]
-    assert routes, "sidebar sem links: nav.ts vazio ou equipamento não selecionado"
-    return routes
+    routes: dict[str, NavRoute] = {}
+    for href in hrefs:
+        routes.setdefault(href, NavRoute(slug_from_href(href), href))
+    assert routes, "navegação sem links: nav.ts vazio ou equipamento não selecionado"
+    return list(routes.values())

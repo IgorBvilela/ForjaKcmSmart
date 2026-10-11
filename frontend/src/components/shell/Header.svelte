@@ -1,9 +1,8 @@
 <script lang="ts">
-  /** Header: alternador da sidebar, marca, seletor de equipamento, estado do Edge (toque abre a
-   *  explicação), selo Somente leitura e relógio. Alvos de 44 px em toque e abaixo de 1024 px. */
+  /** Header: botão do menu (só abaixo de 1024 px, onde o menu vira drawer), marca, seletor de
+   *  equipamento, estado do Edge (toque abre a explicação), selo Somente leitura e relógio.
+   *  Alvos de 44 px em toque e abaixo de 1024 px. */
   import Menu from '@lucide/svelte/icons/menu'
-  import PanelLeftClose from '@lucide/svelte/icons/panel-left-close'
-  import PanelLeftOpen from '@lucide/svelte/icons/panel-left-open'
   import Server from '@lucide/svelte/icons/server'
   import { fmtClock, fmtDate } from '../../lib/format'
   import { live } from '../../lib/live.svelte'
@@ -51,32 +50,24 @@
         ? 'Edge sem resposta: este programa parou de responder. Os valores na tela são os últimos recebidos.'
         : 'Edge conectando: aguardando este programa responder.',
   )
-  const toggleLabel = $derived(
-    app.isNarrow ? 'Abrir menu' : app.sidebarCollapsed ? 'Expandir menu' : 'Recolher menu',
-  )
 </script>
 
 <header class="hdr" data-testid={TID.header.root}>
   <div class="hdr-left">
-    <button
-      type="button"
-      class="icon-btn"
-      data-testid={TID.header.menuToggle}
-      aria-label={toggleLabel}
-      aria-expanded={app.isNarrow ? app.drawerOpen : !app.sidebarCollapsed}
-      aria-controls="sidebar"
-      onclick={() => app.toggleSidebar()}
-    >
-      {#if app.isNarrow}
+    {#if app.isNarrow}
+      <button
+        type="button"
+        class="icon-btn"
+        data-testid={TID.header.menuToggle}
+        aria-label="Abrir menu"
+        aria-expanded={app.drawerOpen}
+        onclick={() => app.toggleDrawer()}
+      >
         <Menu size={20} aria-hidden="true" />
-      {:else if app.sidebarCollapsed}
-        <PanelLeftOpen size={20} aria-hidden="true" />
-      {:else}
-        <PanelLeftClose size={20} aria-hidden="true" />
-      {/if}
-    </button>
+      </button>
+    {/if}
 
-    <a class="brand" href={href.plant()} aria-label="Forja KCM Intelligence, ir para a planta">
+    <a class="brand" href={href.now()} aria-label="Forja KCM Intelligence, ir para a tela Agora">
       <svg class="mono" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true">
         <rect width="32" height="32" rx="7" fill="var(--accent)" />
         <rect x="8" y="7" width="3.2" height="18" fill="var(--on-accent)" />
@@ -239,10 +230,12 @@
     .hdr-left { gap: var(--sp-2); }
     .hdr-center { justify-content: stretch; }
   }
-  /* celular estreito: o seletor precisa de ~250 px para "nome · estado" inteiro; a marca sai
-     do header (mora no topo do drawer) e o relógio também */
+  /* celular estreito: com letra de 16 px o seletor precisa de ~255 px para "nome · estado"
+     inteiro; a marca sai do header (mora no topo do drawer), o relógio também, e as margens
+     encolhem (os alvos de 44 px continuam) */
   @media (max-width: 479px) {
     .clock { display: none; }
     .brand { display: none; }
+    .hdr { padding: 0 var(--sp-1); gap: var(--sp-1); }
   }
 </style>

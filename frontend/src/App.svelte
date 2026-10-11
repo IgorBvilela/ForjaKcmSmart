@@ -8,6 +8,7 @@
   import { live } from './lib/live.svelte'
   import { knowledgeItem, navItemForEqScreen, systemItem, toolsItem } from './lib/nav'
   import { href, installLinkInterceptor, routeSlug } from './lib/router'
+  import { situation } from './lib/situationStore.svelte'
   import { app } from './lib/state.svelte'
   import { TID } from './lib/testids'
   import AboutPage from './routes/AboutPage.svelte'
@@ -28,6 +29,7 @@
   import EventsPage from './routes/EventsPage.svelte'
   import HistoryPage from './routes/HistoryPage.svelte'
   import KnowledgeCasesPage from './routes/KnowledgeCasesPage.svelte'
+  import MorePage from './routes/MorePage.svelte'
   import NowPage from './routes/NowPage.svelte'
   import PlantPage from './routes/PlantPage.svelte'
   import RealtimePage from './routes/RealtimePage.svelte'
@@ -42,12 +44,22 @@
   onMount(() => {
     app.start()
     live.start()
+    situation.start()
     const off = installLinkInterceptor(document.body)
     return () => {
       off()
+      situation.stop()
       live.stop()
       app.stop()
     }
+  })
+
+  // Evento, diagnóstico ou estado novo no SSE: a situação (tela Agora e contador do menu) é refeita.
+  $effect(() => {
+    void live.eventsVersion
+    void live.diagnosisVersion
+    void live.plant
+    situation.refreshSoon()
   })
 
   const route = $derived(app.route)
@@ -59,6 +71,8 @@
         return `Agora · ${PRODUCT}`
       case 'plant':
         return `Planta · ${PRODUCT}`
+      case 'more':
+        return `Mais · ${PRODUCT}`
       case 'eq': {
         const name = live.cardOf(r.id)?.name ?? r.id
         if (r.eventId) return `Evento · ${name} · ${PRODUCT}`
@@ -91,6 +105,8 @@
         <NowPage />
       {:else if route.name === 'plant'}
         <PlantPage />
+      {:else if route.name === 'more'}
+        <MorePage />
       {:else if route.name === 'eq'}
         {#if route.eventId}
           <DiagnosisPage equipmentId={route.id} eventId={route.eventId} />
@@ -164,7 +180,7 @@
           title="Página não encontrada"
           text="O endereço não corresponde a nenhuma tela desta versão."
         >
-          <a class="home" href={href.plant()}>Ir para a planta</a>
+          <a class="home" href={href.now()}>Ir para a tela Agora</a>
         </EmptyState>
       {/if}
     </div>

@@ -31,7 +31,9 @@ def test_beltload_low_event_has_diagnosis_badge_and_seven_sections(desktop_1920:
         .first
     )
     expect(row).to_be_visible(timeout=EVENT_TIMEOUT_MS)
-    expect(row).to_have_attribute("data-status", "OPEN")
+    # a regra olha a queda dentro de 60 s: o evento abre ~70 s após o boot e se encerra ~50 s
+    # depois, quando a carga para de cair; aberto ou resolvido, o diagnóstico é o mesmo
+    expect(row).to_have_attribute("data-status", re.compile(r"^(OPEN|RESOLVED)$"))
     expect(row.get_by_text("Diagnóstico", exact=True)).to_be_visible(timeout=30_000)
     expect(row.get_by_text("Simulado", exact=True)).to_be_visible()
     expect(page.get_by_test_id("events-list")).to_have_attribute(
@@ -85,8 +87,11 @@ def test_print_hides_shell_and_keeps_event_detail(desktop_1920: Page) -> None:
     expect(page.get_by_test_id("diagnosis-panel")).to_be_visible()
     expect(page.get_by_test_id("sidebar")).to_be_visible()
 
+    expect(page.get_by_test_id("eq-tabs")).to_be_visible()
+
     page.emulate_media(media="print")
     expect(page.get_by_test_id("sidebar")).to_be_hidden()
+    expect(page.get_by_test_id("eq-tabs")).to_be_hidden()
     expect(page.get_by_test_id("header")).to_be_hidden()
     expect(page.get_by_test_id("banner-data-source")).to_be_hidden()
     expect(detail).to_be_visible()

@@ -27,6 +27,7 @@ export type SystemSub = 'equipments' | 'settings' | 'backup' | 'logs' | 'about'
 
 export type Route =
   | { name: 'now' }
+  | { name: 'more' }
   | { name: 'plant' }
   | { name: 'eq'; id: string; screen: EqScreen; eventId?: string }
   | { name: 'knowledge'; sub: KnowledgeSub }
@@ -46,17 +47,17 @@ function oneOf<T extends string>(value: string | undefined, allowed: readonly T[
   return value != null && (allowed as readonly string[]).includes(value) ? (value as T) : null
 }
 
-/** Caminhos que devem virar /app/plant (raiz do servidor e raiz do app). */
+/** Caminhos que devem virar /app/now, a primeira tela (raiz do servidor e raiz do app). */
 export function normalizePath(pathname: string): string | null {
   const p = pathname.replace(/\/+$/, '')
-  if (p === '' || p === APP_BASE || p === `${APP_BASE}/index.html`) return `${APP_BASE}/plant`
+  if (p === '' || p === APP_BASE || p === `${APP_BASE}/index.html`) return `${APP_BASE}/now`
   return null
 }
 
 export function parseRoute(pathname: string): Route {
   const notFound: Route = { name: 'notfound', path: pathname }
   const p = pathname.replace(/\/+$/, '')
-  if (p === '' || p === APP_BASE) return { name: 'plant' }
+  if (p === '' || p === APP_BASE) return { name: 'now' }
   if (!p.startsWith(`${APP_BASE}/`)) return notFound
   let segs: string[]
   try {
@@ -67,6 +68,8 @@ export function parseRoute(pathname: string): Route {
   switch (segs[0]) {
     case 'now':
       return segs.length === 1 ? { name: 'now' } : notFound
+    case 'more':
+      return segs.length === 1 ? { name: 'more' } : notFound
     case 'plant':
       return segs.length === 1 ? { name: 'plant' } : notFound
     case 'eq': {
@@ -105,6 +108,7 @@ export function parseRoute(pathname: string): Route {
 
 export const href = {
   now: () => `${APP_BASE}/now`,
+  more: () => `${APP_BASE}/more`,
   plant: () => `${APP_BASE}/plant`,
   eq: (id: string, screen: EqScreen = 'dashboard') =>
     `${APP_BASE}/eq/${encodeURIComponent(id)}/${screen}`,
@@ -120,6 +124,8 @@ export function routeSlug(route: Route): string {
   switch (route.name) {
     case 'now':
       return 'now'
+    case 'more':
+      return 'more'
     case 'plant':
       return 'plant'
     case 'eq':

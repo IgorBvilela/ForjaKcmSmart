@@ -42,6 +42,7 @@ Fonte da verdade: `docs/produto/especificacao_interface_enxuta.md` (aprovada). K
 - Texto: título curto e no máximo 1 frase de apoio por tela; o aviso de segurança fica só no selo "Somente leitura" do cabeçalho.
 - Planta em grade quase quadrada (4 dosadores = 2 × 2). Comunicação direta: protocolo → endereço → testar → salvar e ativar; tempos e mapping fechados.
 - A tela Agora lê `GET /api/v1/situation` (somente leitura). "Desde quando" nunca inventado: o início do alarme do KCM vem do historiador ou aparece como "início não determinado"; "sem dados" nunca conta como normal.
+- O contador do menu e a tela Agora leem o mesmo store (`frontend/src/lib/situationStore.svelte.ts`), com no máximo uma consulta a cada 5 s: com evento aberto o SSE manda uma atualização por segundo.
 - Modo TV em `/app/tv` (TV como segundo monitor do PC do Forja nesta versão). Celular nesta versão = telas em 375 px; abrir na rede com login fica para depois do campo e revisa a ADR 0030.
 - Prévia em localhost antes de construir qualquer tela da fase.
 - Escolhas da prévia (§15 da especificação): menu em trilho com ícones grandes; tela Agora com gerente à esquerda e manutenção à direita; Planta com desvio do setpoint; Dashboard com abas Visão, Variáveis, Gráficos e Ocorrências; Comunicação passo a passo numa coluna com "Salvar e ativar"; engrenagem abre a página `/app/more`. Extras aprovados no §16 (medida de tempo dentro/fora do normal, resumo do turno, placar na TV, atalhos 1 a 4 com desligar, tema claro). Plano em `tasks/plan.md`.

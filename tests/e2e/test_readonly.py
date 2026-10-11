@@ -56,28 +56,33 @@ def test_no_command_controls_outside_simulator(
     )
 
 
-def test_future_phase_routes_show_honest_empty_state(
-    desktop_1366: Page, nav_routes: list[NavRoute]
-) -> None:
+# Telas da fase P: fora do menu e da página Mais até existirem, mas a rota continua honesta.
+FUTURE_ROUTES = [
+    ("/app/knowledge/documents", "knowledge-documents", "P"),
+    ("/app/knowledge/manuals", "knowledge-manuals", "P"),
+]
+
+
+def test_future_phase_routes_show_honest_empty_state(desktop_1366: Page) -> None:
     page = desktop_1366
-    # Toda tela ainda não construída precisa ser honesta. O número cai a cada fase entregue.
-    future = [r for r in nav_routes if r.phase]
-    assert {r.phase for r in future} <= set(PHASE_NAMES)
-    for route in future:
-        open_route(page, route.href, route.slug)
+    assert {phase for _, _, phase in FUTURE_ROUTES} <= set(PHASE_NAMES)
+    open_route(page, "/app/more", "more")
+    for _, slug, _ in FUTURE_ROUTES:
+        expect(page.get_by_test_id(f"more-link-{slug}")).to_have_count(0)
+    for path, slug, phase in FUTURE_ROUTES:
+        open_route(page, path, slug)
         empty = page.get_by_test_id("empty-state")
         expect(empty).to_be_visible()
-        expect(empty).to_have_attribute("data-phase", route.phase)
+        expect(empty).to_have_attribute("data-phase", phase)
         expect(empty).to_contain_text("Em desenvolvimento")
-        expect(empty).to_contain_text(f"próxima etapa: {PHASE_NAMES[route.phase]}")
-        expect(empty).not_to_contain_text(re.compile(r"fase [A-Z]"))
+        expect(empty).to_contain_text(f"próxima etapa: {PHASE_NAMES[phase]}")
+        expect(empty).not_to_contain_text(re.compile(r"fase [A-Z]"))
         expect(empty).to_contain_text("ainda não está disponível")
         expect(empty).to_contain_text("a Forja só lê")
         # sem botão falso dentro do estado vazio
         expect(empty.locator("button, a[href], input")).to_have_count(0)
-        expect(page.get_by_test_id(f"sidebar-link-{route.slug}")).to_have_attribute(
-            "aria-current", "page"
-        )
+        # fora do menu principal, a engrenagem (Mais) é a entrada marcada
+        expect(page.get_by_test_id("sidebar-link-more")).to_have_attribute("aria-current", "page")
 
 
 def test_unknown_route_shows_not_found_without_fake_screen(tablet_768: Page) -> None:
@@ -86,7 +91,8 @@ def test_unknown_route_shows_not_found_without_fake_screen(tablet_768: Page) -> 
     empty = page.get_by_test_id("empty-state")
     expect(empty).to_be_visible()
     expect(empty).to_contain_text("Página não encontrada")
-    expect(empty.get_by_role("link", name="Ir para a planta")).to_be_visible()
+    home = empty.get_by_role("link", name="Ir para a tela Agora")
+    expect(home).to_have_attribute("href", "/app/now")
     expect(page.get_by_test_id("page")).to_have_attribute("data-route", "notfound")
 
 
@@ -106,4 +112,4 @@ def test_about_states_read_only(mobile_375: Page) -> None:
         expect(about.get_by_role("link", name=lic).first).to_have_attribute(
             "href", re.compile(r"^/app/licenses/")
         )
-    expect(page.get_by_test_id("sidebar-link-system-about")).to_have_count(0)  # drawer fechado
+    expect(page.get_by_test_id("sidebar-link-more")).to_have_count(0)  # drawer fechado

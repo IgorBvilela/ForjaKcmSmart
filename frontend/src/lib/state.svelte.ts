@@ -1,7 +1,6 @@
-/** Estado do shell: rota atual, equipamento selecionado, sidebar/drawer, viewport, relógio. */
+/** Estado do shell: rota atual, equipamento selecionado, drawer, viewport, relógio. */
 import { navigate, normalizePath, onNavigate, parseRoute, type Route } from './router'
 
-const LS_SIDEBAR = 'forja.sidebar'
 const LS_EQ = 'forja.equipment'
 
 function readStorage(key: string): string | null {
@@ -26,7 +25,7 @@ function media(query: string): MediaQueryList | null {
 }
 
 class AppState {
-  path = $state('/app/plant')
+  path = $state('/app/now')
   route: Route = $derived(parseRoute(this.path))
   lastEquipmentId = $state<string | null>(readStorage(LS_EQ))
   /** Equipamento da rota, ou o último visitado (para montar links da sidebar). */
@@ -36,17 +35,14 @@ class AppState {
 
   /** < 768 px: celular. Selo Somente leitura migra para a faixa. */
   isMobile = $state(false)
-  /** < 1024 px: sidebar vira drawer com scrim. */
+  /** < 1024 px: o menu vira drawer com scrim. */
   isNarrow = $state(false)
-  /** < 1440 px (inclui 1366×768): sidebar recolhida por padrão; 1920 abre. */
-  isCompact = $state(false)
   /** ≥ 1280 px: dashboard em 12 colunas, 6 indicadores numa linha, tiles compactos. */
   isDesktop = $state(false)
-  /** Sem hover (toque): o rail recolhido expande no toque em vez de mostrar tooltip. */
+  /** Sem hover (toque). */
   noHover = $state(false)
   reducedMotion = $state(false)
 
-  sidebarCollapsed = $state(false)
   drawerOpen = $state(false)
 
   /** Relógio reativo (1 Hz). Lido por quem mostra idade ou hora. */
@@ -70,13 +66,9 @@ class AppState {
       this.isNarrow = m
       if (!m) this.drawerOpen = false
     })
-    this.#watch('(max-width: 1439px)', (m) => (this.isCompact = m))
     this.#watch('(min-width: 1280px)', (m) => (this.isDesktop = m))
     this.#watch('(hover: none)', (m) => (this.noHover = m))
     this.#watch('(prefers-reduced-motion: reduce)', (m) => (this.reducedMotion = m))
-
-    const stored = readStorage(LS_SIDEBAR)
-    this.sidebarCollapsed = stored == null ? this.isCompact : stored === 'collapsed'
 
     this.#ticker = window.setInterval(() => (this.now = Date.now()), 1000)
   }
@@ -111,13 +103,9 @@ class AppState {
     navigate(path, opts)
   }
 
-  toggleSidebar(): void {
-    if (this.isNarrow) {
-      this.drawerOpen = !this.drawerOpen
-      return
-    }
-    this.sidebarCollapsed = !this.sidebarCollapsed
-    writeStorage(LS_SIDEBAR, this.sidebarCollapsed ? 'collapsed' : 'open')
+  /** Abre e fecha o menu no celular e no tablet; no desktop o trilho está sempre à vista. */
+  toggleDrawer(): void {
+    if (this.isNarrow) this.drawerOpen = !this.drawerOpen
   }
 
   closeDrawer(): void {
